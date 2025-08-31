@@ -114,13 +114,13 @@ const Settings = () => {
         <button onClick={()=>openEdit('zone')} className="px-3 py-1.5 rounded bg-orange-500 text-white font-medium hover:bg-orange-600 flex items-center gap-1"><Plus size={14}/> Zone</button>
         <button onClick={()=>openEdit('gate')} className="px-3 py-1.5 rounded bg-orange-500 text-white font-medium hover:bg-orange-600 flex items-center gap-1"><Plus size={14}/> Gate</button>
         <div className="relative ml-auto">
-          <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 rounded border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+          <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 rounded border border-white/10 bg-white/5 focus:bg-white/10 text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1"><Layers3 size={14} className="text-orange-600"/> Zones</h3>
+        <div className="bg-white/5 border border-white/10 rounded-lg p-4 shadow-sm backdrop-blur-sm">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-3 flex items-center gap-1"><Layers3 size={14} className="text-orange-500"/> Zones</h3>
           {loading ? loadingList : filteredZones.length===0 ? emptyState : (
             <ul className="space-y-2 text-xs">
               <AnimatePresence initial={false}>
@@ -130,15 +130,15 @@ const Settings = () => {
                     initial={{opacity:0, y:8}}
                     animate={{opacity:1, y:0}}
                     exit={{opacity:0, y:-6}}
-                    className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 focus-within:bg-orange-50 border border-transparent hover:border-orange-200"
+                    className="flex items-center gap-3 p-2 rounded border border-white/10 bg-white/5 hover:bg-white/10 focus-within:bg-white/10"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-800 truncate flex items-center gap-1"><MapPin size={12} className="text-orange-600"/> {z.name}</div>
-                      <div className="text-[10px] text-gray-500">Capacity: {z.capacity}</div>
+                      <div className="font-medium text-white/90 truncate flex items-center gap-1"><MapPin size={12} className="text-orange-500"/> {z.name}</div>
+                      <div className="text-[10px] text-white/50">Capacity: {z.capacity}</div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={()=>openEdit('zone', z)} className="text-gray-600 hover:text-orange-600" aria-label="Edit zone"><Pencil size={14}/></button>
-                      <button onClick={()=>removeEntity('zone', z.id)} className="text-gray-400 hover:text-red-600" aria-label="Delete zone"><Trash2 size={14}/></button>
+                      <button onClick={()=>openEdit('zone', z)} className="text-white/60 hover:text-orange-400" aria-label="Edit zone"><Pencil size={14}/></button>
+                      <button onClick={()=>removeEntity('zone', z.id)} className="text-white/30 hover:text-red-400" aria-label="Delete zone"><Trash2 size={14}/></button>
                     </div>
                   </motion.li>
                 ))}
@@ -146,8 +146,8 @@ const Settings = () => {
             </ul>
           )}
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1"><DoorOpen size={14} className="text-orange-600"/> Gates</h3>
+        <div className="bg-white/5 border border-white/10 rounded-lg p-4 shadow-sm backdrop-blur-sm">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-3 flex items-center gap-1"><DoorOpen size={14} className="text-orange-500"/> Gates</h3>
           {loading ? loadingList : (
             <ul className="space-y-2 text-xs">
               <AnimatePresence initial={false}>
@@ -157,15 +157,15 @@ const Settings = () => {
                     initial={{opacity:0, y:8}}
                     animate={{opacity:1, y:0}}
                     exit={{opacity:0, y:-6}}
-                    className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 border border-transparent hover:border-orange-200"
+                    className="flex items-center gap-3 p-2 rounded border border-white/10 bg-white/5 hover:bg-white/10"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-800 truncate">{g.name}</div>
-                      <div className="text-[10px] text-gray-500">Zone: {zones.find(z=>z.id===g.zoneId)?.name}</div>
+                      <div className="font-medium text-white/90 truncate">{g.name}</div>
+                      <div className="text-[10px] text-white/50">Zone: {zones.find(z=>z.id===g.zoneId)?.name}</div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={()=>openEdit('gate', g)} className="text-gray-600 hover:text-orange-600" aria-label="Edit gate"><Pencil size={14}/></button>
-                      <button onClick={()=>removeEntity('gate', g.id)} className="text-gray-400 hover:text-red-600" aria-label="Delete gate"><Trash2 size={14}/></button>
+                      <button onClick={()=>openEdit('gate', g)} className="text-white/60 hover:text-orange-400" aria-label="Edit gate"><Pencil size={14}/></button>
+                      <button onClick={()=>removeEntity('gate', g.id)} className="text-white/30 hover:text-red-400" aria-label="Delete gate"><Trash2 size={14}/></button>
                     </div>
                   </motion.li>
                 ))}
@@ -182,12 +182,12 @@ const Settings = () => {
       <div className="flex items-center gap-2 text-xs">
         <button onClick={()=>openEdit('service')} className="px-3 py-1.5 rounded bg-orange-500 text-white font-medium hover:bg-orange-600 flex items-center gap-1"><Plus size={14}/> Service</button>
         <div className="relative ml-auto">
-          <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 rounded border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+          <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 rounded border border-white/10 bg-white/5 focus:bg-white/10 text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
         </div>
       </div>
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1"><Wrench size={14} className="text-orange-600"/> Services</h3>
+      <div className="bg-white/5 border border-white/10 rounded-lg p-4 shadow-sm backdrop-blur-sm">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-3 flex items-center gap-1"><Wrench size={14} className="text-orange-500"/> Services</h3>
         {loading ? loadingList : (
           <ul className="space-y-2 text-xs">
             <AnimatePresence initial={false}>
@@ -197,15 +197,15 @@ const Settings = () => {
                   initial={{opacity:0, y:8}}
                   animate={{opacity:1, y:0}}
                   exit={{opacity:0, y:-6}}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 border border-transparent hover:border-orange-200"
+                  className="flex items-center gap-3 p-2 rounded border border-white/10 bg-white/5 hover:bg-white/10"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-800 truncate flex items-center gap-1"><Gauge size={12} className="text-orange-600"/> {s.name}</div>
-                    <div className="text-[10px] text-gray-500">Type: {s.type} · Zone: {zones.find(z=>z.id===s.zoneId)?.name}</div>
+                    <div className="font-medium text-white/90 truncate flex items-center gap-1"><Gauge size={12} className="text-orange-500"/> {s.name}</div>
+                    <div className="text-[10px] text-white/50">Type: {s.type} · Zone: {zones.find(z=>z.id===s.zoneId)?.name}</div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={()=>openEdit('service', s)} className="text-gray-600 hover:text-orange-600" aria-label="Edit service"><Pencil size={14}/></button>
-                    <button onClick={()=>removeEntity('service', s.id)} className="text-gray-400 hover:text-red-600" aria-label="Delete service"><Trash2 size={14}/></button>
+                    <button onClick={()=>openEdit('service', s)} className="text-white/60 hover:text-orange-400" aria-label="Edit service"><Pencil size={14}/></button>
+                    <button onClick={()=>removeEntity('service', s.id)} className="text-white/30 hover:text-red-400" aria-label="Delete service"><Trash2 size={14}/></button>
                   </div>
                 </motion.li>
               ))}
@@ -221,12 +221,12 @@ const Settings = () => {
       <div className="flex items-center gap-2 text-xs">
         <button onClick={()=>openEdit('camera')} className="px-3 py-1.5 rounded bg-orange-500 text-white font-medium hover:bg-orange-600 flex items-center gap-1"><Plus size={14}/> Camera</button>
         <div className="relative ml-auto">
-          <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 rounded border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+          <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 rounded border border-white/10 bg-white/5 focus:bg-white/10 text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
         </div>
       </div>
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1"><CameraIcon size={14} className="text-orange-600"/> Cameras</h3>
+      <div className="bg-white/5 border border-white/10 rounded-lg p-4 shadow-sm backdrop-blur-sm">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-3 flex items-center gap-1"><CameraIcon size={14} className="text-orange-500"/> Cameras</h3>
         {loading ? loadingList : (
           <ul className="space-y-2 text-xs">
             <AnimatePresence initial={false}>
@@ -236,16 +236,16 @@ const Settings = () => {
                   initial={{opacity:0, y:8}}
                   animate={{opacity:1, y:0}}
                   exit={{opacity:0, y:-6}}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 border border-transparent hover:border-orange-200"
+                  className="flex items-center gap-3 p-2 rounded border border-white/10 bg-white/5 hover:bg-white/10"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-800 truncate flex items-center gap-1"><CameraIcon size={12} className="text-orange-600"/> {c.name}</div>
-                    <div className="text-[10px] text-gray-500">Zone: {zones.find(z=>z.id===c.zoneId)?.name}</div>
-                    <div className="text-[10px] text-gray-400 truncate">{c.rtspUrl}</div>
+                    <div className="font-medium text-white/90 truncate flex items-center gap-1"><CameraIcon size={12} className="text-orange-500"/> {c.name}</div>
+                    <div className="text-[10px] text-white/50">Zone: {zones.find(z=>z.id===c.zoneId)?.name}</div>
+                    <div className="text-[10px] text-white/40 truncate">{c.rtspUrl}</div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={()=>openEdit('camera', c)} className="text-gray-600 hover:text-orange-600" aria-label="Edit camera"><Pencil size={14}/></button>
-                    <button onClick={()=>removeEntity('camera', c.id)} className="text-gray-400 hover:text-red-600" aria-label="Delete camera"><Trash2 size={14}/></button>
+                    <button onClick={()=>openEdit('camera', c)} className="text-white/60 hover:text-orange-400" aria-label="Edit camera"><Pencil size={14}/></button>
+                    <button onClick={()=>removeEntity('camera', c.id)} className="text-white/30 hover:text-red-400" aria-label="Delete camera"><Trash2 size={14}/></button>
                   </div>
                 </motion.li>
               ))}
@@ -258,43 +258,43 @@ const Settings = () => {
 
   const policiesView = (
     <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 mb-4 flex items-center gap-1"><SlidersHorizontal size={14} className="text-orange-600"/> Crowd Thresholds</h3>
+      <div className="bg-white/5 border border-white/10 rounded-lg p-4 shadow-sm backdrop-blur-sm">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-4 flex items-center gap-1"><SlidersHorizontal size={14} className="text-orange-500"/> Crowd Thresholds</h3>
         <div className="space-y-4 text-xs">
           {['normal','busy','critical'].map(k => (
             <div key={k} className="flex items-center gap-4">
-              <label className="w-20 capitalize text-gray-600">{k}</label>
-              <input type="range" min={0} max={100} value={thresholds[k]} onChange={e=>setThresholds(t=>({...t,[k]:Number(e.target.value)}))} className="flex-1 accent-orange-600" />
-              <span className="w-10 tabular-nums text-right font-medium">{thresholds[k]}%</span>
+              <label className="w-20 capitalize text-white/60">{k}</label>
+              <input type="range" min={0} max={100} value={thresholds[k]} onChange={e=>setThresholds(t=>({...t,[k]:Number(e.target.value)}))} className="flex-1 accent-orange-500" />
+              <span className="w-10 tabular-nums text-right font-medium text-white/80">{thresholds[k]}%</span>
             </div>
           ))}
         </div>
       </div>
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 mb-2 flex items-center gap-1"><Settings2 size={14} className="text-orange-600"/> Retention</h3>
-        <p className="text-[11px] text-gray-600">Lost & Found retention: <span className="font-medium">30 days</span> (placeholder)</p>
+      <div className="bg-white/5 border border-white/10 rounded-lg p-4 shadow-sm backdrop-blur-sm">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-2 flex items-center gap-1"><Settings2 size={14} className="text-orange-500"/> Retention</h3>
+        <p className="text-[11px] text-white/60">Lost & Found retention: <span className="font-medium text-white/90">30 days</span> (placeholder)</p>
       </div>
     </div>
   );
 
   const accountView = (
     <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm text-xs space-y-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 flex items-center gap-1"><UserCog size={14} className="text-orange-600"/> Admin Profile</h3>
+      <div className="bg-white/5 border border-white/10 rounded-lg p-4 shadow-sm text-xs space-y-4 backdrop-blur-sm">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-white/80 flex items-center gap-1"><UserCog size={14} className="text-orange-500"/> Admin Profile</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1 font-medium">Name</label>
-            <input defaultValue="Admin User" className="w-full h-8 rounded border border-gray-300 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            <label className="block mb-1 font-medium text-white/70">Name</label>
+            <input defaultValue="Admin User" className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
           </div>
           <div>
-            <label className="block mb-1 font-medium">Email</label>
-            <input defaultValue="admin@example.com" className="w-full h-8 rounded border border-gray-300 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            <label className="block mb-1 font-medium text-white/70">Email</label>
+            <input defaultValue="admin@example.com" className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button className="px-3 py-1.5 rounded bg-orange-500 text-white text-xs font-medium">Update</button>
-          <button className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs">Reset Password</button>
-          <button className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs">Toggle MFA</button>
+          <button className="px-3 py-1.5 rounded bg-orange-500 text-white text-xs font-medium hover:bg-orange-600">Update</button>
+          <button className="px-3 py-1.5 rounded border border-white/10 bg-white/5 text-xs text-white/70 hover:bg-white/10">Reset Password</button>
+          <button className="px-3 py-1.5 rounded border border-white/10 bg-white/5 text-xs text-white/70 hover:bg-white/10">Toggle MFA</button>
         </div>
       </div>
     </div>
