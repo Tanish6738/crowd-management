@@ -30,5 +30,5 @@ const NavigationRoutes = () => {
     </div>
   );
 };
-
+ 
 export default NavigationRoutes;
