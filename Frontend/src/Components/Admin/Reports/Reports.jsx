@@ -75,14 +75,14 @@ const Reports = () => {
   const alertSeverityPie = useMemo(() => alertSeverity.map(a => ({ name:a.severity, value:a.count })), [alertSeverity]);
   const pieColors = ['#6b7280','#f59e0b','#f97316','#dc2626'];
 
-  const loadingTable = <div className="space-y-2">{Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />))}</div>;
+  const loadingTable = <div className="space-y-2">{Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />))}</div>;
   const emptyState = (
-    <div className="p-8 text-sm text-gray-500 text-center border border-dashed border-gray-300 rounded-lg bg-white flex flex-col items-center gap-3">
-      <PackageSearch className="text-orange-500" size={40} />
+    <div className="p-8 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur-sm flex flex-col items-center gap-3">
+      <PackageSearch className="text-orange-400" size={40} />
       <p>No reports match your filters.</p>
     </div>
   );
-  const errorBanner = <div className="p-4 bg-red-50 text-red-700 text-sm flex items-center justify-between rounded border border-red-200">Error loading reports <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs">Retry</button></div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading reports <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white/90 text-xs hover:bg-red-500">Retry</button></div>;
 
   const filteredLost = lostReports.filter(r => search.trim()==='' || r.person.toLowerCase().includes(search.toLowerCase()) || r.lastSeen.toLowerCase().includes(search.toLowerCase()));
   const filteredIncidents = incidents.filter(i => (
@@ -108,10 +108,10 @@ const Reports = () => {
   };
 
   return (
-    <div className="space-y-6" aria-label="Reports">
+    <div className="space-y-6 text-white/90" aria-label="Reports">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><FileBarChart2 size={18} className="text-orange-600"/> Reports</h2>
+        <h2 className="text-sm font-semibold text-white flex items-center gap-2"><FileBarChart2 size={18} className="text-orange-500"/> Reports</h2>
         <div className="flex flex-wrap gap-2 text-xs">
           {[
             {k:'lostfound', label:'Lost & Found', icon:ClipboardList},
@@ -119,56 +119,56 @@ const Reports = () => {
             {k:'tasks', label:'Tasks', icon:ListChecks},
             {k:'export', label:'Export', icon:Download},
           ].map(t => (
-            <button key={t.k} onClick={()=>setTab(t.k)} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 ${tab===t.k ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:bg-orange-50'}`}> <t.icon size={14}/> {t.label}</button>
+            <button key={t.k} onClick={()=>setTab(t.k)} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition-colors ${tab===t.k ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'}`}> <t.icon size={14}/> {t.label}</button>
           ))}
         </div>
         <div className="hidden md:flex items-center gap-2 ml-auto text-xs">
-          <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+          <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
             {['24h','48h','7d','30d'].map(r => <option key={r} value={r}>{r}</option>)}
           </select>
-          <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+          <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
             {['all','Gate A','Riverbank','Transit Hub','Food Court'].map(z => <option key={z} value={z}>{z==='all' ? 'All Zones' : z}</option>)}
           </select>
-          <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+          <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
             {['all','lostfound','crowd','tasks'].map(c => <option key={c} value={c}>{c==='all' ? 'All Categories' : c}</option>)}
           </select>
           {tab==='alerts' && (
-            <select value={severityFilter} onChange={e=>setSeverityFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select value={severityFilter} onChange={e=>setSeverityFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
               {['all','low','medium','high','critical'].map(s => <option key={s} value={s}>{s==='all'?'All Severities':s}</option>)}
             </select>
           )}
           <div className="relative">
-            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-9 pl-7 pr-2 w-40 rounded-md border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-9 pl-7 pr-2 w-40 rounded-md border border-white/10 bg-white/5 focus:bg-white/10 text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
           </div>
-          <button onClick={()=>setDensity(d=>d==='compact'?'comfortable':'compact')} className="h-9 px-3 rounded-md border border-gray-300 bg-white hover:bg-orange-50 flex items-center gap-1" aria-label="Toggle density">
+          <button onClick={()=>setDensity(d=>d==='compact'?'comfortable':'compact')} className="h-9 px-3 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 flex items-center gap-1 text-white/70 hover:text-white" aria-label="Toggle density">
             <ListIcon size={14}/> {density==='compact'?'Comfort':'Compact'}
           </button>
         </div>
         <div className="flex md:hidden ml-auto gap-2">
-          <button onClick={()=>setShowFilters(f=>!f)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 ${showFilters? 'bg-orange-500 text-white border-orange-500':'bg-white border-gray-300 text-gray-600'}`}><Filter size={14}/> Filters</button>
+          <button onClick={()=>setShowFilters(f=>!f)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 ${showFilters? 'bg-orange-500 text-white border-orange-500':'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><Filter size={14}/> Filters</button>
         </div>
       </div>
       {/* Mobile Filter Panel */}
       <AnimatePresence initial={false}>
         {showFilters && (
-          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white rounded-lg border border-gray-200 p-3 space-y-3 text-xs">
+          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-3 space-y-3 text-xs text-white/70">
             <div className="flex gap-2">
-              <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="flex-1 h-8 rounded border border-gray-300 px-2">{['24h','48h','7d','30d'].map(r => <option key={r}>{r}</option>)}</select>
-              <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="flex-1 h-8 rounded border border-gray-300 px-2">{['all','Gate A','Riverbank','Transit Hub','Food Court'].map(z => <option key={z} value={z}>{z==='all' ? 'All Zones' : z}</option>)}</select>
+              <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="flex-1 h-8 rounded border border-white/10 bg-white/5 px-2">{['24h','48h','7d','30d'].map(r => <option key={r}>{r}</option>)}</select>
+              <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="flex-1 h-8 rounded border border-white/10 bg-white/5 px-2">{['all','Gate A','Riverbank','Transit Hub','Food Court'].map(z => <option key={z} value={z}>{z==='all' ? 'All Zones' : z}</option>)}</select>
             </div>
             <div className="flex gap-2">
-              <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="flex-1 h-8 rounded border border-gray-300 px-2">{['all','lostfound','crowd','tasks'].map(c => <option key={c}>{c==='all' ? 'All Categories' : c}</option>)}</select>
+              <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="flex-1 h-8 rounded border border-white/10 bg-white/5 px-2">{['all','lostfound','crowd','tasks'].map(c => <option key={c}>{c==='all' ? 'All Categories' : c}</option>)}</select>
               {tab==='alerts' && (
-                <select value={severityFilter} onChange={e=>setSeverityFilter(e.target.value)} className="flex-1 h-8 rounded border border-gray-300 px-2">{['all','low','medium','high','critical'].map(s => <option key={s}>{s==='all'?'All Severities':s}</option>)}</select>
+                <select value={severityFilter} onChange={e=>setSeverityFilter(e.target.value)} className="flex-1 h-8 rounded border border-white/10 bg-white/5 px-2">{['all','low','medium','high','critical'].map(s => <option key={s}>{s==='all'?'All Severities':s}</option>)}</select>
               )}
             </div>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 w-full rounded border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 pl-7 pr-2 w-full rounded border border-white/10 bg-white/5 focus:bg-white/10 text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
               </div>
-              <button onClick={()=>setDensity(d=>d==='compact'?'comfortable':'compact')} className="h-8 px-3 rounded border border-gray-300 bg-white text-gray-600 flex items-center gap-1"><ListIcon size={14}/> {density==='compact'?'Comfort':'Compact'}</button>
+              <button onClick={()=>setDensity(d=>d==='compact'?'comfortable':'compact')} className="h-8 px-3 rounded border border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 flex items-center gap-1"><ListIcon size={14}/> {density==='compact'?'Comfort':'Compact'}</button>
             </div>
           </motion.div>
         )}
@@ -176,17 +176,17 @@ const Reports = () => {
       {/* KPI Summary */}
       <div className="grid sm:grid-cols-3 lg:grid-cols-5 gap-3 text-[11px]">
         {[
-          {label:'Open Lost', value:kpis.lostOpen, icon:ClipboardList, color:'text-orange-600 bg-orange-50 border-orange-200'},
-          {label:'Incidents', value:kpis.incidents, icon:AlertTriangle, color:'text-red-600 bg-red-50 border-red-200'},
-            {label:'Critical Inc.', value:kpis.criticalInc, icon:Activity, color:'text-red-700 bg-red-100 border-red-200'},
-          {label:'Tasks Done', value:kpis.tasksCompleted, icon:ListChecks, color:'text-green-600 bg-green-50 border-green-200'},
-          {label:'Alerts', value:kpis.alertsTotal, icon:PieIcon, color:'text-blue-600 bg-blue-50 border-blue-200'}
+          {label:'Open Lost', value:kpis.lostOpen, icon:ClipboardList, color:'text-orange-300 bg-orange-500/10 border-orange-400/30'},
+          {label:'Incidents', value:kpis.incidents, icon:AlertTriangle, color:'text-red-300 bg-red-500/10 border-red-400/30'},
+          {label:'Critical Inc.', value:kpis.criticalInc, icon:Activity, color:'text-red-300 bg-red-500/10 border-red-400/30'},
+          {label:'Tasks Done', value:kpis.tasksCompleted, icon:ListChecks, color:'text-green-300 bg-green-500/10 border-green-400/30'},
+          {label:'Alerts', value:kpis.alertsTotal, icon:PieIcon, color:'text-blue-300 bg-blue-500/10 border-blue-400/30'}
         ].map(card => (
-          <div key={card.label} className={`p-2 rounded-lg border flex items-center gap-2 ${card.color}`}>
+          <div key={card.label} className={`p-2 rounded-lg border flex items-center gap-2 backdrop-blur-sm ${card.color}`}>
             <card.icon size={16}/>
             <div className="flex-1 min-w-0">
               <div className="text-[10px] uppercase tracking-wide font-medium">{card.label}</div>
-              <div className="text-sm font-semibold tabular-nums">{card.value}</div>
+              <div className="text-sm font-semibold tabular-nums text-white/90">{card.value}</div>
             </div>
           </div>
         ))}
@@ -195,28 +195,28 @@ const Reports = () => {
       {tab==='lostfound' && (
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="space-y-4 lg:col-span-1">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Lost & Found Summary</h3>
-              {loading ? <div className="h-28 rounded-md bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" /> : (
+            <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-4 backdrop-blur-sm">
+              <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wide mb-2">Lost & Found Summary</h3>
+              {loading ? <div className="h-28 rounded-md bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" /> : (
                 <div className="grid grid-cols-3 gap-3">
                   {lostSummary.map(s => (
-                    <div key={s.label} className="p-2 rounded-md border border-gray-200 bg-gray-50 flex flex-col items-start gap-1">
+                    <div key={s.label} className="p-2 rounded-md border border-white/10 bg-white/5 flex flex-col items-start gap-1">
                       <span className="flex items-center gap-1 text-[10px] font-medium" style={{color:s.color}}><span className="w-2 h-2 rounded-full" style={{ background:s.color }} /> {s.label}</span>
-                      <span className="text-sm font-semibold tabular-nums">{s.value}</span>
+                      <span className="text-sm font-semibold tabular-nums text-white/90">{s.value}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 h-[260px]">
-              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Alert Severity Split</h3>
-              {loading ? <div className="h-[180px] rounded-md bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" /> : (
+            <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-4 h-[260px] backdrop-blur-sm">
+              <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wide mb-2">Alert Severity Split</h3>
+              {loading ? <div className="h-[180px] rounded-md bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" /> : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={alertSeverityPie} dataKey="value" nameKey="name" outerRadius={70} innerRadius={30} paddingAngle={3}>
                       {alertSeverityPie.map((e,i)=>(<Cell key={i} fill={pieColors[i%pieColors.length]} />))}
                     </Pie>
-                    <Tooltip wrapperClassName="text-xs" />
+                    <Tooltip wrapperClassName="text-xs" contentStyle={{background:'#0f172a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, color:'#fff'}}/>
                     <Legend wrapperStyle={{ fontSize:11 }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -224,12 +224,12 @@ const Reports = () => {
             </div>
           </div>
           <div className="space-y-4 lg:col-span-2">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Lost Reports</h3>
+            <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-4 backdrop-blur-sm">
+              <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wide mb-3">Lost Reports</h3>
               {loading ? loadingTable : filteredLost.length===0 ? emptyState : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs">
-                    <thead className="bg-gray-100/80 text-gray-700">
+                  <table className="min-w-full text-xs text-white/80">
+                    <thead className="bg-white/5 text-white/70">
                       <tr>{['Person Name','Status','Last Seen','Age','Actions'].map(h => <th key={h} className="px-3 py-2 font-medium text-[10px] uppercase tracking-wide text-left">{h}</th>)}</tr>
                     </thead>
                     <tbody>
@@ -240,15 +240,15 @@ const Reports = () => {
                             initial={{opacity:0, y:8}}
                             animate={{opacity:1, y:0}}
                             exit={{opacity:0, y:-6}}
-                            className="even:bg-gray-50 hover:bg-orange-50"
+                            className="even:bg-white/5 hover:bg-white/10"
                           >
                             <td className={`px-3 ${rowPad} whitespace-nowrap`}>{r.person}</td>
                             <td className={`px-3 ${rowPad} whitespace-nowrap`}>
-                              <span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wide ${r.status==='open'?'bg-orange-100 text-orange-700 border-orange-200': r.status==='matched'?'bg-blue-100 text-blue-700 border-blue-200':'bg-green-100 text-green-700 border-green-200'}`}>{r.status}</span>
+                              <span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wide ${r.status==='open'?'bg-orange-500/15 text-orange-300 border-orange-400/30': r.status==='matched'?'bg-blue-500/15 text-blue-300 border-blue-400/30':'bg-green-500/15 text-green-300 border-green-400/30'}`}>{r.status}</span>
                             </td>
                             <td className={`px-3 ${rowPad} whitespace-nowrap`}>{r.lastSeen}</td>
                             <td className={`px-3 ${rowPad} whitespace-nowrap`}>{r.age}</td>
-                            <td className={`px-3 ${rowPad} whitespace-nowrap`}><button className="text-orange-600 hover:underline">View</button></td>
+                            <td className={`px-3 ${rowPad} whitespace-nowrap`}><button className="text-orange-400 hover:underline">View</button></td>
                           </motion.tr>
                         ))}
                       </AnimatePresence>
@@ -257,15 +257,15 @@ const Reports = () => {
                 </div>
               )}
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 h-[300px]">
-              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Daily Tasks Completion Trend</h3>
-              {loading ? <div className="h-[220px] rounded-md bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" /> : (
+            <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-4 h-[300px] backdrop-blur-sm">
+              <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wide mb-3">Daily Tasks Completion Trend</h3>
+              {loading ? <div className="h-[220px] rounded-md bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" /> : (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={taskTrend} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                     <XAxis dataKey="day" tick={{ fontSize:10 }} />
                     <YAxis tick={{ fontSize:10 }} />
-                    <Tooltip wrapperClassName="text-xs" />
+                    <Tooltip wrapperClassName="text-xs" contentStyle={{background:'#0f172a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, color:'#fff'}}/>
                     <Legend wrapperStyle={{ fontSize:11 }} />
                     <Line type="monotone" dataKey="completed" stroke="#16a34a" strokeWidth={2} />
                     <Line type="monotone" dataKey="pending" stroke="#f97316" strokeWidth={2} />
@@ -278,26 +278,26 @@ const Reports = () => {
       )}
       {tab==='alerts' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 h-[320px]">
-            <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Alerts by Type (7d)</h3>
-            {loading ? <div className="h-[240px] rounded-md bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" /> : (
+          <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-4 h-[320px] backdrop-blur-sm">
+            <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wide mb-2">Alerts by Type (7d)</h3>
+            {loading ? <div className="h-[240px] rounded-md bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={['Overcrowding','SOS','Camera Offline','Incident'].map(t => ({ type:t, count: Math.floor(Math.random()*80)+10 }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                   <XAxis dataKey="type" tick={{ fontSize:10 }} />
                   <YAxis tick={{ fontSize:10 }} />
-                  <Tooltip wrapperClassName="text-xs" />
+                  <Tooltip wrapperClassName="text-xs" contentStyle={{background:'#0f172a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, color:'#fff'}}/>
                   <Bar dataKey="count" fill="#f97316" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-            <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Incidents</h3>
+          <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-4 backdrop-blur-sm">
+            <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wide mb-3">Incidents</h3>
             {loading ? loadingTable : filteredIncidents.length===0 ? emptyState : (
               <div className="overflow-x-auto">
-                <table className="min-w-full text-xs">
-                  <thead className="bg-gray-100/80 text-gray-700"><tr>{['Type','Zone','Time','Severity','Status'].map(h => <th key={h} className="px-3 py-2 font-medium text-[10px] uppercase tracking-wide text-left">{h}</th>)}</tr></thead>
+                <table className="min-w-full text-xs text-white/80">
+                  <thead className="bg-white/5 text-white/70"><tr>{['Type','Zone','Time','Severity','Status'].map(h => <th key={h} className="px-3 py-2 font-medium text-[10px] uppercase tracking-wide text-left">{h}</th>)}</tr></thead>
                   <tbody>
                     <AnimatePresence initial={false}>
                       {filteredIncidents.map(inc => (
@@ -306,7 +306,7 @@ const Reports = () => {
                           initial={{opacity:0, y:8}}
                           animate={{opacity:1, y:0}}
                           exit={{opacity:0, y:-6}}
-                          className="even:bg-gray-50 hover:bg-orange-50"
+                          className="even:bg-white/5 hover:bg-white/10"
                         >
                           <td className={`px-3 ${rowPad} whitespace-nowrap`}>{inc.type}</td>
                           <td className={`px-3 ${rowPad} whitespace-nowrap`}>{inc.zoneName}</td>
@@ -317,7 +317,7 @@ const Reports = () => {
                             </span>
                           </td>
                           <td className={`px-3 ${rowPad} whitespace-nowrap`}>
-                            <span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase ${inc.status==='open'?'bg-orange-100 text-orange-700 border-orange-200': inc.status==='resolved'?'bg-green-100 text-green-700 border-green-200':'bg-gray-100 text-gray-600 border-gray-200'}`}>{inc.status}</span>
+                            <span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wide ${inc.status==='open'?'bg-orange-500/15 text-orange-300 border-orange-400/30': inc.status==='resolved'?'bg-green-500/15 text-green-300 border-green-400/30':'bg-white/5 text-white/60 border-white/10'}`}>{inc.status}</span>
                           </td>
                         </motion.tr>
                       ))}
@@ -330,29 +330,29 @@ const Reports = () => {
         </div>
       )}
       {tab==='tasks' && (
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 h-[340px] flex flex-col">
+              <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-4 h-[340px] flex flex-col backdrop-blur-sm">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex-1">Task Completion Trend</h3>
-                  <button onClick={()=>setChartType(t=>t==='line'?'bar':'line')} className="h-8 px-2 rounded border border-gray-300 bg-white text-[11px] flex items-center gap-1 hover:bg-orange-50">{chartType==='line'?<BarChartIcon size={14}/>:<LineChartIcon size={14}/>}{chartType==='line'?'Bar':'Line'}</button>
+                  <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wide flex-1">Task Completion Trend</h3>
+                  <button onClick={()=>setChartType(t=>t==='line'?'bar':'line')} className="h-8 px-2 rounded border border-white/10 bg-white/5 text-[11px] flex items-center gap-1 hover:bg-white/10 text-white/70 hover:text-white">{chartType==='line'?<BarChartIcon size={14}/>:<LineChartIcon size={14}/>}{chartType==='line'?'Bar':'Line'}</button>
                 </div>
-                {loading ? <div className="flex-1 rounded-md bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" /> : (
+                {loading ? <div className="flex-1 rounded-md bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" /> : (
                   <ResponsiveContainer width="100%" height="100%">
                     {chartType==='line' ? (
                       <LineChart data={taskTrend}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                         <XAxis dataKey="day" tick={{ fontSize:10 }} />
                         <YAxis tick={{ fontSize:10 }} />
-                        <Tooltip wrapperClassName="text-xs" />
+                        <Tooltip wrapperClassName="text-xs" contentStyle={{background:'#0f172a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, color:'#fff'}}/>
                         <Legend wrapperStyle={{ fontSize:11 }} />
                         <Line type="monotone" dataKey="completed" stroke="#16a34a" strokeWidth={2} />
                         <Line type="monotone" dataKey="pending" stroke="#f97316" strokeWidth={2} />
                       </LineChart>
                     ) : (
                       <BarChart data={taskTrend}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                         <XAxis dataKey="day" tick={{ fontSize:10 }} />
                         <YAxis tick={{ fontSize:10 }} />
-                        <Tooltip wrapperClassName="text-xs" />
+                        <Tooltip wrapperClassName="text-xs" contentStyle={{background:'#0f172a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, color:'#fff'}}/>
                         <Legend wrapperStyle={{ fontSize:11 }} />
                         <Bar dataKey="completed" fill="#16a34a" radius={[4,4,0,0]} />
                         <Bar dataKey="pending" fill="#f97316" radius={[4,4,0,0]} />
@@ -363,10 +363,10 @@ const Reports = () => {
               </div>
             )}
       {tab==='export' && (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 space-y-5">
+        <div className="bg-white/5 rounded-lg border border-white/10 shadow-sm p-6 space-y-5 backdrop-blur-sm">
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Download size={16} className="text-orange-600"/> Export Data</h3>
-            <p className="text-xs text-gray-600 mt-1">Download CSV or PDF snapshots for auditing & offline analysis.</p>
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Download size={16} className="text-orange-500"/> Export Data</h3>
+            <p className="text-xs text-white/60 mt-1">Download CSV or PDF snapshots for auditing & offline analysis.</p>
           </div>
           <div className="grid sm:grid-cols-3 gap-3 text-xs">
             {[
@@ -377,12 +377,12 @@ const Reports = () => {
               {label:'Tasks CSV', type:'tasks_csv'},
               {label:'Tasks PDF', type:'tasks_pdf'}
             ].map(btn => (
-              <button key={btn.type} onClick={()=>handleExport(btn.label)} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-orange-50 flex items-center justify-center gap-1 font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <Download size={14} className="text-orange-600"/> {btn.label}
+              <button key={btn.type} onClick={()=>handleExport(btn.label)} className="px-3 py-2 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center gap-1 font-medium text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+                <Download size={14} className="text-orange-400"/> {btn.label}
               </button>
             ))}
           </div>
-          <div className="text-[11px] text-gray-500">Exports are generated from current filters and are placeholders. Integrate backend endpoints for real files.</div>
+          <div className="text-[11px] text-white/50">Exports are generated from current filters and are placeholders. Integrate backend endpoints for real files.</div>
         </div>
       )}
     </div>

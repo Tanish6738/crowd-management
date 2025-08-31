@@ -1,1 +1,133 @@
 @import "tailwindcss";
+
+/*
+	Dark Theme (Mk) Design Tokens
+	--------------------------------------------------
+	Exposed as CSS variables so components can consume them without relying on Tailwind config changes.
+	Utility helper classes provided for rapid usage inside JSX.
+*/
+:root {
+	--mk-bg: #071126;
+	--mk-surface: #0e2033;
+	--mk-surface-2: #142a3e;
+	--mk-muted: #1b394d;
+
+	--mk-text-primary: #e6eef6;
+	--mk-text-secondary: #b9ccd9;
+	--mk-text-muted: #8ea6b8;
+
+	--mk-accent: #ff8f2a;
+	--mk-accent-strong: #ffb84d;
+	--mk-gold: #d4a017;
+	--mk-indigo: #4b6cc0;
+
+	--mk-success: #37b24d;
+	--mk-danger: #ff5c6c;
+	--mk-warning: #ffb020;
+
+	--mk-focus-ring: 0 0 0 2px var(--mk-bg), 0 0 0 4px var(--mk-accent);
+	--mk-radius-xs: 4px;
+	--mk-radius-sm: 6px;
+	--mk-radius: 10px;
+	--mk-radius-lg: 18px;
+	--mk-transition: 160ms cubic-bezier(.4,0,.2,1);
+}
+
+/* Background helpers */
+.mk-bg-base { background-color: var(--mk-bg); }
+.mk-bg-surface { background-color: var(--mk-surface); }
+.mk-bg-surface-2 { background-color: var(--mk-surface-2); }
+.mk-bg-muted { background-color: var(--mk-muted); }
+
+/* Text helpers */
+.mk-text-primary { color: var(--mk-text-primary); }
+.mk-text-secondary { color: var(--mk-text-secondary); }
+.mk-text-muted { color: var(--mk-text-muted); }
+
+/* Accent */
+.mk-accent { color: var(--mk-accent); }
+.mk-bg-accent { background-color: var(--mk-accent); }
+.mk-bg-accent-strong { background-color: var(--mk-accent-strong); }
+
+/* Modern gradient backdrop */
+.mk-gradient-bg {
+	background: radial-gradient(circle at 20% 20%, rgba(255,143,42,0.12), transparent 60%),
+							radial-gradient(circle at 80% 70%, rgba(75,108,192,0.18), transparent 65%),
+							linear-gradient(145deg, var(--mk-bg), #050b18 55%, #0a1a30);
+}
+
+/* Glass / panel */
+.mk-panel {
+	background: linear-gradient(145deg, rgba(14,32,51,0.9), rgba(20,42,62,0.85));
+	backdrop-filter: blur(18px) saturate(140%);
+	-webkit-backdrop-filter: blur(18px) saturate(140%);
+	border: 1px solid rgba(255,255,255,0.045);
+	border-radius: var(--mk-radius);
+	box-shadow: 0 4px 18px -6px rgba(0,0,0,0.55), 0 2px 6px -2px rgba(0,0,0,0.4);
+}
+
+/* Divider */
+.mk-divider { border-color: rgba(255,255,255,0.07); }
+
+/* Interactive base */
+.mk-btn-tab {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: .5rem;
+	font-weight: 500;
+	font-size: .7rem;
+	letter-spacing: .5px;
+	padding: .55rem .9rem .5rem;
+	line-height: 1;
+	border-radius: 999px;
+	background: var(--mk-surface-2);
+	color: var(--mk-text-secondary);
+	border: 1px solid rgba(255,255,255,0.05);
+	transition: var(--mk-transition);
+}
+.mk-btn-tab:hover { color: var(--mk-text-primary); background: var(--mk-muted); }
+.mk-btn-tab[aria-current="page"], .mk-btn-tab-active {
+	background: linear-gradient(135deg, var(--mk-accent) -10%, var(--mk-accent-strong) 110%);
+	color: #09121f;
+	box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 14px -4px rgba(255,139,42,0.65), 0 0 0 1px var(--mk-accent) inset;
+}
+.mk-btn-tab:focus-visible { outline: none; box-shadow: var(--mk-focus-ring); }
+
+/* Navigation route card */
+.mk-route-card {
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--mk-radius);
+	background: linear-gradient(150deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+	border: 1px solid rgba(255,255,255,0.06);
+	color: var(--mk-text-secondary);
+	transition: var(--mk-transition);
+}
+.mk-route-card::before {
+	content: '';
+	position: absolute; inset: 0;
+	background: radial-gradient(circle at 35% 15%, rgba(255,143,42,0.18), transparent 70%);
+	opacity: 0; transition: var(--mk-transition);
+}
+.mk-route-card:hover::before { opacity: 1; }
+.mk-route-card:hover { color: var(--mk-text-primary); border-color: var(--mk-accent); box-shadow: 0 4px 18px -8px rgba(255,143,42,0.5); transform: translateY(-2px); }
+.mk-route-card:focus-visible { outline: none; box-shadow: var(--mk-focus-ring); }
+.mk-route-card-active { border-color: var(--mk-accent); background: linear-gradient(165deg, rgba(255,143,42,0.12), rgba(255,143,42,0.05)); color: var(--mk-text-primary); }
+
+/* Scrollbar subtle styling */
+::-webkit-scrollbar { width: 10px; height:10px; }
+::-webkit-scrollbar-track { background: var(--mk-bg); }
+::-webkit-scrollbar-thumb { background: var(--mk-muted); border-radius: 20px; border: 2px solid var(--mk-bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--mk-surface-2); }
+
+/* Selection */
+::selection { background: var(--mk-accent); color: #09121f; }
+
+/* Animations helpers */
+@keyframes mkFadeInUp { from { opacity:0; transform: translateY(8px);} to {opacity:1; transform: translateY(0);} }
+.mk-animate-in { animation: mkFadeInUp .5s var(--mk-transition); }
+
+@keyframes mkSlideIn { from { transform: translateX(40px); opacity:0;} to { transform: translateX(0); opacity:1; } }
+
+

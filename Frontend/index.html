@@ -1,13 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dhruv Ai</title>
+    <meta name="theme-color" content="#071126" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="description" content="Crowd Management Console – dark themed dashboard" />
+    <title>Dhruv AI Console</title>
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="h-full mk-gradient-bg text-[var(--mk-text-primary)] antialiased selection:bg-[var(--mk-accent)] selection:text-[#09121f]">
+    <div id="root" class="min-h-screen"></div>
+    <noscript>
+      <div style="padding:1rem;margin:1rem;border:1px solid rgba(255,255,255,0.1);border-radius:10px;background:rgba(255,255,255,0.05);color:#e6eef6;font:12px/1.4 system-ui,Segoe UI,Roboto,Ubuntu,sans-serif;">
+        JavaScript is required to run the Dhruv AI dashboard.
+      </div>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

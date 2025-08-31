@@ -2,16 +2,16 @@ import React from 'react';
 
 const DataTable = ({ columns, data, onRowClick, rowKey = 'id', empty, caption }) => {
   return (
-    <div className="w-full overflow-x-auto border border-gray-200 rounded-lg bg-white shadow-sm">
+    <div className="w-full overflow-x-auto rounded-xl mk-panel">
       <table className="min-w-full text-sm">
-        {caption && <caption className="text-left p-3 text-xs text-gray-500">{caption}</caption>}
-        <thead className="bg-gray-100/70 text-gray-600">
-          <tr>
+        {caption && <caption className="text-left p-3 text-[11px] mk-text-muted">{caption}</caption>}
+        <thead className="mk-text-muted">
+          <tr className="border-b mk-divider">
             {columns.map(col => (
               <th
                 key={col.accessor}
                 scope="col"
-                className={`px-3 py-2 font-medium text-[10px] sm:text-xs uppercase tracking-wide text-left whitespace-nowrap ${col.hideSm ? 'hidden sm:table-cell' : ''}`}
+                className={`px-3 py-2 font-semibold text-[10px] sm:text-[11px] uppercase tracking-[1.3px] text-left whitespace-nowrap mk-text-secondary/80 ${col.hideSm ? 'hidden sm:table-cell' : ''}`}
               >
                 {col.header}
               </th>
@@ -21,7 +21,7 @@ const DataTable = ({ columns, data, onRowClick, rowKey = 'id', empty, caption })
         <tbody>
           {data.length === 0 && (
             <tr>
-              <td colSpan={columns.length} className="text-center py-6 text-gray-500 text-sm">{empty || 'No records'}</td>
+              <td colSpan={columns.length} className="text-center py-8 mk-text-muted text-sm">{empty || 'No records'}</td>
             </tr>
           )}
           {data.map(row => (
@@ -30,12 +30,12 @@ const DataTable = ({ columns, data, onRowClick, rowKey = 'id', empty, caption })
               tabIndex={0}
               onClick={() => onRowClick?.(row)}
               onKeyDown={e => { if (e.key === 'Enter') onRowClick?.(row); }}
-              className="focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 cursor-pointer even:bg-gray-50 hover:bg-orange-50 transition-colors"
+              className="focus:outline-none focus-visible:shadow-[var(--mk-focus-ring)] cursor-pointer even:bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,143,42,0.12)] transition-colors border-b last:border-0 border-[rgba(255,255,255,0.05)]"
             >
               {columns.map(col => (
                 <td
                   key={col.accessor}
-                  className={`px-3 py-2 whitespace-nowrap align-middle text-[11px] sm:text-xs ${col.hideSm ? 'hidden sm:table-cell' : ''}`}
+                  className={`px-3 py-2 whitespace-nowrap align-middle text-[11px] sm:text-[11px] mk-text-secondary ${col.hideSm ? 'hidden sm:table-cell' : ''}`}
                 >
                   {col.cell ? col.cell(row) : row[col.accessor]}
                 </td>

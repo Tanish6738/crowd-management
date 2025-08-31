@@ -11,13 +11,13 @@ import History from "./History/History";
 /** Shared Data Contract */
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
 
-// Simple status style map
+// Simple status style map (dark theme tinted)
 const badgeStyles = {
-  open: "bg-blue-100 text-blue-700 border-blue-200",
-  matched: "bg-amber-100 text-amber-700 border-amber-200",
-  resolved: "bg-green-100 text-green-700 border-green-200",
-  missing: "bg-pink-100 text-pink-700 border-pink-200",
-  cancelled: "bg-gray-200 text-gray-600 border-gray-300",
+  open: "bg-blue-500/15 text-blue-300 border-blue-400/30",
+  matched: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+  resolved: "bg-green-500/15 text-green-300 border-green-400/30",
+  missing: "bg-pink-500/15 text-pink-300 border-pink-400/30",
+  cancelled: "bg-white/10 text-white/55 border-white/15",
 };
 
 export const StatusBadge = ({ value }) => (
@@ -215,13 +215,13 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
   ];
 
   return (
-    <div className="space-y-5" aria-label="Lost and Found module">
+    <div className="space-y-5 text-white/90" aria-label="Lost and Found module">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-gray-800">Lost & Found</h2>
+        <h2 className="text-sm font-semibold text-white">Lost & Found</h2>
         <div
           role="tablist"
           aria-label="Lost & Found tabs"
-          className="flex flex-wrap gap-1 text-xs bg-white rounded-md border border-gray-200 p-1"
+          className="flex flex-wrap gap-1 text-xs rounded-md border border-white/10 bg-white/5 backdrop-blur-sm p-1"
         >
           {tabs.map((t) => (
             <button
@@ -232,7 +232,7 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
                 setTab(t.key);
                 if (t.key === "lostReport") setShowLostReportModal(true);
               }}
-              className={`px-3 py-1.5 rounded-md font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 transition ${tab === t.key ? "bg-orange-600 text-white shadow" : "text-gray-600 hover:bg-gray-100"}`}
+              className={`px-3 py-1.5 rounded-md font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 transition ${tab === t.key ? "bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] shadow" : "text-white/65 hover:bg-white/10"}`}
             >
               {t.label}
             </button>
@@ -243,18 +243,16 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
             setShowLostReportModal(true);
             setTab("lostReport");
           }}
-          className="ml-auto h-9 px-4 rounded-md bg-orange-600 text-white flex items-center gap-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="ml-auto h-9 px-4 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] flex items-center gap-2 text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 shadow hover:brightness-110"
         >
           <Plus size={14} /> Report Lost
         </button>
       </div>
 
       {error && (
-        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-xs flex justify-between items-center">
+        <div className="p-3 rounded-md bg-red-500/10 border border-red-500/40 text-xs flex justify-between items-center text-red-300">
           <span>{error}</span>
-          <button onClick={load} className="underline">
-            Retry
-          </button>
+          <button onClick={load} className="underline hover:text-red-200">Retry</button>
         </div>
       )}
 

@@ -15,26 +15,26 @@ const MetricCard = ({ title, value, delta, loading, icon }) => {
   };
 
   return (
-    <div className="group relative min-w-[150px] sm:min-w-[160px] flex-1 bg-white rounded-lg border border-gray-200 p-3 sm:p-4 shadow-sm flex flex-col gap-1.5 overflow-hidden">
+    <div className="group relative min-w-[150px] sm:min-w-[160px] flex-1 mk-panel p-3 sm:p-4 flex flex-col gap-1.5 overflow-hidden">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</div>
+        <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] mk-text-muted">{title}</div>
         {icon && (
-          <span className="text-orange-500 text-lg leading-none flex items-center justify-center">
+          <span className="text-[var(--mk-accent-strong)] text-lg leading-none flex items-center justify-center drop-shadow-[0_0_6px_rgba(255,143,42,0.4)]">
             {renderIcon()}
           </span>
         )}
       </div>
       {loading ? (
-        <div className="h-6 w-20 bg-orange-100 animate-pulse rounded" />
+        <div className="h-6 w-20 rounded bg-[rgba(255,255,255,0.08)] animate-pulse" />
       ) : (
-        <div className="text-xl sm:text-2xl font-semibold text-gray-800 tabular-nums">{value}</div>
+        <div className="text-xl sm:text-2xl font-semibold mk-text-primary tabular-nums tracking-wide">{value}</div>
       )}
       {delta != null && !loading && (
-        <div className={`text-[10px] sm:text-xs font-medium flex items-center gap-0.5 ${delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <div className={`text-[10px] sm:text-[11px] font-semibold flex items-center gap-1 tracking-wide ${delta >= 0 ? 'text-[var(--mk-success)]' : 'text-[var(--mk-danger)]'}`}>
           {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}%
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-orange-400/0 via-orange-400/60 to-orange-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--mk-accent)]/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
     </div>
   );
 };

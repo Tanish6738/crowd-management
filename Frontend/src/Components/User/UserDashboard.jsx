@@ -21,10 +21,10 @@ import Profile from "./Profile/Profile";
 
 /** Fallback local StatusBadge if volunteer export path changes */
 const statusStyles = {
-  open: "bg-blue-100 text-blue-700 border-blue-200",
-  matched: "bg-amber-100 text-amber-700 border-amber-200",
-  resolved: "bg-green-100 text-green-700 border-green-200",
-  cancelled: "bg-gray-200 text-gray-600 border-gray-300",
+  open: "bg-blue-500/15 text-blue-300 border-blue-400/30",
+  matched: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+  resolved: "bg-green-500/15 text-green-300 border-green-400/30",
+  cancelled: "bg-white/10 text-white/55 border-white/15",
 };
 const StatusBadge = ({ value }) => (
   <span
@@ -54,7 +54,7 @@ const TabButton = ({ active, onClick, children }) => (
     role="tab"
     aria-selected={active}
     onClick={onClick}
-    className={`px-3 py-1.5 rounded-md text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 transition ${active ? "bg-orange-600 text-white shadow" : "text-gray-600 hover:bg-gray-100"}`}
+    className={`px-3 py-1.5 rounded-md text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 transition ${active ? "bg-orange-600 text-white shadow" : "text-white/60 hover:bg-white/10"}`}
   >
     {children}
   </button>
@@ -381,8 +381,15 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
   const content = {
     home: (
       <Home
-        stats={{ total: totalReports, open: openReports, resolved: resolvedReports }}
-        recent={recentActivity.map((r) => ({ label: r.label, time: rel(r.ts) }))}
+        stats={{
+          total: totalReports,
+          open: openReports,
+          resolved: resolvedReports,
+        }}
+        recent={recentActivity.map((r) => ({
+          label: r.label,
+          time: rel(r.ts),
+        }))}
       />
     ),
     reports: (
@@ -423,23 +430,26 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
 
   return (
     <div
-      className="min-h-dvh flex flex-col lg:flex-row bg-gray-50 lg:max-w-7xl lg:mx-auto lg:border-x lg:border-gray-200"
+      className="min-h-dvh flex flex-col lg:flex-row bg-[#0b111b] text-white/90 lg:max-w-7xl lg:mx-auto lg:border-x lg:border-white/10"
       aria-label="User dashboard"
     >
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col w-64 border-r border-gray-200 bg-white/80 backdrop-blur-sm">
-        <div className="px-5 py-5 border-b border-gray-200 flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 text-white flex items-center justify-center font-semibold text-lg">
+      <aside className="hidden lg:flex lg:flex-col w-64 border-r border-white/10 bg-white/5 backdrop-blur-sm">
+        <div className="px-5 py-5 border-b border-white/10 flex items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 text-white flex items-center justify-center font-semibold text-lg shadow-inner">
             {profile.name.slice(0, 1)}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-800 truncate">
+            <span className="text-sm font-semibold text-white truncate">
               {profile.name}
             </span>
-            <span className="text-[11px] text-gray-500">User Portal</span>
+            <span className="text-[11px] text-white/50">User Portal</span>
           </div>
         </div>
-        <nav className="flex-1 overflow-y-auto py-4 text-sm" role="tablist">
+        <nav
+          className="flex-1 overflow-y-auto py-4 text-sm text-white/80"
+          role="tablist"
+        >
           <ul className="space-y-0.5 px-3">
             {tabs.map((t) => {
               const Icon = t.icon;
@@ -450,12 +460,14 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                     onClick={() => setTab(t.key)}
                     role="tab"
                     aria-selected={active}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 ${active ? "bg-orange-500 text-white shadow-sm" : "text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${active ? "bg-orange-600 text-white shadow-sm" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
                   >
                     <Icon size={18} strokeWidth={active ? 2.2 : 1.8} />
-                    <span className="flex-1 truncate text-[13px] font-medium">{t.label}</span>
+                    <span className="flex-1 truncate text-[13px] font-medium">
+                      {t.label}
+                    </span>
                     {t.badge ? (
-                      <span className="inline-flex items-center justify-center h-5 min-w-[1.1rem] px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold">
+                      <span className="inline-flex items-center justify-center h-5 min-w-[1.1rem] px-1 rounded-full bg-red-600/80 text-white text-[10px] font-semibold shadow">
                         {t.badge}
                       </span>
                     ) : null}
@@ -465,30 +477,36 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
             })}
           </ul>
         </nav>
-        <div className="p-4 border-t border-gray-200 flex flex-col gap-2">
+        <div className="p-4 border-t border-white/10 flex flex-col gap-2">
           <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-            <div className="p-2 rounded-md bg-gray-50 border border-gray-200">
-              <div className="text-xs font-semibold text-gray-800">{totalReports}</div>
-              <div className="text-[10px] text-gray-500">Total</div>
+            <div className="p-2 rounded-md bg-white/5 border border-white/10">
+              <div className="text-xs font-semibold text-white">
+                {totalReports}
+              </div>
+              <div className="text-[10px] text-white/50">Total</div>
             </div>
-            <div className="p-2 rounded-md bg-gray-50 border border-gray-200">
-              <div className="text-xs font-semibold text-orange-600">{openReports}</div>
-              <div className="text-[10px] text-gray-500">Open</div>
+            <div className="p-2 rounded-md bg-white/5 border border-white/10">
+              <div className="text-xs font-semibold text-orange-400">
+                {openReports}
+              </div>
+              <div className="text-[10px] text-white/50">Open</div>
             </div>
-            <div className="p-2 rounded-md bg-gray-50 border border-gray-200">
-              <div className="text-xs font-semibold text-green-600">{resolvedReports}</div>
-              <div className="text-[10px] text-gray-500">Resolved</div>
+            <div className="p-2 rounded-md bg-white/5 border border-white/10">
+              <div className="text-xs font-semibold text-green-400">
+                {resolvedReports}
+              </div>
+              <div className="text-[10px] text-white/50">Resolved</div>
             </div>
           </div>
           <button
             onClick={startReport}
-            className="h-10 w-full rounded-md bg-orange-600 text-white text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="h-10 w-full rounded-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
           >
             <Plus size={16} /> Report Lost
           </button>
           <button
             onClick={() => onLogout?.()}
-            className="h-10 w-full rounded-md bg-gray-200 text-gray-700 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-300"
+            className="h-10 w-full rounded-md bg-white/10 hover:bg-white/20 text-white/70 text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
             <LogOut size={16} /> Logout
           </button>
@@ -498,25 +516,25 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
       {/* Right side content */}
       <div className="flex-1 flex flex-col min-h-dvh">
         {/* Mobile Header */}
-        <header className="px-4 py-3 bg-white border-b border-gray-200 flex items-center gap-3 lg:hidden">
+        <header className="px-4 py-3 bg-white/5 backdrop-blur-sm border-b border-white/10 flex items-center gap-3 lg:hidden">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={() => setTab("profile")}
-              className="h-11 w-11 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 text-white flex items-center justify-center font-semibold text-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="h-11 w-11 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 text-white flex items-center justify-center font-semibold text-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 shadow-inner"
               aria-label="Profile"
             >
               {profile.name.slice(0, 1)}
             </button>
             <div className="flex flex-col truncate">
-              <span className="text-sm font-semibold text-gray-800 truncate">
+              <span className="text-sm font-semibold text-white truncate">
                 {profile.name}
               </span>
-              <span className="text-[11px] text-gray-500">User Portal</span>
+              <span className="text-[11px] text-white/50">User Portal</span>
             </div>
           </div>
           <button
             onClick={startReport}
-            className="h-10 px-3 rounded-md bg-orange-600 text-white text-xs font-semibold flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="h-10 px-3 rounded-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white text-xs font-semibold flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
           >
             <Plus size={14} />
             <span className="hidden sm:inline">Report</span>
@@ -525,8 +543,8 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
 
         {/* Error */}
         {error && (
-          <div className="m-3 p-3 bg-red-50 border border-red-200 rounded-md text-xs text-red-700 flex items-center gap-2">
-            <AlertCircle size={14} /> {error}
+          <div className="m-3 p-3 bg-red-500/15 border border-red-400/30 rounded-md text-xs text-red-300 flex items-center gap-2">
+            <AlertCircle size={14} className="text-red-300" /> {error}
           </div>
         )}
 
@@ -537,7 +555,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
 
         {/* Bottom Navigation (mobile) */}
         <nav
-          className="fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-200 shadow-sm flex lg:hidden"
+          className="fixed bottom-0 inset-x-0 z-20 bg-white/5 backdrop-blur-sm border-t border-white/10 shadow-sm flex lg:hidden text-white/70"
           role="tablist"
           aria-label="User navigation"
         >
@@ -550,7 +568,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setTab(t.key)}
-                className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${active ? "text-orange-600" : "text-gray-500"} hover:text-orange-600`}
+                className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${active ? "text-orange-400" : "text-white/50"} hover:text-orange-300`}
               >
                 <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
                 <span>{t.label}</span>
@@ -559,7 +577,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                   className={`h-0.5 w-8 rounded-full mt-0.5 transition-colors ${active ? "bg-orange-500" : "bg-transparent"}`}
                 />
                 {t.badge ? (
-                  <span className="absolute top-1.5 right-5 h-4 min-w-[1rem] px-1 rounded-full bg-red-600 text-white text-[9px] leading-4 font-semibold">
+                  <span className="absolute top-1.5 right-5 h-4 min-w-[1rem] px-1 rounded-full bg-red-600/80 text-white text-[9px] leading-4 font-semibold">
                     {t.badge}
                   </span>
                 ) : null}
@@ -575,45 +593,53 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
         onClose={() => setShowReportModal(false)}
         title="New Lost Report"
       >
-        <div className="space-y-4 text-sm">
+        <div className="space-y-4 text-sm text-white/80">
           <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1 text-[11px] font-medium text-gray-600">
+            <label className="flex flex-col gap-1 text-[11px] font-medium text-white/60">
               Type
               <select
                 value={formType}
                 onChange={(e) => setFormType(e.target.value)}
-                className="h-9 rounded-md border border-gray-300 px-2 text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-sm text-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
               >
                 <option value="item">Item</option>
                 <option value="person">Person</option>
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-[11px] font-medium text-gray-600">
+            <label className="flex flex-col gap-1 text-[11px] font-medium text-white/60">
               Location
               <select
                 value={formLocation}
                 onChange={(e) => setFormLocation(e.target.value)}
-                className="h-9 rounded-md border border-gray-300 px-2 text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-sm text-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
               >
-                {["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6"].map((z) => (
+                {[
+                  "Zone 1",
+                  "Zone 2",
+                  "Zone 3",
+                  "Zone 4",
+                  "Zone 5",
+                  "Zone 6",
+                ].map((z) => (
                   <option key={z}>{z}</option>
                 ))}
               </select>
             </label>
           </div>
-          <label className="flex flex-col gap-1 text-[11px] font-medium text-gray-600">
+          <label className="flex flex-col gap-1 text-[11px] font-medium text-white/60">
             Description
             <textarea
               rows={4}
               value={formDesc}
               onChange={(e) => setFormDesc(e.target.value)}
-              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none"
+              className="w-full rounded-md border border-white/10 bg-white/5 p-2 text-sm resize-none text-white/80 placeholder-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
               placeholder="Describe the lost item/person, last seen details..."
             />
           </label>
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-gray-600 font-medium">
-              Photos <span className="font-normal text-gray-400">(URLs for now)</span>
+            <div className="flex items-center justify-between text-[11px] text-white/60 font-medium">
+              Photos{" "}
+              <span className="font-normal text-white/40">(URLs for now)</span>
             </div>
             <div className="space-y-2">
               {formPhotos.map((p, i) => (
@@ -621,13 +647,17 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                   <input
                     value={p}
                     onChange={(e) =>
-                      setFormPhotos((arr) => arr.map((v, idx) => (idx === i ? e.target.value : v)))
+                      setFormPhotos((arr) =>
+                        arr.map((v, idx) => (idx === i ? e.target.value : v))
+                      )
                     }
-                    className="flex-1 h-9 rounded-md border border-gray-300 px-2 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="flex-1 h-9 rounded-md border border-white/10 bg-white/5 px-2 text-xs text-white/80 placeholder-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
                   />
                   <button
-                    onClick={() => setFormPhotos((arr) => arr.filter((_, idx) => idx !== i))}
-                    className="h-8 px-2 rounded-md bg-gray-200 text-gray-600 text-[10px] font-medium"
+                    onClick={() =>
+                      setFormPhotos((arr) => arr.filter((_, idx) => idx !== i))
+                    }
+                    className="h-8 px-2 rounded-md bg-white/10 hover:bg-white/20 text-white/70 text-[10px] font-medium"
                   >
                     Remove
                   </button>
@@ -635,7 +665,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
               ))}
               <button
                 onClick={() => setFormPhotos((p) => [...p, ""])}
-                className="h-8 px-3 rounded-md bg-blue-600 text-white text-[11px] font-medium flex items-center gap-1"
+                className="h-8 px-3 rounded-md bg-blue-600/80 hover:bg-blue-600 text-white text-[11px] font-medium flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
               >
                 <ImageIcon size={14} /> Add Photo URL
               </button>
@@ -645,7 +675,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
             <button
               disabled={formSubmitting}
               onClick={submitReport}
-              className={`flex-1 h-9 rounded-md text-xs font-semibold flex items-center justify-center gap-2 ${formSubmitting ? "bg-gray-300 text-gray-500" : "bg-orange-600 text-white"}`}
+              className={`flex-1 h-9 rounded-md text-xs font-semibold flex items-center justify-center gap-2 ${formSubmitting ? "bg-white/10 text-white/40" : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white"}`}
             >
               {formSubmitting ? (
                 "Submitting..."
@@ -657,7 +687,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
             </button>
             <button
               onClick={() => setShowReportModal(false)}
-              className="h-9 px-4 rounded-md bg-gray-200 text-gray-700 text-xs font-medium"
+              className="h-9 px-4 rounded-md bg-white/10 hover:bg-white/20 text-white/70 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             >
               Cancel
             </button>

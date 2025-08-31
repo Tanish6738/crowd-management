@@ -83,7 +83,13 @@ const AdminDashboard = () => {
     <div className="sm:hidden mb-3 -mx-1">
       <div className="flex gap-2 overflow-x-auto px-1">
         {['map','alerts','cameras'].map(key => (
-          <button key={key} onClick={() => setMobileSection(key)} className={`px-3 py-1.5 rounded-full text-xs border whitespace-nowrap ${mobileSection===key ? 'bg-orange-500 text-white border-orange-500' : 'bg-white border-gray-300 text-gray-600'}`}>{key.charAt(0).toUpperCase()+key.slice(1)}</button>
+          <button
+            key={key}
+            onClick={() => setMobileSection(key)}
+            className={`px-3 py-1.5 rounded-full text-xs border whitespace-nowrap transition ${mobileSection===key ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
+          >
+            {key.charAt(0).toUpperCase()+key.slice(1)}
+          </button>
         ))}
       </div>
     </div>
@@ -94,8 +100,8 @@ const AdminDashboard = () => {
   );
   // Removed legacy alertsEl; overlay implemented below
   const camerasEl = (
-    <div className="sm:hidden border border-gray-200 rounded-lg bg-white p-3 space-y-3">
-      <div className="text-xs font-semibold text-gray-700 px-1">Cameras</div>
+    <div className="sm:hidden border border-white/10 rounded-lg bg-white/5 backdrop-blur p-3 space-y-3">
+      <div className="text-xs font-semibold text-white/70 px-1">Cameras</div>
       <div className="flex overflow-x-auto gap-3 pb-2">
         {camerasSeed.map(c => (
           <div key={c.id} className="min-w-[150px] w-40"><CameraStrip cameras={[c]} onSelect={setCameraModal} /></div>
@@ -110,7 +116,7 @@ const AdminDashboard = () => {
       sidebar={<Sidebar tabs={navTabs} active={activeNav} onChange={setActiveNav} mobileOpen={mobileMenu} onClose={() => setMobileMenu(false)} />}
     >
       {renderMobileTabs()}
-      <div className="flex flex-col lg:flex-row gap-6">
+  <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 min-w-0 space-y-6">
           {activeNav === 'dashboard' && mobileSection === 'map' && mapEl}
           {activeNav === 'cameras' && <Cameras />}
@@ -123,12 +129,12 @@ const AdminDashboard = () => {
           {activeNav === 'map-editor' && <MapEditor />}
           {activeNav === 'settings' && <Settings />}
           {(!['dashboard','cameras','lost-found','crowd-analytics','alerts','volunteers','tasks','reports','settings','map-editor'].includes(activeNav)) && (
-            <div className="text-sm text-gray-500 p-4 border border-dashed border-gray-300 rounded-lg bg-white">Section under construction: {activeNav}</div>
+            <div className="text-sm text-white/60 p-4 border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur">Section under construction: {activeNav}</div>
           )}
         </div>
         {/* Right alerts panel (desktop) */}
   {activeNav === 'dashboard' && (
-          <div className="hidden lg:flex flex-col w-80 xl:w-96 lg:shrink-0 border-l border-gray-200 bg-white rounded-lg overflow-hidden shadow-sm">
+          <div className="hidden lg:flex flex-col w-80 xl:w-96 lg:shrink-0 border-l border-white/10 bg-white/5 backdrop-blur rounded-lg overflow-hidden shadow-sm">
             <Alerts onActiveCountChange={setAlertCount} />
           </div>
         )}
@@ -138,11 +144,11 @@ const AdminDashboard = () => {
       {/* Alerts overlay for < lg */}
       {alertsOverlayOpen && (
         <div className="lg:hidden fixed inset-0 z-40" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={()=>setAlertsOverlayOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-full sm:w-[480px] max-w-full bg-white shadow-xl border-l border-gray-200 flex flex-col transform translate-x-0">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-800">Alerts</h2>
-              <button onClick={()=>setAlertsOverlayOpen(false)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded" aria-label="Close alerts">✕</button>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={()=>setAlertsOverlayOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-full sm:w-[480px] max-w-full bg-white/5 backdrop-blur-xl shadow-xl border-l border-white/10 flex flex-col transform translate-x-0">
+            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-white/90">Alerts</h2>
+              <button onClick={()=>setAlertsOverlayOpen(false)} className="text-white/60 hover:text-white/90 focus:outline-none focus:ring-2 focus:ring-orange-500/50 rounded" aria-label="Close alerts">✕</button>
             </div>
             <div className="flex-1 overflow-hidden">
               <Alerts onActiveCountChange={setAlertCount} />

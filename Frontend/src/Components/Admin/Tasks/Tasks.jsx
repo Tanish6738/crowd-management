@@ -20,10 +20,10 @@ import {
 // type Task = { id:string; title:string; zoneName:string; volunteerName:string; status:'pending'|'in_progress'|'done'|'cancelled'; createdAt:string; ackAt?:string; doneAt?:string; evidenceCount?:number };
 
 const statusStyles = {
-  pending: 'bg-orange-100 text-orange-700 border-orange-200',
-  in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
-  done: 'bg-green-100 text-green-700 border-green-200',
-  cancelled: 'bg-gray-100 text-gray-600 border-gray-200'
+  pending: 'bg-orange-500/15 text-orange-300 border-orange-400/30',
+  in_progress: 'bg-blue-500/15 text-blue-300 border-blue-400/30',
+  done: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
+  cancelled: 'bg-gray-500/15 text-gray-300 border-gray-400/30'
 };
 
 const Tasks = () => {
@@ -90,17 +90,17 @@ const Tasks = () => {
 
   const loadingCards = (
     <div className="grid [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {Array.from({length:8}).map((_,i)=>(<div key={i} className="h-40 rounded-lg bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse"/>))}
+      {Array.from({length:8}).map((_,i)=>(<div key={i} className="h-40 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"/>))}
     </div>
   );
   const emptyState = (
-    <div className="p-10 text-sm text-gray-500 text-center border border-dashed border-gray-300 rounded-lg bg-white flex flex-col items-center gap-3">
-      <Inbox className="text-orange-500" size={36} />
+    <div className="p-10 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur flex flex-col items-center gap-3">
+      <Inbox className="text-orange-400" size={36} />
       <p>No tasks match your filters.</p>
-      <button onClick={()=>setCreateOpen(true)} className="px-3 py-1.5 rounded-md bg-orange-500 text-white text-xs font-medium flex items-center gap-1"><Plus size={14}/> Create Task</button>
+      <button onClick={()=>setCreateOpen(true)} className="px-3 py-1.5 rounded-md bg-orange-500 text-white text-xs font-medium flex items-center gap-1 hover:bg-orange-600"><Plus size={14}/> Create Task</button>
     </div>
   );
-  const errorBanner = <div className="p-4 bg-red-50 text-red-700 text-sm flex items-center justify-between rounded border border-red-200">Error loading tasks <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs">Retry</button></div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading tasks <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Retry</button></div>;
 
   const cardGrid = (
     <LayoutGroup>
@@ -116,22 +116,22 @@ const Tasks = () => {
               whileHover={{y:-4}}
               whileTap={{scale:0.97}}
               onClick={()=>setDetailTask(t)}
-              className="relative bg-white/95 backdrop-blur border border-gray-200 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="relative bg-white/5 backdrop-blur border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:bg-white/7 hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
               aria-label={`Open task ${t.title}`}
             >
               <div className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-gray-800 truncate flex items-center gap-1"><ClipboardList size={14} className="text-orange-600"/> {t.title}</div>
-                  <div className="text-[11px] text-gray-600 flex items-center gap-2 flex-wrap">
-                    <span className="px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 flex items-center gap-1"><MapPin size={11}/> {t.zoneName}</span>
-                    <span className="flex items-center gap-1"><UserIcon size={11}/> {t.volunteerName}</span>
+                  <div className="text-xs font-semibold text-white/90 truncate flex items-center gap-1"><ClipboardList size={14} className="text-orange-400"/> {t.title}</div>
+                  <div className="text-[11px] text-white/60 flex items-center gap-2 flex-wrap">
+                    <span className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 flex items-center gap-1 text-white/70"><MapPin size={11}/> {t.zoneName}</span>
+                    <span className="flex items-center gap-1 text-white/60"><UserIcon size={11}/> {t.volunteerName}</span>
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded border text-[10px] uppercase whitespace-nowrap ${statusStyles[t.status]}`}>{t.status.replace('_',' ')}</span>
               </div>
-              <div className="mt-auto flex items-center justify-between text-[10px] text-gray-500">
+              <div className="mt-auto flex items-center justify-between text-[10px] text-white/50">
                 <span className="inline-flex items-center gap-1"><Clock size={11}/> {new Date(t.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                {t.evidenceCount ? <span className="text-orange-600 font-medium">Ev: {t.evidenceCount}</span> : null}
+                {t.evidenceCount ? <span className="text-orange-300 font-medium">Ev: {t.evidenceCount}</span> : null}
               </div>
               <motion.span layoutId={`bar-${t.id}`} className="absolute left-0 top-0 h-full w-0.5 rounded-r bg-gradient-to-b from-orange-400 to-orange-600" />
             </motion.button>
@@ -142,9 +142,9 @@ const Tasks = () => {
   );
 
   const tableList = (
-    <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white shadow-sm">
+    <div className="overflow-x-auto border border-white/10 rounded-lg bg-white/5 backdrop-blur shadow-sm">
       <table className="min-w-full text-xs">
-        <thead className="bg-gray-100/80 text-gray-700 sticky top-0">
+        <thead className="bg-white/5 text-white/70 sticky top-0">
           <tr>
             {['Task','Zone','Volunteer','Status','Created','Evidence'].map(h => (
               <th key={h} className="px-3 py-2 font-medium text-[10px] uppercase tracking-wide text-left">{h}</th>
@@ -159,15 +159,15 @@ const Tasks = () => {
                 initial={{opacity:0, y:8}}
                 animate={{opacity:1, y:0}}
                 exit={{opacity:0, y:-6}}
-                className="even:bg-gray-50 hover:bg-orange-50 cursor-pointer"
+                className="even:bg-white/5 hover:bg-white/8 cursor-pointer"
                 onClick={()=>setDetailTask(t)}
               >
-                <td className="px-3 py-2 whitespace-nowrap font-medium text-gray-800">{t.title}</td>
-                <td className="px-3 py-2 whitespace-nowrap">{t.zoneName}</td>
-                <td className="px-3 py-2 whitespace-nowrap">{t.volunteerName}</td>
+                <td className="px-3 py-2 whitespace-nowrap font-medium text-white/85">{t.title}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-white/70">{t.zoneName}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-white/70">{t.volunteerName}</td>
                 <td className="px-3 py-2 whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase ${statusStyles[t.status]}`}>{t.status.replace('_',' ')}</span></td>
-                <td className="px-3 py-2 whitespace-nowrap">{new Date(t.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
-                <td className="px-3 py-2 whitespace-nowrap">{t.evidenceCount || '-'}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-white/60">{new Date(t.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-white/60">{t.evidenceCount || '-'}</td>
               </motion.tr>
             ))}
           </AnimatePresence>
@@ -201,53 +201,53 @@ const Tasks = () => {
     <div className="space-y-6" aria-label="Tasks">
       {/* Header & Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><ListChecks size={18} className="text-orange-600"/> Tasks <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-[10px] border border-orange-200">{counts.total}</span></h2>
+        <h2 className="text-sm font-semibold text-white/90 flex items-center gap-2"><ListChecks size={18} className="text-orange-400"/> Tasks <span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 text-[10px] border border-orange-400/30">{counts.total}</span></h2>
         <div className="hidden md:flex gap-2 text-xs">
-          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-            {['all','pending','in_progress','done','cancelled'].map(s => <option key={s} value={s}>{s==='all' ? 'All Statuses' : s.replace('_',' ')}</option>)}
+          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+            {['all','pending','in_progress','done','cancelled'].map(s => <option key={s} value={s} className="bg-gray-900">{s==='all' ? 'All Statuses' : s.replace('_',' ')}</option>)}
           </select>
-          <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-            {zones.map(z => <option key={z} value={z}>{z==='all' ? 'All Zones' : z}</option>)}
+          <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+            {zones.map(z => <option key={z} value={z} className="bg-gray-900">{z==='all' ? 'All Zones' : z}</option>)}
           </select>
-            <select value={volFilter} onChange={e=>setVolFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-            {volunteers.map(v => <option key={v} value={v}>{v==='all' ? 'All Volunteers' : v}</option>)}
+            <select value={volFilter} onChange={e=>setVolFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+            {volunteers.map(v => <option key={v} value={v} className="bg-gray-900">{v==='all' ? 'All Volunteers' : v}</option>)}
           </select>
           <div className="relative">
-            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-9 w-40 sm:w-56 pl-7 pr-2 rounded-md border border-gray-300 bg-gray-100 focus:bg-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-9 w-40 sm:w-56 pl-7 pr-2 rounded-md border border-white/10 bg-white/5 text-xs text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
           </div>
         </div>
         <div className="flex md:hidden ml-auto">
-          <button onClick={()=>setShowFilters(s=>!s)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 ${showFilters? 'bg-orange-500 text-white border-orange-500':'bg-white border-gray-300 text-gray-600'}`}><Filter size={14}/> Filters</button>
+          <button onClick={()=>setShowFilters(s=>!s)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 transition ${showFilters? 'bg-orange-500 text-white border-orange-500':'bg-white/5 border-white/10 text-white/70'}`}><Filter size={14}/> Filters</button>
         </div>
         <div className="flex gap-2 ml-auto">
-          <div className="flex gap-1 border border-gray-300 rounded-md overflow-hidden text-xs">
-            <button onClick={()=>setView('grid')} className={`px-2 py-1 ${view==='grid'? 'bg-orange-500 text-white':'bg-white text-gray-600 hover:bg-orange-50'}`}>Grid</button>
-            <button onClick={()=>setView('list')} className={`px-2 py-1 ${view==='list'? 'bg-orange-500 text-white':'bg-white text-gray-600 hover:bg-orange-50'}`}>List</button>
+          <div className="flex gap-1 border border-white/10 rounded-md overflow-hidden text-xs bg-white/5">
+            <button onClick={()=>setView('grid')} className={`px-2 py-1 transition ${view==='grid'? 'bg-orange-500 text-white':'text-white/70 hover:bg-white/10'}`}>Grid</button>
+            <button onClick={()=>setView('list')} className={`px-2 py-1 transition ${view==='list'? 'bg-orange-500 text-white':'text-white/70 hover:bg-white/10'}`}>List</button>
           </div>
-          <button onClick={()=>setCreateOpen(true)} className="px-3 py-1.5 rounded-md bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 flex items-center gap-1"><Plus size={14}/> <span className="hidden sm:inline">Create Task</span></button>
+          <button onClick={()=>setCreateOpen(true)} className="px-3 py-1.5 rounded-md bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 flex items-center gap-1"><Plus size={14}/> <span className="hidden sm:inline">Create Task</span></button>
         </div>
       </div>
 
       {/* Mobile Filters */}
       <AnimatePresence initial={false}>
         {showFilters && (
-          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white rounded-lg border border-gray-200 p-3 space-y-3 text-xs">
+          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white/5 backdrop-blur rounded-lg border border-white/10 p-3 space-y-3 text-xs text-white/70">
             <div className="flex gap-2">
-              <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="flex-1 h-8 rounded border border-gray-300 px-2">
-                {['all','pending','in_progress','done','cancelled'].map(s => <option key={s} value={s}>{s==='all' ? 'All Statuses' : s.replace('_',' ')}</option>)}
+              <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="flex-1 h-8 rounded border border-white/10 bg-white/5 px-2">
+                {['all','pending','in_progress','done','cancelled'].map(s => <option key={s} value={s} className="bg-gray-900">{s==='all' ? 'All Statuses' : s.replace('_',' ')}</option>)}
               </select>
-              <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="flex-1 h-8 rounded border border-gray-300 px-2">
-                {zones.map(z => <option key={z} value={z}>{z==='all' ? 'All Zones' : z}</option>)}
+              <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="flex-1 h-8 rounded border border-white/10 bg-white/5 px-2">
+                {zones.map(z => <option key={z} value={z} className="bg-gray-900">{z==='all' ? 'All Zones' : z}</option>)}
               </select>
             </div>
             <div className="flex gap-2">
-              <select value={volFilter} onChange={e=>setVolFilter(e.target.value)} className="flex-1 h-8 rounded border border-gray-300 px-2">
-                {volunteers.map(v => <option key={v} value={v}>{v==='all' ? 'All Volunteers' : v}</option>)}
+              <select value={volFilter} onChange={e=>setVolFilter(e.target.value)} className="flex-1 h-8 rounded border border-white/10 bg-white/5 px-2">
+                {volunteers.map(v => <option key={v} value={v} className="bg-gray-900">{v==='all' ? 'All Volunteers' : v}</option>)}
               </select>
               <div className="relative flex-1">
-                <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 w-full pl-7 pr-2 rounded border border-gray-300 bg-gray-100 focus:bg-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 w-full pl-7 pr-2 rounded border border-white/10 bg-white/5 text-white/80 placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
               </div>
             </div>
           </motion.div>
@@ -255,15 +255,15 @@ const Tasks = () => {
       </AnimatePresence>
 
       {/* Status Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[11px]">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[11px]">
         {[
-          {k:'pending', label:'Pending', color:'bg-orange-100 text-orange-700 border-orange-200', val:counts.pending},
-          {k:'in_progress', label:'In Progress', color:'bg-blue-100 text-blue-700 border-blue-200', val:counts.in_progress},
-          {k:'done', label:'Done', color:'bg-green-100 text-green-700 border-green-200', val:counts.done},
-          {k:'cancelled', label:'Cancelled', color:'bg-gray-100 text-gray-600 border-gray-200', val:counts.cancelled},
-          {k:'total', label:'Total', color:'bg-gray-50 text-gray-700 border-gray-200', val:counts.total},
+      {k:'pending', label:'Pending', color:'bg-orange-500/15 text-orange-300 border-orange-400/30', val:counts.pending},
+      {k:'in_progress', label:'In Progress', color:'bg-blue-500/15 text-blue-300 border-blue-400/30', val:counts.in_progress},
+      {k:'done', label:'Done', color:'bg-emerald-500/15 text-emerald-300 border-emerald-400/30', val:counts.done},
+      {k:'cancelled', label:'Cancelled', color:'bg-gray-500/15 text-gray-300 border-gray-400/30', val:counts.cancelled},
+      {k:'total', label:'Total', color:'bg-white/5 text-white/70 border-white/10', val:counts.total},
         ].map(c => (
-          <button key={c.k} onClick={()=> c.k!=='total' && setStatusFilter(c.k)} className={`p-2 rounded-lg border flex flex-col items-start gap-1 text-left hover:shadow-sm transition ${c.color} ${statusFilter===c.k? 'ring-2 ring-orange-500':''}`} aria-label={`${c.label} count`}>
+      <button key={c.k} onClick={()=> c.k!=='total' && setStatusFilter(c.k)} className={`p-2 rounded-lg border flex flex-col items-start gap-1 text-left transition ${c.color} ${statusFilter===c.k? 'ring-2 ring-orange-500/50':''}`} aria-label={`${c.label} count`}>
             <span className="text-[10px] uppercase tracking-wide font-medium">{c.label}</span>
             <span className="text-sm font-semibold tabular-nums">{c.val}</span>
           </button>
@@ -276,25 +276,25 @@ const Tasks = () => {
       {/* Detail Drawer */}
       <Drawer open={!!detailTask} onClose={()=>setDetailTask(null)} title={detailTask ? detailTask.title : ''}>
         {detailTask && (
-          <div className="space-y-5 text-[11px]">
+          <div className="space-y-5 text-[11px] text-white/70">
             <div className="grid grid-cols-2 gap-4">
-              <div><span className="text-gray-500">Zone</span><div className="font-medium">{detailTask.zoneName}</div></div>
-              <div><span className="text-gray-500">Volunteer</span><div className="font-medium">{detailTask.volunteerName}</div></div>
-              <div><span className="text-gray-500">Status</span><div className="font-medium uppercase">{detailTask.status.replace('_',' ')}</div></div>
-              <div><span className="text-gray-500">Created</span><div className="font-medium">{new Date(detailTask.createdAt).toLocaleTimeString()}</div></div>
+              <div><span className="text-white/50">Zone</span><div className="font-medium text-white/80">{detailTask.zoneName}</div></div>
+              <div><span className="text-white/50">Volunteer</span><div className="font-medium text-white/80">{detailTask.volunteerName}</div></div>
+              <div><span className="text-white/50">Status</span><div className="font-medium uppercase text-white/80">{detailTask.status.replace('_',' ')}</div></div>
+              <div><span className="text-white/50">Created</span><div className="font-medium text-white/80">{new Date(detailTask.createdAt).toLocaleTimeString()}</div></div>
             </div>
             <div>
-              <h4 className="text-[11px] font-semibold text-gray-700 mb-2 uppercase tracking-wide">Timeline</h4>
-              <ol className="list-disc pl-4 space-y-1 text-gray-600">
+              <h4 className="text-[11px] font-semibold text-white/80 mb-2 uppercase tracking-wide">Timeline</h4>
+              <ol className="list-disc pl-4 space-y-1 text-white/60">
                 <li>Created: {new Date(detailTask.createdAt).toLocaleTimeString()}</li>
                 {detailTask.ackAt && <li>Acknowledged: {new Date(detailTask.ackAt).toLocaleTimeString()}</li>}
                 {detailTask.doneAt && <li>Done: {new Date(detailTask.doneAt).toLocaleTimeString()}</li>}
               </ol>
             </div>
             <div className="flex flex-wrap gap-2">
-              {detailTask.status!=='in_progress' && detailTask.status!=='done' && <button onClick={()=>updateTaskStatus(detailTask.id,'in_progress')} className="px-3 py-1.5 rounded bg-blue-600 text-white text-xs hover:bg-blue-700 flex items-center gap-1"><Play size={14}/> Start</button>}
-              {detailTask.status!=='done' && <button onClick={()=>updateTaskStatus(detailTask.id,'done')} className="px-3 py-1.5 rounded bg-green-600 text-white text-xs hover:bg-green-700 flex items-center gap-1"><CheckCircle2 size={14}/> Done</button>}
-              {detailTask.status!=='cancelled' && <button onClick={()=>updateTaskStatus(detailTask.id,'cancelled')} className="px-3 py-1.5 rounded bg-red-600 text-white text-xs hover:bg-red-700 flex items-center gap-1"><XIcon size={14}/> Cancel</button>}
+              {detailTask.status!=='in_progress' && detailTask.status!=='done' && <button onClick={()=>updateTaskStatus(detailTask.id,'in_progress')} className="px-3 py-1.5 rounded bg-blue-600 text-white text-xs hover:bg-blue-500 flex items-center gap-1"><Play size={14}/> Start</button>}
+              {detailTask.status!=='done' && <button onClick={()=>updateTaskStatus(detailTask.id,'done')} className="px-3 py-1.5 rounded bg-emerald-600 text-white text-xs hover:bg-emerald-500 flex items-center gap-1"><CheckCircle2 size={14}/> Done</button>}
+              {detailTask.status!=='cancelled' && <button onClick={()=>updateTaskStatus(detailTask.id,'cancelled')} className="px-3 py-1.5 rounded bg-red-600 text-white text-xs hover:bg-red-500 flex items-center gap-1"><XIcon size={14}/> Cancel</button>}
             </div>
           </div>
         )}
@@ -302,30 +302,30 @@ const Tasks = () => {
 
       {/* Create Task Modal */}
       <Modal open={createOpen} onClose={()=>setCreateOpen(false)} title="Create Task" actions={[
-        <button key="cancel" onClick={()=>setCreateOpen(false)} className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs hover:bg-gray-50">Cancel</button>,
+        <button key="cancel" onClick={()=>setCreateOpen(false)} className="px-3 py-1.5 rounded border border-white/10 bg-white/5 text-xs text-white/70 hover:bg-white/10">Cancel</button>,
         <button key="save" onClick={submitTask} className="px-3 py-1.5 rounded bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 flex items-center gap-1"><Plus size={14}/> Create</button>
       ]}>
-        <form onSubmit={submitTask} className="space-y-4 text-[11px]">
+        <form onSubmit={submitTask} className="space-y-4 text-[11px] text-white/70">
           <div>
-            <label className="block font-medium mb-1">Title</label>
-            <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} className="w-full h-8 rounded-md border border-gray-300 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            <label className="block font-medium mb-1 text-white/80">Title</label>
+            <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} className="w-full h-8 rounded-md border border-white/10 bg-white/5 px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-white/40" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
-              <label className="block font-medium mb-1">Zone</label>
-              <select value={form.zone} onChange={e=>setForm(f=>({...f,zone:e.target.value}))} className="w-full h-8 rounded-md border border-gray-300 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                {zones.filter(z=>z!=='all').map(z => <option key={z}>{z}</option>)}
+              <label className="block font-medium mb-1 text-white/80">Zone</label>
+              <select value={form.zone} onChange={e=>setForm(f=>({...f,zone:e.target.value}))} className="w-full h-8 rounded-md border border-white/10 bg-white/5 px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+                {zones.filter(z=>z!=='all').map(z => <option key={z} className="bg-gray-900">{z}</option>)}
               </select>
             </div>
             <div className="col-span-1">
-              <label className="block font-medium mb-1">Volunteer</label>
-              <select value={form.volunteer} onChange={e=>setForm(f=>({...f,volunteer:e.target.value}))} className="w-full h-8 rounded-md border border-gray-300 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                {volunteers.filter(v=>v!=='all').map(v => <option key={v}>{v}</option>)}
+              <label className="block font-medium mb-1 text-white/80">Volunteer</label>
+              <select value={form.volunteer} onChange={e=>setForm(f=>({...f,volunteer:e.target.value}))} className="w-full h-8 rounded-md border border-white/10 bg-white/5 px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+                {volunteers.filter(v=>v!=='all').map(v => <option key={v} className="bg-gray-900">{v}</option>)}
               </select>
             </div>
             <div className="col-span-3">
-              <label className="block font-medium mb-1">Notes</label>
-              <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} className="w-full rounded-md border border-gray-300 px-2 py-1 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500" />
+              <label className="block font-medium mb-1 text-white/80">Notes</label>
+              <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 h-20 resize-none text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-white/40" />
             </div>
           </div>
         </form>

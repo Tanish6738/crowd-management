@@ -91,9 +91,9 @@ const Settings = () => {
     if (type==='camera') setCameras(c => c.filter(i=>i.id!==id));
   };
 
-  const loadingList = <div className="space-y-2">{Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />))}</div>;
-  const emptyState = <div className="p-6 text-xs text-gray-500 text-center border border-dashed border-gray-300 rounded bg-white">No zones configured yet.</div>;
-  const errorBanner = <div className="p-4 bg-red-50 text-red-700 text-xs flex items-center justify-between rounded border border-red-200">Error loading settings <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-[10px]">Retry</button></div>;
+  const loadingList = <div className="space-y-2">{Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />))}</div>;
+  const emptyState = <div className="p-6 text-xs text-white/50 text-center border border-dashed border-white/15 rounded bg-white/5 backdrop-blur-sm">No zones configured yet.</div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-xs flex items-center justify-between rounded border border-red-500/30">Error loading settings <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white/90 text-[10px] hover:bg-red-500">Retry</button></div>;
 
   const sectionTabs = [
     { key:'zones', label:'Zones & Gates', icon:Layers3, count: zones.length + gates.length },
@@ -303,31 +303,31 @@ const Settings = () => {
   const view = section==='zones'? zoneGateView : section==='services'? servicesView : section==='cameras'? camerasView : section==='policies'? policiesView : accountView;
 
   return (
-    <div className="space-y-6" aria-label="Settings">
+    <div className="space-y-6 text-white/90" aria-label="Settings">
       <div className="flex flex-wrap gap-2 text-xs items-center">
-        <h2 className="text-sm font-semibold text-gray-800 mr-2 flex items-center gap-2"><Settings2 size={18} className="text-orange-600"/> Settings</h2>
+        <h2 className="text-sm font-semibold text-white flex items-center gap-2"><Settings2 size={18} className="text-orange-500"/> Settings</h2>
         <div className="hidden md:flex flex-wrap gap-2">
           {sectionTabs.map(t => (
-            <button key={t.key} onClick={()=>setSection(t.key)} className={`relative px-3 py-1.5 rounded-md border flex items-center gap-1 ${section===t.key ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:bg-orange-50'}`} aria-current={section===t.key? 'page':undefined}>
-              <t.icon size={14}/> {t.label}
+            <button key={t.key} onClick={()=>setSection(t.key)} className={`relative px-3 py-1.5 rounded-md border flex items-center gap-1 transition-colors ${section===t.key ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'}`} aria-current={section===t.key? 'page':undefined}>
+              <t.icon size={14} className={section===t.key? '':'text-white/60'} /> {t.label}
               {typeof t.count==='number' && (
-                <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] border ${section===t.key? 'bg-white/20 text-white border-white/30':'bg-gray-100 text-gray-600 border-gray-200'}`}>{t.count}</span>
+                <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] border ${section===t.key? 'bg-white/15 text-white border-white/20':'bg-white/5 text-white/60 border-white/10'}`}>{t.count}</span>
               )}
             </button>
           ))}
         </div>
         <div className="md:hidden ml-auto">
-          <button onClick={()=>setShowMobileTabs(s=>!s)} className={`h-9 px-3 rounded-md border flex items-center gap-1 ${showMobileTabs? 'bg-orange-500 text-white border-orange-500':'bg-white border-gray-300 text-gray-600'}`}><Settings2 size={14}/> Sections</button>
+          <button onClick={()=>setShowMobileTabs(s=>!s)} className={`h-9 px-3 rounded-md border flex items-center gap-1 ${showMobileTabs? 'bg-orange-500 text-white border-orange-500':'bg-white/5 border-white/10 text-white/70'} hover:bg-white/10`}><Settings2 size={14}/> Sections</button>
         </div>
       </div>
       <AnimatePresence initial={false}>
         {showMobileTabs && (
-          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white rounded-lg border border-gray-200 p-3 flex flex-wrap gap-2">
+          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white/5 rounded-lg border border-white/10 p-3 flex flex-wrap gap-2 backdrop-blur-sm">
             {sectionTabs.map(t => (
-              <button key={t.key} onClick={()=>{setSection(t.key); setShowMobileTabs(false);}} className={`relative px-3 py-1.5 rounded-md border flex items-center gap-1 text-xs ${section===t.key ? 'bg-orange-500 text-white border-orange-500' : 'bg-white border-gray-300 text-gray-600 hover:bg-orange-50'}`} aria-current={section===t.key? 'page':undefined}>
+              <button key={t.key} onClick={()=>{setSection(t.key); setShowMobileTabs(false);}} className={`relative px-3 py-1.5 rounded-md border flex items-center gap-1 text-xs transition-colors ${section===t.key ? 'bg-orange-500 text-white border-orange-500' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'}`} aria-current={section===t.key? 'page':undefined}>
                 <t.icon size={14}/> {t.label}
                 {typeof t.count==='number' && (
-                  <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] border ${section===t.key? 'bg-white/20 text-white border-white/30':'bg-gray-100 text-gray-600 border-gray-200'}`}>{t.count}</span>
+                  <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] border ${section===t.key? 'bg-white/15 text-white border-white/20':'bg-white/5 text-white/60 border-white/10'}`}>{t.count}</span>
                 )}
               </button>
             ))}
@@ -339,20 +339,20 @@ const Settings = () => {
 
       {/* Edit Modal */}
       <Modal open={!!editType} onClose={closeEdit} title={editEntity? 'Edit '+editType : 'Add '+editType} actions={[
-        <button key="cancel" onClick={closeEdit} className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs">Cancel</button>,
-        <button key="save" onClick={saveEntity} className="px-3 py-1.5 rounded bg-orange-500 text-white text-xs font-medium flex items-center gap-1"><Plus size={14}/> Save</button>
+        <button key="cancel" onClick={closeEdit} className="px-3 py-1.5 rounded border border-white/10 bg-white/5 text-xs text-white/70 hover:bg-white/10">Cancel</button>,
+        <button key="save" onClick={saveEntity} className="px-3 py-1.5 rounded bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium flex items-center gap-1"><Plus size={14}/> Save</button>
       ]}>
         {editType && (
-          <form onSubmit={saveEntity} className="space-y-4 text-[11px]">
+          <form onSubmit={saveEntity} className="space-y-4 text-[11px] text-white/80">
             {editType==='zone' && (
               <>
                 <div>
                   <label className="block mb-1 font-medium">Name</label>
-                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-gray-300 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">Capacity</label>
-                  <input type="number" min={0} value={form.capacity} onChange={e=>setForm(f=>({...f,capacity:e.target.value}))} required className="w-full h-8 rounded border border-gray-300 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                  <input type="number" min={0} value={form.capacity} onChange={e=>setForm(f=>({...f,capacity:e.target.value}))} required className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
                 </div>
               </>
             )}
@@ -360,11 +360,11 @@ const Settings = () => {
               <>
                 <div>
                   <label className="block mb-1 font-medium">Name</label>
-                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-gray-300 px-2" />
+                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">Zone</label>
-                  <select value={form.zoneId} onChange={e=>setForm(f=>({...f,zoneId:e.target.value}))} className="w-full h-8 rounded border border-gray-300 px-2">{zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}</select>
+                  <select value={form.zoneId} onChange={e=>setForm(f=>({...f,zoneId:e.target.value}))} className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">{zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}</select>
                 </div>
               </>
             )}
@@ -372,16 +372,16 @@ const Settings = () => {
               <>
                 <div>
                   <label className="block mb-1 font-medium">Name</label>
-                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-gray-300 px-2" />
+                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block mb-1 font-medium">Type</label>
-                    <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full h-8 rounded border border-gray-300 px-2">{['washroom','camp','health'].map(t => <option key={t}>{t}</option>)}</select>
+                    <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">{['washroom','camp','health'].map(t => <option key={t}>{t}</option>)}</select>
                   </div>
                   <div>
                     <label className="block mb-1 font-medium">Zone</label>
-                    <select value={form.zoneId} onChange={e=>setForm(f=>({...f,zoneId:e.target.value}))} className="w-full h-8 rounded border border-gray-300 px-2">{zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}</select>
+                    <select value={form.zoneId} onChange={e=>setForm(f=>({...f,zoneId:e.target.value}))} className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">{zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}</select>
                   </div>
                 </div>
               </>
@@ -390,15 +390,15 @@ const Settings = () => {
               <>
                 <div>
                   <label className="block mb-1 font-medium">Name</label>
-                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-gray-300 px-2" />
+                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} required className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">RTSP URL</label>
-                  <input value={form.rtspUrl} onChange={e=>setForm(f=>({...f,rtspUrl:e.target.value}))} required className="w-full h-8 rounded border border-gray-300 px-2" />
+                  <input value={form.rtspUrl} onChange={e=>setForm(f=>({...f,rtspUrl:e.target.value}))} required className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-400" />
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">Zone</label>
-                  <select value={form.zoneId} onChange={e=>setForm(f=>({...f,zoneId:e.target.value}))} className="w-full h-8 rounded border border-gray-300 px-2">{zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}</select>
+                  <select value={form.zoneId} onChange={e=>setForm(f=>({...f,zoneId:e.target.value}))} className="w-full h-8 rounded border border-white/15 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">{zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}</select>
                 </div>
               </>
             )}

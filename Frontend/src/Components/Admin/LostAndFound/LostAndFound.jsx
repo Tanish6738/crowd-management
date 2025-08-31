@@ -22,7 +22,12 @@ import {
 // Contracts reference
 // LostReport, Match (pending review)
 
-const statusStyles = { open:'bg-orange-100 text-orange-700 border-orange-200', matched:'bg-blue-100 text-blue-700 border-blue-200', closed:'bg-green-100 text-green-700 border-green-200' };
+// Dark tinted status badge styles
+const statusStyles = {
+  open:'bg-orange-500/15 text-orange-300 border-orange-400/30',
+  matched:'bg-blue-500/15 text-blue-300 border-blue-400/30',
+  closed:'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'
+};
 
 const LostAndFound = () => {
   const [tab, setTab] = useState('reports'); // reports | matches
@@ -101,9 +106,9 @@ const LostAndFound = () => {
   }), [reports, matches]);
 
   // States rendering helpers ----------------------------------------------
-  const loadingCards = <div className="grid [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))] gap-4">{Array.from({length:8}).map((_,i)=>(<div key={i} className="h-48 rounded-lg bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse"/>))}</div>;
-  const emptyState = <div className="p-10 text-sm text-gray-500 text-center border border-dashed border-gray-300 rounded-lg bg-white flex flex-col gap-3 items-center"><PackageSearch size={40} className="text-orange-500"/>No lost reports found.</div>;
-  const errorBanner = <div className="p-4 bg-red-50 text-red-700 text-sm flex items-center justify-between rounded border border-red-200">Error loading data <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs">Retry</button></div>;
+  const loadingCards = <div className="grid [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))] gap-4">{Array.from({length:8}).map((_,i)=>(<div key={i} className="h-48 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"/>))}</div>;
+  const emptyState = <div className="p-10 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur flex flex-col gap-3 items-center"><PackageSearch size={40} className="text-orange-400"/>No lost reports found.</div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading data <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Retry</button></div>;
 
   // Cards ------------------------------------------------------------------
   const reportCards = (
@@ -120,7 +125,7 @@ const LostAndFound = () => {
               whileHover={{y:-4}}
               whileTap={{scale:0.97}}
               onClick={()=>setSelectedReport(r)}
-              className="relative bg-white/95 backdrop-blur border border-gray-200 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="relative bg-white/5 backdrop-blur border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:bg-white/7 hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
               aria-label={`Open lost report for ${r.person.name}`}
             >
               <div className="flex items-start gap-2">
@@ -129,14 +134,14 @@ const LostAndFound = () => {
                   <span className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow border border-gray-200"><ImageIcon size={12} className="text-orange-600"/></span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-gray-800 truncate flex items-center gap-1"><UserSearch size={14} className="text-orange-600"/> {r.person.name}</div>
-                  <div className="text-[11px] text-gray-600">{r.person.age} yrs • {r.person.gender}</div>
-                  <div className="text-[11px] text-gray-500 line-clamp-2">{r.person.description}</div>
+                  <div className="text-xs font-semibold text-white/90 truncate flex items-center gap-1"><UserSearch size={14} className="text-orange-400"/> {r.person.name}</div>
+                  <div className="text-[11px] text-white/60">{r.person.age} yrs • {r.person.gender}</div>
+                  <div className="text-[11px] text-white/50 line-clamp-2">{r.person.description}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[10px] mt-auto">
                 <span className={`px-2 py-0.5 rounded border uppercase ${statusStyles[r.status]}`}>{r.status}</span>
-                <span className="ml-auto text-gray-500 inline-flex items-center gap-1"><Clock size={11}/> {new Date(r.lastUpdated).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                <span className="ml-auto text-white/50 inline-flex items-center gap-1"><Clock size={11}/> {new Date(r.lastUpdated).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
               </div>
               <motion.span layoutId={`bar-${r.id}`} className="absolute left-0 top-0 h-full w-0.5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-r" />
             </motion.button>
@@ -160,7 +165,7 @@ const LostAndFound = () => {
               whileHover={{y:-4}}
               whileTap={{scale:0.97}}
               onClick={()=>setMatchModal(m)}
-              className="relative bg-white/95 backdrop-blur border border-gray-200 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="relative bg-white/5 backdrop-blur border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:bg-white/7 hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
               aria-label={`Open match review for ${m.lostPersonName}`}
             >
               <div className="flex items-center gap-2">
@@ -173,14 +178,14 @@ const LostAndFound = () => {
                   <span className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow border border-gray-200"><Sparkles size={12} className="text-orange-600"/></span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-gray-800 truncate">{m.lostPersonName}</div>
-                  <div className="text-[11px] text-gray-600">Similarity: {(m.score*100).toFixed(1)}%</div>
-                  <div className="text-[10px] text-gray-500">Threshold: {(m.threshold*100).toFixed(0)}%</div>
+                  <div className="text-xs font-semibold text-white/90 truncate">{m.lostPersonName}</div>
+                  <div className="text-[11px] text-white/60">Similarity: {(m.score*100).toFixed(1)}%</div>
+                  <div className="text-[10px] text-white/50">Threshold: {(m.threshold*100).toFixed(0)}%</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[10px] mt-auto">
-                <span className="px-2 py-0.5 rounded border bg-orange-100 text-orange-700 border-orange-200">Pending</span>
-                <span className="ml-auto text-gray-500">Score {(m.score*100).toFixed(0)}%</span>
+                <span className="px-2 py-0.5 rounded border bg-orange-500/15 text-orange-300 border-orange-400/30">Pending</span>
+                <span className="ml-auto text-white/50">Score {(m.score*100).toFixed(0)}%</span>
               </div>
               <motion.span layoutId={`bar-${m.id}`} className="absolute left-0 top-0 h-full w-0.5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-r" />
             </motion.button>
@@ -194,43 +199,43 @@ const LostAndFound = () => {
     <div className="space-y-6" aria-label="Lost and Found">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><UserSearch size={18} className="text-orange-600"/> Lost & Found</h2>
+        <h2 className="text-sm font-semibold text-white/90 flex items-center gap-2"><UserSearch size={18} className="text-orange-400"/> Lost & Found</h2>
         <div className="flex flex-wrap gap-2 text-xs">
-          <button onClick={()=>setTab('reports')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 ${tab==='reports' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:bg-orange-50'}`}><Users size={14}/> Reports</button>
-          <button onClick={()=>setTab('matches')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 ${tab==='matches' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:bg-orange-50'}`}><ListChecks size={14}/> Matches <span className="text-[10px] px-1 py-0.5 rounded bg-orange-100 text-orange-700 border border-orange-200">{counts.pendingMatches}</span></button>
+          <button onClick={()=>setTab('reports')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition ${tab==='reports' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><Users size={14}/> Reports</button>
+          <button onClick={()=>setTab('matches')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition ${tab==='matches' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><ListChecks size={14}/> Matches <span className="text-[10px] px-1 py-0.5 rounded bg-orange-500/15 text-orange-300 border border-orange-400/30">{counts.pendingMatches}</span></button>
         </div>
         <div className="hidden md:flex items-center gap-2 ml-auto text-xs">
           {tab==='reports' && (
-            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-              {['all','open','matched','closed'].map(s=> <option key={s} value={s}>{s==='all'?'All Statuses':s}</option>)}
+            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 backdrop-blur px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500">
+              {['all','open','matched','closed'].map(s=> <option key={s} className="bg-gray-900" value={s}>{s==='all'?'All Statuses':s}</option>)}
             </select>
           )}
           <div className="relative">
-            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==='reports'? 'Search name / desc':'Search name'} className="h-9 w-40 sm:w-56 pl-7 pr-2 rounded-md border border-gray-300 bg-gray-100 focus:bg-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==='reports'? 'Search name / desc':'Search name'} className="h-9 w-40 sm:w-56 pl-7 pr-2 rounded-md border border-white/10 bg-white/5 text-xs text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500" />
           </div>
-          <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-9 rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-            {['24h','48h','7d','30d'].map(r => <option key={r} value={r}>{r}</option>)}
+          <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 backdrop-blur px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            {['24h','48h','7d','30d'].map(r => <option key={r} className="bg-gray-900" value={r}>{r}</option>)}
           </select>
         </div>
         <div className="flex md:hidden ml-auto">
-          <button onClick={()=>setShowFilters(f=>!f)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 ${showFilters? 'bg-orange-500 text-white border-orange-500':'bg-white border-gray-300 text-gray-600'}`}><Filter size={14}/> Filters</button>
+          <button onClick={()=>setShowFilters(f=>!f)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 transition ${showFilters? 'bg-orange-500 text-white border-orange-500':'bg-white/5 border-white/10 text-white/70'}`}><Filter size={14}/> Filters</button>
         </div>
       </div>
 
       {/* Mobile Filters */}
       <AnimatePresence initial={false}>
         {showFilters && (
-          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white rounded-lg border border-gray-200 p-3 space-y-3 text-xs">
+          <motion.div initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} className="md:hidden bg-white/5 backdrop-blur rounded-lg border border-white/10 p-3 space-y-3 text-xs text-white/70">
             {tab==='reports' && (
-              <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full h-8 rounded border border-gray-300 px-2">{['all','open','matched','closed'].map(s=> <option key={s} value={s}>{s==='all'?'All Statuses':s}</option>)}</select>
+              <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full h-8 rounded border border-white/10 bg-white/5 text-white/80 px-2">{['all','open','matched','closed'].map(s=> <option key={s} className="bg-gray-900" value={s}>{s==='all'?'All Statuses':s}</option>)}</select>
             )}
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"/>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 w-full pl-7 pr-2 rounded border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-8 w-full pl-7 pr-2 rounded border border-white/10 bg-white/5 text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500" />
               </div>
-              <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-8 rounded border border-gray-300 px-2">{['24h','48h','7d','30d'].map(r=> <option key={r}>{r}</option>)}</select>
+              <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-8 rounded border border-white/10 bg-white/5 text-white/80 px-2">{['24h','48h','7d','30d'].map(r=> <option key={r} className="bg-gray-900" value={r}>{r}</option>)}</select>
             </div>
           </motion.div>
         )}
@@ -240,13 +245,13 @@ const LostAndFound = () => {
       {tab==='reports' && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[11px]">
           {[
-            {k:'open', label:'Open', val:counts.open, style:'bg-orange-100 text-orange-700 border-orange-200'},
-            {k:'matched', label:'Matched', val:counts.matched, style:'bg-blue-100 text-blue-700 border-blue-200'},
-            {k:'closed', label:'Closed', val:counts.closed, style:'bg-green-100 text-green-700 border-green-200'},
-            {k:'total', label:'Total', val:counts.total, style:'bg-gray-50 text-gray-700 border-gray-200'},
-            {k:'pendingMatches', label:'Pending Matches', val:counts.pendingMatches, style:'bg-orange-50 text-orange-600 border-orange-200'},
+            {k:'open', label:'Open', val:counts.open, style:'bg-orange-500/15 text-orange-300 border-orange-400/30'},
+            {k:'matched', label:'Matched', val:counts.matched, style:'bg-blue-500/15 text-blue-300 border-blue-400/30'},
+            {k:'closed', label:'Closed', val:counts.closed, style:'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'},
+            {k:'total', label:'Total', val:counts.total, style:'bg-white/5 text-white/70 border-white/10'},
+            {k:'pendingMatches', label:'Pending Matches', val:counts.pendingMatches, style:'bg-orange-500/10 text-orange-300 border-orange-400/30'},
           ].map(c => (
-            <button key={c.k} onClick={()=> ['open','matched','closed'].includes(c.k) && setStatusFilter(c.k)} className={`p-2 rounded-lg border flex flex-col items-start gap-1 text-left hover:shadow-sm transition ${c.style} ${statusFilter===c.k? 'ring-2 ring-orange-500':''}`} aria-label={`${c.label} count`}>
+            <button key={c.k} onClick={()=> ['open','matched','closed'].includes(c.k) && setStatusFilter(c.k)} className={`p-2 rounded-lg border flex flex-col items-start gap-1 text-left transition ${c.style} ${statusFilter===c.k? 'ring-2 ring-orange-500/50':''}`} aria-label={`${c.label} count`}>
               <span className="text-[10px] uppercase tracking-wide font-medium">{c.label}</span>
               <span className="text-sm font-semibold tabular-nums">{c.val}</span>
             </button>
@@ -255,24 +260,24 @@ const LostAndFound = () => {
       )}
 
       {error && errorBanner}
-      {loading ? loadingCards : (tab==='reports' ? (filteredReports.length===0 ? emptyState : reportCards) : (filteredMatches.length===0 ? <div className="p-10 text-sm text-gray-500 text-center border border-dashed border-gray-300 rounded-lg bg-white flex flex-col gap-3 items-center"><Inbox size={40} className="text-orange-500"/>No matches pending.</div> : matchCards))}
+  {loading ? loadingCards : (tab==='reports' ? (filteredReports.length===0 ? emptyState : reportCards) : (filteredMatches.length===0 ? <div className="p-10 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur flex flex-col gap-3 items-center"><Inbox size={40} className="text-orange-400"/>No matches pending.</div> : matchCards))}
 
       {/* Report Detail Drawer */}
       <Drawer open={!!selectedReport} onClose={()=>setSelectedReport(null)} title={selectedReport ? selectedReport.person.name : ''}>
         {selectedReport && (
-          <div className="space-y-5 text-[11px]">
+          <div className="space-y-5 text-[11px] text-white/70">
             <div className="flex gap-3 flex-wrap">
-              {selectedReport.photos.map(p => <img key={p} src={p} alt="report photo" className="w-24 h-24 rounded object-cover border border-gray-200" />)}
+              {selectedReport.photos.map(p => <img key={p} src={p} alt="report photo" className="w-24 h-24 rounded object-cover border border-white/10" />)}
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><span className="text-gray-500">Age</span><div className="font-medium">{selectedReport.person.age}</div></div>
-              <div><span className="text-gray-500">Gender</span><div className="font-medium capitalize">{selectedReport.person.gender}</div></div>
-              <div className="col-span-2"><span className="text-gray-500">Description</span><div className="font-medium leading-snug">{selectedReport.person.description}</div></div>
-              <div className="col-span-2"><span className="text-gray-500">Status</span><div className={`inline-flex items-center px-2 py-0.5 rounded border mt-1 text-[10px] uppercase ${statusStyles[selectedReport.status]}`}>{selectedReport.status}</div></div>
+              <div><span className="text-white/50">Age</span><div className="font-medium text-white/80">{selectedReport.person.age}</div></div>
+              <div><span className="text-white/50">Gender</span><div className="font-medium capitalize text-white/80">{selectedReport.person.gender}</div></div>
+              <div className="col-span-2"><span className="text-white/50">Description</span><div className="font-medium leading-snug text-white/80">{selectedReport.person.description}</div></div>
+              <div className="col-span-2"><span className="text-white/50">Status</span><div className={`inline-flex items-center px-2 py-0.5 rounded border mt-1 text-[10px] uppercase ${statusStyles[selectedReport.status]}`}>{selectedReport.status}</div></div>
             </div>
             <div>
-              <h4 className="text-[11px] font-semibold text-gray-700 mb-2 uppercase tracking-wide">Timeline</h4>
-              <ol className="text-[11px] list-disc pl-4 space-y-1 text-gray-600">
+              <h4 className="text-[11px] font-semibold text-white/80 mb-2 uppercase tracking-wide">Timeline</h4>
+              <ol className="text-[11px] list-disc pl-4 space-y-1 text-white/60">
                 {selectedReport.timeline.map((t,i)=>(<li key={i}>{t}</li>))}
               </ol>
             </div>
@@ -287,19 +292,19 @@ const LostAndFound = () => {
         <button key="close" onClick={()=>setMatchModal(null)} className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs hover:bg-gray-50">Close</button>
       ]}>
         {matchModal && (
-          <div className="grid sm:grid-cols-2 gap-4 text-[11px]">
+          <div className="grid sm:grid-cols-2 gap-4 text-[11px] text-white/70">
             <div className="space-y-2">
-              <img src={matchModal.lostPhotoUrl} alt="Lost Person" className="w-full rounded object-cover border border-gray-200" />
-              <div className="text-gray-600 flex items-center gap-1"><UserSearch size={12} className="text-orange-600"/> Lost Person</div>
+              <img src={matchModal.lostPhotoUrl} alt="Lost Person" className="w-full rounded object-cover border border-white/10" />
+              <div className="text-white/60 flex items-center gap-1"><UserSearch size={12} className="text-orange-400"/> Lost Person</div>
             </div>
             <div className="space-y-2">
-              <img src={matchModal.foundFaceUrl} alt="Found Face" className="w-full rounded object-cover border border-gray-200" />
-              <div className="text-gray-600 flex items-center gap-1"><Sparkles size={12} className="text-orange-600"/> Found Face</div>
+              <img src={matchModal.foundFaceUrl} alt="Found Face" className="w-full rounded object-cover border border-white/10" />
+              <div className="text-white/60 flex items-center gap-1"><Sparkles size={12} className="text-orange-400"/> Found Face</div>
             </div>
-            <div className="col-span-2 text-gray-700 space-y-1">
-              <div><span className="text-gray-500">Similarity Score:</span> {(matchModal.score*100).toFixed(1)}%</div>
-              <div><span className="text-gray-500">Threshold:</span> {(matchModal.threshold*100).toFixed(0)}%</div>
-              <div className="h-2 rounded bg-gray-200 overflow-hidden"><div className="h-full bg-gradient-to-r from-orange-400 to-orange-600" style={{ width: Math.min(100, matchModal.score*100)+'%' }} /></div>
+            <div className="col-span-2 text-white/70 space-y-1">
+              <div><span className="text-white/50">Similarity Score:</span> {(matchModal.score*100).toFixed(1)}%</div>
+              <div><span className="text-white/50">Threshold:</span> {(matchModal.threshold*100).toFixed(0)}%</div>
+              <div className="h-2 rounded bg-white/10 overflow-hidden"><div className="h-full bg-gradient-to-r from-orange-400 to-orange-600" style={{ width: Math.min(100, matchModal.score*100)+'%' }} /></div>
             </div>
           </div>
         )}

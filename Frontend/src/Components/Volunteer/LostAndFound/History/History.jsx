@@ -24,25 +24,25 @@ const History = ({ data, loading }) => {
   }, [data, actionFilter, dateFilter]);
 
   return (
-    <div className="space-y-4" aria-label="Activity history">
+    <div className="space-y-4 text-white/90" aria-label="Activity history">
       <div className="flex flex-wrap gap-3 items-center text-[11px]">
-        <div className="flex items-center gap-1 text-gray-600"><Filter size={14}/> Filters:</div>
-        <select value={actionFilter} onChange={e=>setActionFilter(e.target.value)} className="h-8 rounded-md border border-gray-300 bg-white px-2 text-[11px] focus:ring-2 focus:ring-orange-500">
+        <div className="flex items-center gap-1 text-white/70"><Filter size={14} className="text-orange-400"/> Filters:</div>
+        <select value={actionFilter} onChange={e=>setActionFilter(e.target.value)} className="h-8 rounded-md border border-white/10 bg-white/5 px-2 text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60">
           <option value="">All Actions</option>
           <option value="Reported">Reported</option>
           <option value="Found Logged">Found Logged</option>
           <option value="Resolved">Resolved</option>
           <option value="Cancelled">Cancelled</option>
         </select>
-        <select value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="h-8 rounded-md border border-gray-300 bg-white px-2 text-[11px] focus:ring-2 focus:ring-orange-500">
+        <select value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="h-8 rounded-md border border-white/10 bg-white/5 px-2 text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60">
           <option value="">All Time</option>
           <option value="24h">Last 24h</option>
           <option value="7d">Last 7d</option>
         </select>
-        {(actionFilter || dateFilter) && <button onClick={()=>{ setActionFilter(''); setDateFilter(''); }} className="text-[10px] px-2 py-1 rounded-md bg-gray-100 hover:bg-gray-200">Clear</button>}
+        {(actionFilter || dateFilter) && <button onClick={()=>{ setActionFilter(''); setDateFilter(''); }} className="text-[10px] px-2 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white/80">Clear</button>}
       </div>
 
-      <div className="hidden md:grid grid-cols-12 text-[11px] font-semibold text-gray-600 px-3">
+      <div className="hidden md:grid grid-cols-12 text-[11px] font-semibold text-white/60 px-3">
         <div className="col-span-2">Case ID</div>
         <div className="col-span-2">Action</div>
         <div className="col-span-2">Type</div>
@@ -51,15 +51,15 @@ const History = ({ data, loading }) => {
         <div className="col-span-2">Status</div>
       </div>
       <div className="space-y-2 hidden md:block">
-        {loading && Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse"/>))}
-        {!loading && filtered.length===0 && <div className="p-8 text-center text-xs text-gray-500 bg-white border rounded-lg">No activity.</div>}
+        {loading && Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"/>))}
+        {!loading && filtered.length===0 && <div className="p-8 text-center text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg">No activity.</div>}
         {!loading && filtered.map(r => (
-          <div key={r.id} role="button" tabIndex={0} onClick={()=>setDetail(r)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(r); }} className="grid grid-cols-12 items-center bg-white border border-gray-200 rounded-md px-3 py-2 text-[11px] hover:border-orange-400 cursor-pointer">
-            <div className="col-span-2 font-mono truncate" title={r.caseId}>{r.caseId}</div>
-            <div className="col-span-2">{r.action}</div>
-            <div className="col-span-2 capitalize">{r.type}</div>
-            <div className="col-span-2">{r.zone}</div>
-            <div className="col-span-2 flex items-center gap-1"><Clock size={12} className="text-gray-400"/>{relative(r.date)}</div>
+          <div key={r.id} role="button" tabIndex={0} onClick={()=>setDetail(r)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(r); }} className={`grid grid-cols-12 items-center border rounded-md px-3 py-2 text-[11px] cursor-pointer backdrop-blur-sm transition ${detail?.id===r.id? 'border-orange-400/60 bg-white/10':'border-white/10 bg-white/5 hover:bg-white/10'}`}>
+            <div className="col-span-2 font-mono truncate text-white/70" title={r.caseId}>{r.caseId}</div>
+            <div className="col-span-2 text-white/80">{r.action}</div>
+            <div className="col-span-2 capitalize text-white/70">{r.type}</div>
+            <div className="col-span-2 text-white/70">{r.zone}</div>
+            <div className="col-span-2 flex items-center gap-1 text-white/60"><Clock size={12} className="text-white/40"/>{relative(r.date)}</div>
             <div className="col-span-2"><StatusBadge value={r.status} /></div>
           </div>
         ))}
@@ -67,19 +67,19 @@ const History = ({ data, loading }) => {
 
       {/* Mobile accordion style */}
       <div className="md:hidden space-y-3">
-        {loading && Array.from({length:5}).map((_,i)=>(<div key={i} className="h-20 rounded-lg bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse"/>))}
-        {!loading && filtered.length===0 && <div className="p-8 text-center text-xs text-gray-500 bg-white border rounded-lg">No activity.</div>}
+        {loading && Array.from({length:5}).map((_,i)=>(<div key={i} className="h-20 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"/>))}
+        {!loading && filtered.length===0 && <div className="p-8 text-center text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg">No activity.</div>}
         {!loading && filtered.map(r => (
-          <div key={r.id} role="button" tabIndex={0} onClick={()=>setDetail(r)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(r); }} className="bg-white border border-gray-200 hover:border-orange-400 rounded-lg p-3 flex flex-col gap-2 text-[11px] cursor-pointer">
+          <div key={r.id} role="button" tabIndex={0} onClick={()=>setDetail(r)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(r); }} className={`border rounded-lg p-3 flex flex-col gap-2 text-[11px] cursor-pointer backdrop-blur-sm transition ${detail?.id===r.id? 'border-orange-400/60 bg-white/10':'border-white/10 bg-white/5 hover:bg-white/10'}`}>
             <div className="flex justify-between">
-              <span className="font-mono text-[10px] text-gray-500">{r.caseId}</span>
+              <span className="font-mono text-[10px] text-white/50">{r.caseId}</span>
               <StatusBadge value={r.status} />
             </div>
-            <div className="font-medium">{r.action}</div>
-            <div className="flex flex-wrap gap-2 text-gray-600">
+            <div className="font-medium text-white/85">{r.action}</div>
+            <div className="flex flex-wrap gap-2 text-white/60">
               <span className="inline-flex items-center gap-1 capitalize">{r.type}</span>
-              <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-gray-400"/>{r.zone}</span>
-              <span className="inline-flex items-center gap-1"><Clock size={12} className="text-gray-400"/>{relative(r.date)}</span>
+              <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-white/40"/>{r.zone}</span>
+              <span className="inline-flex items-center gap-1"><Clock size={12} className="text-white/40"/>{relative(r.date)}</span>
             </div>
           </div>
         ))}
@@ -87,15 +87,15 @@ const History = ({ data, loading }) => {
 
   <Drawer open={!!detail} onClose={()=>setDetail(null)} title={detail? 'Activity '+detail.caseId:''}>
         {detail && (
-          <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap gap-2 text-[10px] text-gray-600">
+          <div className="space-y-4 text-sm text-white/80">
+            <div className="flex flex-wrap gap-2 text-[10px] text-white/60">
               <StatusBadge value={detail.status} />
-              <span className="inline-flex items-center gap-1"><Clock size={12} className="text-gray-400"/>{relative(detail.date)}</span>
+              <span className="inline-flex items-center gap-1"><Clock size={12} className="text-white/40"/>{relative(detail.date)}</span>
             </div>
-            <div className="text-xs text-gray-700">Action: <span className="font-medium">{detail.action}</span></div>
-            <div className="text-xs text-gray-700">Type: {detail.type}</div>
-            <div className="text-xs text-gray-700">Zone: {detail.zone}</div>
-            <div className="text-xs text-gray-700">Status: {detail.status}</div>
+            <div className="text-xs text-white/70">Action: <span className="font-medium text-white">{detail.action}</span></div>
+            <div className="text-xs text-white/70">Type: {detail.type}</div>
+            <div className="text-xs text-white/70">Zone: {detail.zone}</div>
+            <div className="text-xs text-white/70">Status: {detail.status}</div>
           </div>
         )}
       </Drawer>

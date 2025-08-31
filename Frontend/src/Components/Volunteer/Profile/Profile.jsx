@@ -12,7 +12,7 @@ const Switch = ({ checked, onChange, disabled, label }) => (
     aria-label={label}
     disabled={disabled}
     onClick={()=>!disabled && onChange(!checked)}
-    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 ${checked? 'bg-green-500 border-green-500':'bg-gray-300 border-gray-300'} disabled:opacity-50`}
+    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${checked? 'bg-green-600/60 border-green-400/40':'bg-white/10 border-white/15'} disabled:opacity-50`}
   >
     <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${checked? 'translate-x-[22px]':'translate-x-[2px]'}`}/>
   </button>
@@ -56,58 +56,58 @@ const Profile = ({ volunteer:initialVolunteer, online:initialOnline, onStatusCha
   ];
 
   return (
-    <div className="w-full" aria-label="Volunteer profile">
+  <div className="w-full text-white/90" aria-label="Volunteer profile">
       <div className="flex flex-col lg:grid lg:grid-cols-5 lg:gap-8">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6 mb-6 lg:mb-0">
           {/* Profile Card */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 flex flex-col gap-5">
+          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-5 flex flex-col gap-5">
             <div className="flex items-start gap-4">
               <div className="relative">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white flex items-center justify-center font-semibold text-xl select-none">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 text-[#081321] flex items-center justify-center font-semibold text-xl select-none">
                   {v.name.split(' ').map(p=>p[0]).join('').slice(0,2)}
                 </div>
-                <span className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] ${v.status==='online'? 'bg-green-500':'bg-gray-400'}`}>{v.status==='online'? <Wifi size={12}/> : <WifiOff size={12}/>}</span>
+                <span className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-[#0d1623] flex items-center justify-center text-white text-[10px] ${v.status==='online'? 'bg-green-500':'bg-white/30'}`}>{v.status==='online'? <Wifi size={12}/> : <WifiOff size={12}/>}</span>
               </div>
               <div className="flex-1 min-w-0 space-y-1">
-                <h2 className="text-lg font-semibold text-gray-800 truncate flex items-center gap-2">{v.name} <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Volunteer</span></h2>
+                <h2 className="text-lg font-semibold text-white truncate flex items-center gap-2">{v.name} <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">Volunteer</span></h2>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {(v.assignedZones||[]).map(z => (
-                    <span key={z} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[11px] font-medium"><MapPin size={12}/>{z}</span>
+                    <span key={z} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 text-[11px] font-medium"><MapPin size={12}/>{z}</span>
                   ))}
                 </div>
               </div>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <div className="text-xs text-gray-600">Status: <span className={`font-medium ${v.status==='online'? 'text-green-600':'text-gray-600'}`}>{v.status}</span></div>
+              <div className="text-xs text-white/60">Status: <span className={`font-medium ${v.status==='online'? 'text-green-300':'text-white/60'}`}>{v.status}</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium text-gray-600">{v.status==='online'? 'Online':'Offline'}</span>
+                <span className="text-[11px] font-medium text-white/60">{v.status==='online'? 'Online':'Offline'}</span>
                 <Switch checked={v.status==='online'} disabled={updating} onChange={val=>updateStatus(val)} label="Toggle online status" />
               </div>
             </div>
           </div>
 
           {/* Settings Card */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-5">
-            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Shield size={16} className="text-orange-500"/> Account & Settings</h3>
+          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-5 space-y-5">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Shield size={16} className="text-orange-400"/> Account & Settings</h3>
             <div className="space-y-3 text-xs">
               <div className="flex items-center gap-3">
-                <Mail size={14} className="text-gray-400"/>
+                <Mail size={14} className="text-white/40"/>
                 <div className="flex-1">
-                  <div className="font-medium text-gray-700">Email</div>
-                  <div className="text-gray-600 break-all">{v.email}</div>
+                  <div className="font-medium text-white/80">Email</div>
+                  <div className="text-white/60 break-all">{v.email}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Phone size={14} className="text-gray-400"/>
+                <Phone size={14} className="text-white/40"/>
                 <div className="flex-1">
-                  <div className="font-medium text-gray-700">Phone</div>
-                  <div className="text-gray-600">{v.phone}</div>
+                  <div className="font-medium text-white/80">Phone</div>
+                  <div className="text-white/60">{v.phone}</div>
                 </div>
               </div>
-              <button className="w-full h-10 rounded-md border border-gray-300 hover:bg-gray-50 text-xs font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-orange-500"><Lock size={14}/> Change Password</button>
+              <button className="w-full h-10 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"><Lock size={14}/> Change Password</button>
             </div>
-            <button className="w-full h-11 rounded-md bg-red-600 hover:bg-red-700 text-white font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-500"><LogOut size={16}/> Logout</button>
+            <button className="w-full h-11 rounded-md bg-red-600/80 hover:bg-red-600 text-white font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"><LogOut size={16}/> Logout</button>
           </div>
         </div>
 
@@ -116,20 +116,20 @@ const Profile = ({ volunteer:initialVolunteer, online:initialOnline, onStatusCha
           {/* Performance Stats */}
             <div className="grid sm:grid-cols-3 gap-3">
               {stats.map(s => (
-                <div key={s.label} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm flex flex-col gap-2">
-                  <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{s.label}</div>
-                  <div className={`text-2xl font-semibold tabular-nums ${s.color}`}>{s.value}</div>
+                <div key={s.label} className="rounded-lg border border-white/10 bg-white/5 p-4 flex flex-col gap-2 backdrop-blur-sm">
+                  <div className="text-[11px] font-medium text-white/50 uppercase tracking-wide">{s.label}</div>
+                  <div className={`text-2xl font-semibold tabular-nums ${s.color.replace('text-','text-')}`}>{s.value}</div>
                 </div>
               ))}
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Clock size={16} className="text-orange-500"/> Recent Activity</h3>
-              <ul className="space-y-3 text-xs text-gray-600">
-                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-green-500"/> Completed task "Water distribution" 25m ago</li>
-                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-blue-500"/> Responded to alert in Zone 5 40m ago</li>
-                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-gray-400"/> Went online 2h ago</li>
+            <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Clock size={16} className="text-orange-400"/> Recent Activity</h3>
+              <ul className="space-y-3 text-xs text-white/65">
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-green-400"/> Completed task "Water distribution" 25m ago</li>
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-blue-400"/> Responded to alert in Zone 5 40m ago</li>
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-white/30"/> Went online 2h ago</li>
               </ul>
             </div>
         </div>

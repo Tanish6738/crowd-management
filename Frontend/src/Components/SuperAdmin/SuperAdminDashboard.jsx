@@ -51,36 +51,38 @@ const SuperAdminDashboard = () => {
   }[activeTab];
 
   return (
-    <LayoutShell
-      topBar={
-        <TopBar
-          onSearch={setSearchTerm}
-          searchTerm={searchTerm}
-          modelVersion="1.3.0"
-        />
-      }
-      sidebar={
-        <Sidebar tabs={tabs} active={activeTab} onChange={setActiveTab} />
-      }
-    >
-      {/* Mobile Tab Switcher */}
-      <div className="sm:hidden mb-4 overflow-x-auto">
-        <div className="flex gap-2 w-max">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${activeTab === t.key ? "bg-orange-500 text-white border-orange-500" : "bg-white border-gray-300 text-gray-600"}`}
-            >
-              {t.label}
-            </button>
-          ))}
+    <div className="mk-gradient-bg min-h-screen flex flex-col">
+      <LayoutShell
+        topBar={
+          <TopBar
+            onSearch={setSearchTerm}
+            searchTerm={searchTerm}
+            modelVersion="1.3.0"
+          />
+        }
+        sidebar={<Sidebar tabs={tabs} active={activeTab} onChange={setActiveTab} />}
+      >
+        {/* Mobile Tab Switcher */}
+        <div className="sm:hidden mb-4 overflow-x-auto pb-1 -mx-1">
+          <div className="flex gap-2 w-max px-1">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`mk-btn-tab ${activeTab === t.key ? 'mk-btn-tab-active' : ''}`}
+                aria-current={activeTab === t.key ? 'page' : undefined}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      {tabBody}
-
-      {/* Feature components encapsulate their own modals/drawers */}
-    </LayoutShell>
+        <div className="mk-animate-in space-y-4">
+          {tabBody}
+        </div>
+        {/* Feature components encapsulate their own modals/drawers */}
+      </LayoutShell>
+    </div>
   );
 };
 
