@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import Modal from '../../General/Modal';
 import Drawer from '../../General/Drawer';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
@@ -18,6 +18,7 @@ import {
   Plus,
   AlertCircle
 } from 'lucide-react';
+import { getAllLost, getAllMatches } from '../../../Services/api';
 
 // Contracts reference
 // LostReport, Match (pending review)
@@ -31,8 +32,8 @@ const statusStyles = {
 
 const LostAndFound = () => {
   const [tab, setTab] = useState('reports'); // reports | matches
-  const [reports, setReports] = useState([]);
-  const [matches, setMatches] = useState([]);
+  const [reports, setReports] = useState([]); // transformed lost people records
+  const [matches, setMatches] = useState([]); // transformed match records
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -43,47 +44,71 @@ const LostAndFound = () => {
   const [showFilters, setShowFilters] = useState(false); // mobile
   const [view, setView] = useState('grid'); // future toggle (grid/list) currently only grid
 
-  // Fetch simulated --------------------------------------------------------
-  useEffect(() => {
+  // Data Fetching ----------------------------------------------------------
+  const transformLost = (lostRecords, matchMap) => {
+    return lostRecords.map(rec => {
+      // Derive component-specific status mapping
+      const hasMatch = matchMap.has(rec.face_id);
+      let uiStatus = 'open';
+      if (hasMatch) uiStatus = 'matched';
+      if (rec.status === 'found') uiStatus = 'closed';
+      return {
+        id: rec.face_id,
+        person: {
+          name: rec.name || 'Unknown',
+          age: rec.age ?? '—',
+          gender: (rec.gender || 'unknown').toLowerCase(),
+          description: rec.where_lost ? `Last seen at ${rec.where_lost}` : 'No description'
+        },
+        photos: [ 'https://via.placeholder.com/120x120.png?text=Lost' ], // Placeholder (API currently doesn't supply images)
+        status: uiStatus,
+        lastUpdated: rec.upload_time,
+        timeline: [
+          'Reported',
+          hasMatch && 'Match Found',
+          rec.status === 'found' && 'Marked Found'
+        ].filter(Boolean)
+      };
+    });
+  };
+
+  const transformMatches = (records) => {
+    return records.map(m => ({
+      id: m.match_id,
+      lostPersonName: m.lost_person?.name || 'Unknown',
+      score: null, // similarity not provided by API
+      threshold: null,
+      lostPhotoUrl: 'https://via.placeholder.com/150x150.png?text=Lost',
+      foundFaceUrl: 'https://via.placeholder.com/150x150.png?text=Found',
+      status: m.match_status || 'pending_review'
+    }));
+  };
+
+  const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
-    setTimeout(() => {
-      const repSeed = Array.from({ length: 12 }).map((_,i)=> ({
-        id:'r'+(i+1),
-        person:{ name:'Person '+(i+1), age: 10 + i, gender:['male','female','other'][i%3], description:'Wearing color '+['red','blue','green','white'][i%4] },
-        photos:['https://via.placeholder.com/120x120.png?text=P'+(i+1)],
-        status:['open','matched','closed'][i%3],
-        lastUpdated:new Date(Date.now()-i*3600000).toISOString(),
-        timeline:[ 'Reported', 'Photos Added', i%3!==0 && 'Match Found', i%3===2 && 'Closed' ].filter(Boolean)
-      }));
-      const matchSeed = Array.from({ length: 5 }).map((_,i)=> ({
-        id:'m'+(i+1),
-        lostPersonName:'Person '+(i+2),
-        score: 0.65 + (i*0.05),
-        threshold:0.75,
-        lostPhotoUrl:'https://via.placeholder.com/150x150.png?text=Lost'+(i+1),
-        foundFaceUrl:'https://via.placeholder.com/150x150.png?text=Found'+(i+1),
-        status:'pending_review'
-      }));
-      setReports(repSeed); setMatches(matchSeed); setLoading(false);
-    }, 600);
+    try {
+      const [lostRes, matchesRes] = await Promise.all([
+        getAllLost(),
+        getAllMatches()
+      ]);
+      const matchMap = new Map();
+      (matchesRes.records || []).forEach(m => { if (m.lost_face_id) matchMap.set(m.lost_face_id, true); });
+      setMatches(transformMatches(matchesRes.records || []));
+      setReports(transformLost(lostRes.records || [], matchMap));
+    } catch (e) {
+      setError(e.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // WS simulation for new matches -----------------------------------------
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Optional lightweight polling for updates every 60s
   useEffect(() => {
-    if (loading) return;
-    const iv = setInterval(() => {
-      setMatches(prev => [{
-        id:'m'+Date.now(),
-        lostPersonName:'Person '+Math.ceil(Math.random()*20),
-        score: 0.5 + Math.random()*0.5,
-        threshold:0.75,
-        lostPhotoUrl:'https://via.placeholder.com/150x150.png?text=Lost',
-        foundFaceUrl:'https://via.placeholder.com/150x150.png?text=Found',
-        status:'pending_review'
-      }, ...prev]);
-    }, 30000);
+    const iv = setInterval(() => { fetchData(); }, 60000);
     return () => clearInterval(iv);
-  }, [loading]);
+  }, [fetchData]);
 
   // Filters ----------------------------------------------------------------
   const filteredReports = useMemo(()=> reports.filter(r => (
@@ -179,13 +204,20 @@ const LostAndFound = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-gray-800 dark:text-white/90 truncate">{m.lostPersonName}</div>
-                  <div className="text-[11px] text-gray-600 dark:text-white/60">Similarity: {(m.score*100).toFixed(1)}%</div>
-                  <div className="text-[10px] text-gray-500 dark:text-white/50">Threshold: {(m.threshold*100).toFixed(0)}%</div>
+                  {m.score !== null && (
+                    <div className="text-[11px] text-gray-600 dark:text-white/60">Similarity: {(m.score*100).toFixed(1)}%</div>
+                  )}
+                  {m.threshold !== null && (
+                    <div className="text-[10px] text-gray-500 dark:text-white/50">Threshold: {(m.threshold*100).toFixed(0)}%</div>
+                  )}
+                  {m.score === null && (
+                    <div className="text-[10px] text-gray-500 dark:text-white/50">Match record</div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[10px] mt-auto">
-                <span className="px-2 py-0.5 rounded border bg-orange-500/15 text-orange-300 border-orange-400/30">Pending</span>
-                <span className="ml-auto text-white/50">Score {(m.score*100).toFixed(0)}%</span>
+                <span className="px-2 py-0.5 rounded border bg-orange-500/15 text-orange-300 border-orange-400/30 capitalize">{m.status.replace('_',' ')}</span>
+                {m.score !== null && <span className="ml-auto text-white/50">Score {(m.score*100).toFixed(0)}%</span>}
               </div>
               <motion.span layoutId={`bar-${m.id}`} className="absolute left-0 top-0 h-full w-0.5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-r" />
             </motion.button>
@@ -259,8 +291,13 @@ const LostAndFound = () => {
         </div>
       )}
 
-      {error && errorBanner}
-  {loading ? loadingCards : (tab==='reports' ? (filteredReports.length===0 ? emptyState : reportCards) : (filteredMatches.length===0 ? <div className="p-10 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur flex flex-col gap-3 items-center"><Inbox size={40} className="text-orange-400"/>No matches pending.</div> : matchCards))}
+      {error && (
+        <div className="p-4 bg-red-500/10 text-red-600 dark:text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">
+          <span>Error loading data: {error}</span>
+          <button onClick={fetchData} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Retry</button>
+        </div>
+      )}
+      {loading ? loadingCards : (tab==='reports' ? (filteredReports.length===0 ? emptyState : reportCards) : (filteredMatches.length===0 ? <div className="p-10 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur flex flex-col gap-3 items-center"><Inbox size={40} className="text-orange-400"/>No match records.</div> : matchCards))}
 
       {/* Report Detail Drawer */}
       <Drawer open={!!selectedReport} onClose={()=>setSelectedReport(null)} title={selectedReport ? selectedReport.person.name : ''}>
@@ -286,9 +323,7 @@ const LostAndFound = () => {
       </Drawer>
 
       {/* Match Review Modal */}
-      <Modal open={!!matchModal} onClose={()=>setMatchModal(null)} title={matchModal ? 'Review Match: '+matchModal.lostPersonName : ''} actions={[
-        <button key="reject" onClick={()=>{ setMatches(m=>m.map(mm=>mm.id===matchModal.id?{...mm,status:'rejected'}:mm)); setMatchModal(null); }} className="px-3 py-1.5 rounded bg-red-600 text-white text-xs hover:bg-red-700 flex items-center gap-1"><XIcon size={14}/> Reject</button>,
-        <button key="confirm" onClick={()=>{ setMatches(m=>m.map(mm=>mm.id===matchModal.id?{...mm,status:'confirmed'}:mm)); setMatchModal(null); }} className="px-3 py-1.5 rounded bg-green-600 text-white text-xs hover:bg-green-700 flex items-center gap-1"><CheckCircle2 size={14}/> Confirm</button>,
+      <Modal open={!!matchModal} onClose={()=>setMatchModal(null)} title={matchModal ? 'Match: '+matchModal.lostPersonName : ''} actions={[
         <button key="close" onClick={()=>setMatchModal(null)} className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs hover:bg-gray-50">Close</button>
       ]}>
         {matchModal && (
@@ -302,9 +337,16 @@ const LostAndFound = () => {
               <div className="text-white/60 flex items-center gap-1"><Sparkles size={12} className="text-orange-400"/> Found Face</div>
             </div>
             <div className="col-span-2 text-white/70 space-y-1">
-              <div><span className="text-white/50">Similarity Score:</span> {(matchModal.score*100).toFixed(1)}%</div>
-              <div><span className="text-white/50">Threshold:</span> {(matchModal.threshold*100).toFixed(0)}%</div>
-              <div className="h-2 rounded bg-white/10 overflow-hidden"><div className="h-full bg-gradient-to-r from-orange-400 to-orange-600" style={{ width: Math.min(100, matchModal.score*100)+'%' }} /></div>
+              {matchModal.score !== null && (
+                <>
+                  <div><span className="text-white/50">Similarity Score:</span> {(matchModal.score*100).toFixed(1)}%</div>
+                  <div><span className="text-white/50">Threshold:</span> {(matchModal.threshold*100).toFixed(0)}%</div>
+                  <div className="h-2 rounded bg-white/10 overflow-hidden"><div className="h-full bg-gradient-to-r from-orange-400 to-orange-600" style={{ width: Math.min(100, matchModal.score*100)+'%' }} /></div>
+                </>
+              )}
+              {matchModal.score === null && (
+                <div className="text-white/50 italic">No similarity metrics provided by API.</div>
+              )}
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2, MapPin, AlertCircle } from 'lucide-react';
+import { createLostReport } from '../../../../Services/api';
 
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
 
@@ -8,6 +9,9 @@ const LostReport = ({ volunteerId='vol123', onCreated }) => {
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [photos, setPhotos] = useState([]); // File[]
+  const [personName, setPersonName] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
@@ -33,22 +37,44 @@ const LostReport = ({ volunteerId='vol123', onCreated }) => {
 
   const submit = async () => {
     if(!canSubmit) return;
-    setSubmitting(true); setError(null);
+    setSubmitting(true); setError(null); setSuccess(false);
     try {
-      await new Promise(r=>setTimeout(r, 900)); // simulate
-      /** @type {LostCase} */
+      const payload = {
+        type,
+        description: description.trim(),
+        location: location.trim(),
+        photos,
+        name: personName.trim() || undefined,
+        age: age || undefined,
+        gender: gender || undefined
+      };
+      const res = await createLostReport(payload);
+      // Construct local record for optimistic UI (shape aligned with volunteer components)
       const record = {
-        id:'lr'+Date.now(),
-        type, description:description.trim(),
+        id: res?.lost_id || 'lr'+Date.now(),
+        type,
+        description: description.trim(),
         photoUrls: photos.map(f=>URL.createObjectURL(f)),
         location: location.trim(),
-        status:'open', createdAt:new Date().toISOString(), reporterId:volunteerId
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        reporterId: volunteerId
       };
       setSuccess(true);
       onCreated && onCreated(record);
-      setTimeout(()=>{ setSuccess(false); setType('person'); setDescription(''); setLocation(''); setPhotos([]); }, 1200);
-    } catch(e){ setError('Failed to submit report.'); }
-    finally { setSubmitting(false); }
+      setTimeout(()=>{
+        setSuccess(false);
+        setType('person');
+        setDescription('');
+        setLocation('');
+        setPhotos([]);
+        setPersonName('');
+        setAge('');
+        setGender('');
+      }, 1500);
+    } catch(e){
+      setError(e?.message || 'Failed to submit report.');
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -62,6 +88,27 @@ const LostReport = ({ volunteerId='vol123', onCreated }) => {
           <option value="item">Item</option>
         </select>
       </div>
+      {type==='person' && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1 col-span-2">
+            <label className="text-[11px] font-medium mk-text-secondary">Person Name <span className="mk-text-fainter">(optional)</span></label>
+            <input value={personName} onChange={e=>setPersonName(e.target.value)} placeholder="Full name" className="w-full h-9 rounded-md mk-border mk-surface-alt px-2 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 placeholder:mk-text-fainter mk-text-primary" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium mk-text-secondary">Age</label>
+            <input type="number" min="0" value={age} onChange={e=>setAge(e.target.value)} placeholder="—" className="w-full h-9 rounded-md mk-border mk-surface-alt px-2 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 placeholder:mk-text-fainter mk-text-primary" />
+          </div>
+          <div className="space-y-1 col-span-3">
+            <label className="text-[11px] font-medium mk-text-secondary">Gender</label>
+            <select value={gender} onChange={e=>setGender(e.target.value)} className="h-9 rounded-md mk-border mk-surface-alt px-2 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 mk-text-primary">
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+      )}
       <div className="space-y-2">
         <label className="text-[11px] font-medium mk-text-secondary">Photos <span className="mk-text-fainter">(max 3)</span></label>
         <div className="flex flex-wrap gap-3">
@@ -87,7 +134,7 @@ const LostReport = ({ volunteerId='vol123', onCreated }) => {
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-medium mk-text-secondary">Location / Zone</label>
+          <label className="text-[11px] font-medium mk-text-secondary flex items-center gap-1"><MapPin size={12}/> Location / Zone</label>
           <button type="button" onClick={detectLocation} className="text-[10px] underline mk-text-accent hover:mk-text-accent-strong">Auto-detect</button>
         </div>
         <input value={location} onChange={e=>setLocation(e.target.value)} placeholder="Zone 5 or coordinates" className="w-full h-10 rounded-md mk-border mk-surface-alt px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 placeholder:mk-text-fainter mk-text-primary" />
@@ -95,6 +142,9 @@ const LostReport = ({ volunteerId='vol123', onCreated }) => {
       <div className="pt-2 flex justify-end">
         <button disabled={!canSubmit || submitting} onClick={submit} className="h-10 px-5 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] text-xs font-semibold flex items-center gap-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 hover:brightness-110">{submitting && <Loader2 size={14} className="animate-spin"/>} Submit Report</button>
       </div>
+      {!canSubmit && (description.length>0 || location.length>0 || photos.length>0) && (
+        <div className="text-[10px] flex items-start gap-1 text-amber-400/80"><AlertCircle size={12}/> Ensure: at least 1 photo, 10+ chars description & location set.</div>
+      )}
     </div>
   );
 };

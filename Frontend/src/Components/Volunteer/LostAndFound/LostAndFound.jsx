@@ -7,6 +7,7 @@ import Missings from "./Missing/Missing";
 import MyReports from "./MyReports/MyReports";
 import Modal from "../../General/Modal";
 import History from "./History/History";
+import { getAllLost, getAllFound, getAllMatches } from "../../../Services/api";
 
 /** Shared Data Contract */
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
@@ -32,150 +33,118 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
   const [tab, setTab] = useState("founds"); // founds default
   const [showLostReportModal, setShowLostReportModal] = useState(false);
 
-  // Core datasets
+  // Core datasets mapped from backend
   const [foundCases, setFoundCases] = useState(/** @type {LostCase[]} */ ([]));
-  const [lostReports, setLostReports] = useState(
-    /** @type {LostCase[]} */ ([])
-  );
+  const [lostReports, setLostReports] = useState(/** @type {LostCase[]} */ ([]));
+  const [matchedCases, setMatchedCases] = useState([]); // built from /get_all_matches
   // Activity log entries: { id, caseId, action, type, zone, date, status }
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Initial load simulation
+  // Data transformers ------------------------------------------------------
+  const mapLost = useCallback((records) => {
+    return (records || []).map(r => {
+      // Backend status: pending | found
+      // Local mapping: pending -> open, found -> resolved
+      const statusMap = r.status === 'pending' ? 'open' : 'resolved';
+      return {
+        id: r.face_id,
+        type: 'person',
+        description: r.name ? `${r.name} (${r.age ?? 'Unknown'} yrs) – Last seen ${r.where_lost || 'unspecified'}` : `Lost person ${r.face_id.slice(0,8)}`,
+        photoUrls: [], // API currently doesn't return image URLs in list
+        location: r.where_lost || 'Unknown',
+        status: statusMap,
+        createdAt: r.upload_time,
+        reporterId: r.user_id || 'n/a'
+      };
+    });
+  }, []);
+
+  const mapFound = useCallback((records) => {
+    return (records || []).map(r => {
+      const statusMap = r.status === 'found' ? 'resolved' : 'open';
+      return {
+        id: r.face_id,
+        type: 'person',
+        description: r.name ? `Found: ${r.name} (${r.age ?? 'Unknown'} yrs)` : `Found person ${r.face_id.slice(0,8)}`,
+        photoUrls: [],
+        location: r.location_found || 'Unknown',
+        status: statusMap,
+        createdAt: r.upload_time,
+        reporterId: r.user_id || (r.reported_by?.name ? r.reported_by.name : 'n/a')
+      };
+    });
+  }, []);
+
+  const buildMatches = useCallback((matchRecords, lostList, foundList) => {
+    const lostMap = Object.fromEntries(lostList.map(l => [l.id, l]));
+    const foundMap = Object.fromEntries(foundList.map(f => [f.id, f]));
+    return (matchRecords || []).map(m => {
+      const lostCase = lostMap[m.lost_face_id];
+      const foundCase = foundMap[m.found_face_id];
+      if (!lostCase || !foundCase) return null;
+      return {
+        id: m.match_id,
+        lostCase: {
+          id: lostCase.id,
+          type: 'person',
+            description: lostCase.description,
+            photoUrls: lostCase.photoUrls,
+            location: lostCase.location,
+            createdAt: lostCase.createdAt
+        },
+        foundCase: {
+          id: foundCase.id,
+          type: 'person',
+          description: foundCase.description,
+          photoUrls: foundCase.photoUrls,
+          location: foundCase.location,
+          reportedAt: foundCase.createdAt
+        },
+        confidence: null, // API doesn't provide similarity score here
+        status: m.match_status || 'matched'
+      };
+    }).filter(Boolean);
+  }, []);
+
+  // Fetch real data -------------------------------------------------------
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 500));
-      const now = Date.now();
-      setFoundCases([
-        {
-          id: "fd1",
-          type: "item",
-          description: "Black backpack with red stripes.",
-          photoUrls: [],
-          location: "Zone 4",
-          status: "open",
-          createdAt: new Date(now - 3600_000).toISOString(),
-          reporterId: "r1",
-        },
-        {
-          id: "fd2",
-          type: "person",
-          description: "Young child (~6) waiting near info booth.",
-          photoUrls: [],
-          location: "Zone 2",
-          status: "matched",
-          createdAt: new Date(now - 7200_000).toISOString(),
-          reporterId: "r2",
-          matchedWith: "lr1",
-        },
+      const [lostRes, foundRes, matchesRes] = await Promise.all([
+        getAllLost(),
+        getAllFound(),
+        getAllMatches().catch(()=>({ records: [] }))
       ]);
-      setLostReports([
-        {
-          id: "lr1",
-          type: "person",
-          description: "Missing child named Sam wearing blue shirt.",
-          photoUrls: [],
-          location: "Zone 1",
-          status: "matched",
-          createdAt: new Date(now - 7500_000).toISOString(),
-          reporterId: volunteerId,
-          matchedWith: "fd2",
-        },
-      ]);
-      setActivity([
-        { id: 'a1', caseId: 'fd1', action: 'Found Logged', type: 'item', zone: 'Zone 4', date: new Date(now-3600_000).toISOString(), status: 'open' },
-        { id: 'a2', caseId: 'hxPrev', action: 'Resolved', type: 'item', zone: 'Zone 3', date: new Date(now-25*3600_000).toISOString(), status: 'resolved' }
-      ]);
+      const lostList = mapLost(lostRes.records || []);
+      const foundList = mapFound(foundRes.records || []);
+      const matchesList = buildMatches(matchesRes.records || [], lostList, foundList);
+      setLostReports(lostList);
+      setFoundCases(foundList);
+      setMatchedCases(matchesList);
+      // Basic derived activity log (initial snapshot)
+      const initialActivity = [
+        ...foundList.slice(0,5).map(f => ({ id:'act-found-'+f.id, caseId:f.id, action:'Found Logged', type:f.type, zone:f.location, date:f.createdAt, status:f.status })),
+        ...lostList.slice(0,5).map(l => ({ id:'act-lost-'+l.id, caseId:l.id, action:'Lost Reported', type:l.type, zone:l.location, date:l.createdAt, status:l.status }))
+      ].sort((a,b)=> new Date(b.date)-new Date(a.date));
+      setActivity(initialActivity);
     } catch (e) {
-      setError("Failed to load lost & found data.");
+      setError(e.message || 'Failed to load lost & found data');
     } finally {
       setLoading(false);
     }
-  }, [volunteerId]);
+  }, [mapLost, mapFound, buildMatches]);
 
+  useEffect(() => { load(); }, [load]);
+
+  // Optional polling every 90s for updates
   useEffect(() => {
-    load();
+    const iv = setInterval(() => { load(); }, 90000);
+    return () => clearInterval(iv);
   }, [load]);
 
-  // Real-time simulated events (found:new, lost:new)
-  useEffect(() => {
-    if (loading) return;
-    const ivFound = setInterval(() => {
-      setFoundCases((c) => [
-        {
-          id: "fd" + Date.now(),
-          type: Math.random() > 0.5 ? "person" : "item",
-          description: "Auto found case pending review.",
-          photoUrls: [],
-          location: "Zone " + (Math.floor(Math.random() * 8) + 1),
-          status: "open",
-          createdAt: new Date().toISOString(),
-          reporterId: "sys",
-        },
-        ...c,
-      ]);
-    }, 120000);
-    const ivLost = setInterval(() => {
-      setLostReports((c) => [
-        {
-          id: "lr" + Date.now(),
-          type: Math.random() > 0.5 ? "person" : "item",
-          description: "Auto lost report awaiting validation.",
-          photoUrls: [],
-          location: "Zone " + (Math.floor(Math.random() * 8) + 1),
-          status: "open",
-          createdAt: new Date().toISOString(),
-          reporterId: "guest",
-        },
-        ...c,
-      ]);
-    }, 180000);
-    return () => {
-      clearInterval(ivFound);
-      clearInterval(ivLost);
-    };
-  }, [loading]);
-
-  // Derived sets
-  // Build MatchedCase objects from paired lostReports + foundCases where status === 'matched'.
-  // Simple heuristic pairing by matchedWith field if present.
-  const matchedCases = useMemo(() => {
-    const lostIndexed = Object.fromEntries(lostReports.filter(l=>l.status==='matched').map(l=>[l.id,l]));
-    const list = [];
-    foundCases.forEach(f => {
-      if(f.status==='matched') {
-        // try to find related lost by matchedWith or by description fuzzy (simplified)
-        const related = f.matchedWith && lostIndexed[f.matchedWith] ? lostIndexed[f.matchedWith] : Object.values(lostIndexed).find(l=> l.type===f.type && l.description.slice(0,20)===f.description.slice(0,20));
-        if(related) {
-          list.push({
-            id: 'match-'+related.id+'-'+f.id,
-            lostCase: {
-              id: related.id,
-              type: related.type,
-              description: related.description,
-              photoUrls: related.photoUrls||[],
-              location: related.location,
-              createdAt: related.createdAt
-            },
-            foundCase: {
-              id: f.id,
-              type: f.type,
-              description: f.description,
-              photoUrls: f.photoUrls||[],
-              location: f.location,
-              reportedAt: f.createdAt
-            },
-            confidence: 0.8,
-            status: 'matched'
-          });
-        }
-      }
-    });
-    return list;
-  }, [foundCases, lostReports]);
+  // Derived sets -----------------------------------------------------------
   const missingCases = useMemo(
     () => lostReports.filter((c) => c.status === "missing"),
     [lostReports]
@@ -293,7 +262,7 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
           onCancel={cancelReport}
         />
       )}
-      {tab === "matched" && <Matched data={matchedCases} loading={loading} />}
+  {tab === "matched" && <Matched data={matchedCases} loading={loading} />}
       {tab === "missings" && <Missings data={missingCases} loading={loading} onMarkFound={markMissingFound} />}
       {tab === "history" && <History data={activity} loading={loading} />}
     </div>

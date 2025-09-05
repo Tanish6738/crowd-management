@@ -10,13 +10,15 @@
 // 7. GET  /stats
 // 8. GET  /check_matches/{face_id}
 // 9. POST /cleanup_found_duplicates?threshold=<float>
+// (Additional) POST /lost-reports (create lost report)
+// (Additional) GET  /lost-reports (list lost reports)
 
 import axios from 'axios';
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
-const BASE_URL = (import.meta?.env?.VITE_API_URL || process.env.VITE_API_URL || '') || 'http://localhost:8000';
+const BASE_URL = (import.meta?.env?.VITE_API_URL || 'https://krish09bha-dhruvai.hf.space') || 'http://localhost:8000';
 
 // Default timeout (ms)
 
@@ -176,6 +178,42 @@ export const cleanupFoundDuplicates = async (threshold, config) => {
 	return exec(client.post('/cleanup_found_duplicates', null, withConfig({ ...config, params })));
 };
 
+/**
+ * Create Lost Report (POST /lost-reports)
+ * Accepts photos[], description, type, last_known_location (assumed field names based on DEVELOPER_SPEC.md)
+ * @param {Object} payload
+ * @param {File[]} payload.photos
+ * @param {string} payload.description
+ * @param {string} payload.type - 'person' | 'item'
+ * @param {string} payload.location
+ * @param {string} [payload.name]
+ * @param {number|string} [payload.age]
+ * @param {string} [payload.gender]
+ */
+export const createLostReport = async (payload = {}, config) => {
+	if (!payload.description || !payload.location) throw new ApiError('description & location are required');
+	const form = new FormData();
+	form.append('description', payload.description.trim());
+	form.append('type', payload.type || 'person');
+	form.append('last_known_location', payload.location.trim());
+	if (payload.name) form.append('name', payload.name);
+	if (payload.age !== undefined && payload.age !== null && payload.age !== '') form.append('age', String(payload.age));
+	if (payload.gender) form.append('gender', payload.gender);
+	(payload.photos || []).forEach((f) => { if (f) form.append('photos', f); });
+	return exec(client.post('/lost-reports', form, withConfig({
+		...config,
+		headers: { ...(config?.headers || {}), 'Content-Type': 'multipart/form-data' }
+	})));
+};
+
+/**
+ * List Lost Reports (GET /lost-reports)
+ * @param {{ status?:string, q?:string }} params
+ */
+export const listLostReports = async (params = {}, config) => {
+	return exec(client.get('/lost-reports', withConfig({ ...config, params })));
+};
+
 // ---------------------------------------------------------------------------
 // Utility / Aggregated Export
 // ---------------------------------------------------------------------------
@@ -189,6 +227,8 @@ export const apiService = {
 	getStats,
 	checkMatches,
 	cleanupFoundDuplicates,
+	createLostReport,
+	listLostReports,
 	client // expose raw axios instance for advanced usage
 };
 

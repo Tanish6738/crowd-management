@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import dataFile from '../../../Data/data.json';
 import Modal from '../../General/Modal';
 import Drawer from '../../General/Drawer';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,31 +41,31 @@ const Volunteers = () => {
   const [density, setDensity] = useState('comfortable'); // comfortable | compact
   const rowPad = density==='compact' ? 'py-1.5' : 'py-2';
 
-  // Seed fetch ------------------------------------------------------------
+  // Load volunteers from data.json ----------------------------------------
   useEffect(() => {
     setLoading(true); setError(null);
-    const t = setTimeout(() => {
-      const seed = Array.from({length:24}).map((_,i)=> ({
-        id:'v'+(i+1),
-        name:'Volunteer '+(i+1),
-        phone:'+1 555-010'+(i%10),
-        assignedZones: [zones[i%zones.length]],
-        activeTasks: Math.floor(Math.random()*4),
-        status: i%11===0 ? 'suspended':'active'
+    try {
+      const emails = Array.isArray(dataFile?.volunteers) ? dataFile.volunteers : [];
+      const unique = [...new Set(emails)];
+      const mapName = (email) => {
+        const base = email.split('@')[0].replace(/[_-.]+/g,' ');
+        return base.split(' ').map(p=> p.charAt(0).toUpperCase()+p.slice(1)).join(' ') || email;
+      };
+      const mapped = unique.map((email,i) => ({
+        id: email,
+        name: mapName(email),
+        phone: '—',
+        assignedZones: [],
+        activeTasks: 0,
+        status: 'active'
       }));
-      setVols(seed); setLoading(false);
-    }, 650);
-    return () => clearTimeout(t);
-  }, [zones]);
-
-  // Simulate task:new affecting activeTasks
-  useEffect(() => {
-    if (loading) return;
-    const iv = setInterval(() => {
-      setVols(prev => prev.map(v => Math.random()<0.05 ? { ...v, activeTasks: v.activeTasks+1 } : v));
-    }, 20000);
-    return () => clearInterval(iv);
-  }, [loading]);
+      setVols(mapped);
+    } catch(e){
+      setError('Failed to load volunteers');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const filtered = useMemo(()=> vols.filter(v => (
     (zoneFilter==='all'||v.assignedZones.includes(zoneFilter)) &&

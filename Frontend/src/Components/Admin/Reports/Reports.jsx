@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAllLost, getAllMatches, getStats } from '../../../Services/api';
 import {
   ClipboardList,
   AlertTriangle,
@@ -49,19 +50,73 @@ const Reports = () => {
   const [chartType, setChartType] = useState('line'); // line | bar
   const [severityFilter, setSeverityFilter] = useState('all');
 
-  useEffect(() => {
+  const [stats, setStats] = useState(null);
+
+  const transformLost = (records, matchMap) => {
+    return (records || []).map(r => {
+      const hasMatch = matchMap.has(r.face_id);
+      // Map backend status -> UI status
+      // backend: pending | found
+      // UI wants: open | matched | closed
+      let uiStatus = r.status === 'pending' ? 'open' : 'closed';
+      // If we can detect a match (exists in matches) and backend still pending (edge case), mark matched
+      if (hasMatch && r.status === 'pending') uiStatus = 'matched';
+      return {
+        id: r.face_id,
+        person: r.name || 'Unknown',
+        status: uiStatus,
+        lastSeen: r.where_lost || '—',
+        age: r.age ?? '—',
+        ts: r.upload_time
+      };
+    });
+  };
+
+  const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
-    const to = setTimeout(() => {
-      const lr = Array.from({ length: 12 }).map((_,i)=> ({ id:'lr'+(i+1), person:'Person '+(i+1), status:['open','matched','closed'][i%3], lastSeen:['Gate A','Riverbank','Transit Hub'][i%3], age:10+i, ts:new Date(Date.now()-i*3600000).toISOString() }));
-      const inc = Array.from({ length: 15 }).map((_,i)=> ({ id:'inc'+(i+1), type:['Overcrowding','SOS','Incident','Camera Offline'][i%4], zoneName:['Gate A','Riverbank','Transit Hub','Food Court'][i%4], severity:['low','medium','high','critical'][i%4], ts:new Date(Date.now()-i*1800000).toISOString(), status:['open','resolved','dismissed'][i%3] }));
-      const taskT = Array.from({ length: 14 }).map((_,i)=> ({ day:'D'+(i+1), completed: Math.floor(Math.random()*40)+20, pending: Math.floor(Math.random()*20)+5 }));
-      const alertS = ['low','medium','high','critical'].map(s => ({ severity:s, count: Math.floor(Math.random()*40)+5 }));
-      setLostReports(lr); setIncidents(inc); setTaskTrend(taskT); setAlertSeverity(alertS); setLoading(false);
-    }, 700);
-    return () => clearTimeout(to);
-  }, [dateRange]);
+    try {
+      const [lostRes, matchRes, statsRes] = await Promise.all([
+        getAllLost(),
+        getAllMatches().catch(()=>({ records: [] })), // tolerant if matches endpoint fails
+        getStats().catch(()=>null)
+      ]);
+      const matchMap = new Map();
+      (matchRes.records || []).forEach(m => { if (m.lost_face_id) matchMap.set(m.lost_face_id, true); });
+      setLostReports(transformLost(lostRes.records, matchMap));
+      setStats(statsRes);
+
+      // The following remain simulated (no API endpoints yet): incidents, taskTrend, alertSeverity
+      const inc = Array.from({ length: 8 }).map((_,i)=> ({ id:'inc'+(i+1), type:['Overcrowding','SOS','Incident','Camera Offline'][i%4], zoneName:['Gate A','Riverbank','Transit Hub','Food Court'][i%4], severity:['low','medium','high','critical'][i%4], ts:new Date(Date.now()-i*1800000).toISOString(), status:['open','resolved','dismissed'][i%3] }));
+      const taskT = Array.from({ length: 10 }).map((_,i)=> ({ day:'D'+(i+1), completed: Math.floor(Math.random()*30)+10, pending: Math.floor(Math.random()*15)+3 }));
+      const alertS = ['low','medium','high','critical'].map(s => ({ severity:s, count: Math.floor(Math.random()*25)+3 }));
+      setIncidents(inc); setTaskTrend(taskT); setAlertSeverity(alertS);
+    } catch (e) {
+      setError(e.message || 'Failed to load reports');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData, dateRange]);
+
+  // Optional polling every 2 minutes for fresher stats
+  useEffect(() => {
+    const iv = setInterval(() => { fetchData(); }, 120000);
+    return () => clearInterval(iv);
+  }, [fetchData]);
 
   const lostSummary = useMemo(() => {
+    if (stats) {
+      const open = stats.lost_pending ?? lostReports.filter(r=>r.status==='open').length;
+      const closed = stats.lost_found ?? lostReports.filter(r=>r.status==='closed').length;
+      // matched: we approximate via matches count difference (not directly in stats). If backend sets status directly to 'found', matched may effectively be closed.
+      const matched = Math.max(0, (stats.matches ?? 0) - closed < 0 ? 0 : (stats.matches ?? 0));
+      return [
+        { label:'Open', value: open, color:'#f97316' },
+        { label:'Matched', value: matched, color:'#2563eb' },
+        { label:'Closed', value: closed, color:'#16a34a' },
+      ];
+    }
     const open = lostReports.filter(r=>r.status==='open').length;
     const matched = lostReports.filter(r=>r.status==='matched').length;
     const closed = lostReports.filter(r=>r.status==='closed').length;
@@ -70,7 +125,7 @@ const Reports = () => {
       { label:'Matched', value: matched, color:'#2563eb' },
       { label:'Closed', value: closed, color:'#16a34a' },
     ];
-  }, [lostReports]);
+  }, [lostReports, stats]);
 
   const alertSeverityPie = useMemo(() => alertSeverity.map(a => ({ name:a.severity, value:a.count })), [alertSeverity]);
   const pieColors = ['#6b7280','#f59e0b','#f97316','#dc2626'];
@@ -92,12 +147,12 @@ const Reports = () => {
   ));
 
   const kpis = useMemo(()=> ({
-    lostOpen: lostReports.filter(r=>r.status==='open').length,
+    lostOpen: stats?.lost_pending ?? lostReports.filter(r=>r.status==='open').length,
     incidents: incidents.length,
     criticalInc: incidents.filter(i=>i.severity==='critical').length,
     tasksCompleted: taskTrend.reduce((a,c)=>a+c.completed,0),
-    alertsTotal: alertSeverity.reduce((a,c)=>a+c.count,0)
-  }), [lostReports, incidents, taskTrend, alertSeverity]);
+    alertsTotal: stats?.found_people ?? alertSeverity.reduce((a,c)=>a+c.count,0) // repurpose found_people as a placeholder until real alert endpoint
+  }), [lostReports, incidents, taskTrend, alertSeverity, stats]);
 
   const rowPad = density==='compact' ? 'py-1.5' : 'py-2';
 
