@@ -21,8 +21,8 @@ import {
 // type Volunteer = { id:string; name:string; phone:string; assignedZones:string[]; activeTasks:number; status:'active'|'suspended' };
 
 const statusStyles = {
-  active:'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
-  suspended:'bg-gray-500/15 text-gray-300 border-gray-400/30'
+  active:'bg-emerald-500/15 mk-text-secondary border-emerald-400/30',
+  suspended:'bg-gray-500/15 mk-text-muted border-gray-400/30'
 };
 
 const Volunteers = () => {
@@ -79,12 +79,12 @@ const Volunteers = () => {
     activeTasks: vols.reduce((a,v)=>a+v.activeTasks,0)
   }), [vols]);
 
-  const loadingRows = <tbody>{Array.from({length:8}).map((_,i)=>(<tr key={i}><td colSpan={7} className="h-10"><div className="h-6 rounded bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" /></td></tr>))}</tbody>;
-  const emptyRow = <tbody><tr><td colSpan={7} className="py-10 text-center text-sm text-white/60 flex flex-col items-center gap-2">
+  const loadingRows = <tbody>{Array.from({length:8}).map((_,i)=>(<tr key={i}><td colSpan={7} className="h-10"><div className="h-6 rounded bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse" /></td></tr>))}</tbody>;
+  const emptyRow = <tbody><tr><td colSpan={7} className="py-10 text-center text-sm mk-text-muted flex flex-col items-center gap-2">
     <UserX size={36} className="text-orange-400"/>
     <span>No volunteers match current filters.</span>
   </td></tr></tbody>;
-  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-xs flex items-center justify-between rounded border border-red-500/30">Error loading volunteers <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-[10px] hover:bg-red-500">Retry</button></div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-600 dark:text-red-300 text-xs flex items-center justify-between rounded border border-red-500/30">Error loading volunteers <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-[10px] hover:bg-red-500">Retry</button></div>;
 
   const toggleZoneAssign = (z) => setAssignZones(prev => prev.includes(z) ? prev.filter(x=>x!==z) : [...prev, z]);
   const openAssign = (v) => { setDetail(v); setAssignZones(v.assignedZones); setAssignOpen(true); };
@@ -132,10 +132,10 @@ const Volunteers = () => {
       {/* KPI Summary */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[11px]">
         {[
-          {label:'Active', value:counts.active, icon:UserCheck, color:'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'},
-          {label:'Suspended', value:counts.suspended, icon:UserX, color:'bg-gray-500/15 text-gray-300 border-gray-400/30'},
-          {label:'Total', value:counts.total, icon:Users, color:'bg-orange-500/15 text-orange-300 border-orange-400/30'},
-          {label:'Active Tasks', value:counts.activeTasks, icon:Activity, color:'bg-blue-500/15 text-blue-300 border-blue-400/30'},
+          {label:'Active', value:counts.active, icon:UserCheck, color:'bg-emerald-500/15 mk-text-secondary border-emerald-400/30'},
+          {label:'Suspended', value:counts.suspended, icon:UserX, color:'bg-gray-500/15 mk-text-muted border-gray-400/30'},
+          {label:'Total', value:counts.total, icon:Users, color:'bg-orange-500/15 mk-text-secondary border-orange-400/30'},
+          {label:'Active Tasks', value:counts.activeTasks, icon:Activity, color:'bg-blue-500/15 mk-text-secondary border-blue-400/30'},
         ].map(c => (
           <div key={c.label} className={`p-2 rounded-lg border flex items-center gap-2 ${c.color}`}>
             <c.icon size={16} />
@@ -147,10 +147,10 @@ const Volunteers = () => {
         ))}
       </div>
       {error && errorBanner}
-      <div className="bg-white/5 backdrop-blur rounded-lg border border-white/10 shadow-sm overflow-hidden">
+      <div className="mk-surface-alt backdrop-blur rounded-lg mk-border shadow-sm overflow-hidden">
         <div className="overflow-auto max-h-[560px]">
           <table className="min-w-full text-xs">
-            <thead className="bg-white/5 text-white/70 sticky top-0">
+            <thead className="mk-surface-alt mk-text-secondary sticky top-0">
               <tr>{['Name','Phone','Assigned Zones','Active Tasks','Status','Actions'].map(h => <th key={h} className="px-3 py-2 font-medium text-[10px] uppercase tracking-wide text-left">{h}</th>)}</tr>
             </thead>
             {loading ? loadingRows : filtered.length===0 ? emptyRow : (
@@ -162,18 +162,18 @@ const Volunteers = () => {
                       initial={{opacity:0, y:8}}
                       animate={{opacity:1, y:0}}
                       exit={{opacity:0, y:-6}}
-                      className="even:bg-white/5 hover:bg-white/8"
+                      className="even:mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/8"
                       layout
                     >
-                      <td className={`px-3 ${rowPad} whitespace-nowrap font-medium text-white/85`}>{v.name}</td>
-                      <td className={`px-3 ${rowPad} whitespace-nowrap tabular-nums flex items-center gap-1`}><Phone size={12} className="text-white/40"/> <span className="text-white/70">{v.phone}</span></td>
-                      <td className={`px-3 ${rowPad} whitespace-nowrap text-white/70`}>{v.assignedZones.join(', ')}</td>
-                      <td className={`px-3 ${rowPad} whitespace-nowrap tabular-nums text-white/70`}>{v.activeTasks}</td>
+                      <td className={`px-3 ${rowPad} whitespace-nowrap font-medium mk-text-primary`}>{v.name}</td>
+                      <td className={`px-3 ${rowPad} whitespace-nowrap tabular-nums flex items-center gap-1`}><Phone size={12} className="mk-text-fainter"/> <span className="mk-text-secondary">{v.phone}</span></td>
+                      <td className={`px-3 ${rowPad} whitespace-nowrap mk-text-secondary`}>{v.assignedZones.join(', ')}</td>
+                      <td className={`px-3 ${rowPad} whitespace-nowrap tabular-nums mk-text-secondary`}>{v.activeTasks}</td>
                       <td className={`px-3 ${rowPad} whitespace-nowrap`}><span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase ${statusStyles[v.status]}`}>{v.status}</span></td>
                       <td className={`px-3 ${rowPad} whitespace-nowrap flex items-center gap-2 text-[11px]`}> 
-                        <button onClick={()=>openAssign(v)} className="text-white/60 hover:text-orange-400 focus:outline-none" aria-label="Assign zones"><MapPin size={14}/></button>
-                        <button onClick={()=>toggleSuspend(v)} className="text-white/60 hover:text-orange-400 focus:outline-none" aria-label={v.status==='active'?'Suspend volunteer':'Activate volunteer'}>{v.status==='active'?<UserX size={14}/>:<UserCheck size={14}/>}</button>
-                        <button onClick={()=>setDetail(v)} className="text-white/60 hover:text-orange-400 focus:outline-none" aria-label="View details"><ListChecks size={14}/></button>
+                        <button onClick={()=>openAssign(v)} className="mk-text-muted hover:text-orange-500 focus:outline-none" aria-label="Assign zones"><MapPin size={14}/></button>
+                        <button onClick={()=>toggleSuspend(v)} className="mk-text-muted hover:text-orange-500 focus:outline-none" aria-label={v.status==='active'?'Suspend volunteer':'Activate volunteer'}>{v.status==='active'?<UserX size={14}/>:<UserCheck size={14}/>}</button>
+                        <button onClick={()=>setDetail(v)} className="mk-text-muted hover:text-orange-500 focus:outline-none" aria-label="View details"><ListChecks size={14}/></button>
                       </td>
                     </motion.tr>
                   ))}
@@ -187,15 +187,15 @@ const Volunteers = () => {
       {/* Detail Drawer */}
       <Drawer open={!!detail && !assignOpen} onClose={()=>setDetail(null)} title={detail ? detail.name : ''}>
         {detail && (
-          <div className="space-y-5 text-[11px] text-white/70">
+          <div className="space-y-5 text-[11px] mk-text-secondary">
             <div className="grid grid-cols-2 gap-4">
-              <div><span className="text-white/50">Phone</span><div className="font-medium flex items-center gap-1 text-white/80"><Phone size={12} className="text-orange-400"/> {detail.phone}</div></div>
-              <div><span className="text-white/50">Status</span><div className="font-medium capitalize flex items-center gap-1 text-white/80">{detail.status==='active'?<UserCheck size={12} className="text-emerald-400"/>:<UserX size={12} className="text-gray-400"/>}{detail.status}</div></div>
-              <div className="col-span-2"><span className="text-white/50">Assigned Zones</span><div className="font-medium flex flex-wrap gap-1 mt-1">{detail.assignedZones.length? detail.assignedZones.map(z => <span key={z} className="px-1.5 py-0.5 rounded border text-[10px] bg-orange-500/15 text-orange-300 border-orange-400/30">{z}</span>): <span className="text-white/40">None</span>}</div></div>
+              <div><span className="mk-text-fainter">Phone</span><div className="font-medium flex items-center gap-1 mk-text-primary"><Phone size={12} className="text-orange-400"/> {detail.phone}</div></div>
+              <div><span className="mk-text-fainter">Status</span><div className="font-medium capitalize flex items-center gap-1 mk-text-primary">{detail.status==='active'?<UserCheck size={12} className="text-emerald-400"/>:<UserX size={12} className="text-gray-400"/>}{detail.status}</div></div>
+              <div className="col-span-2"><span className="mk-text-fainter">Assigned Zones</span><div className="font-medium flex flex-wrap gap-1 mt-1">{detail.assignedZones.length? detail.assignedZones.map(z => <span key={z} className="px-1.5 py-0.5 rounded border text-[10px] bg-orange-500/15 mk-text-secondary border-orange-400/30">{z}</span>): <span className="mk-text-fainter">None</span>}</div></div>
             </div>
             <div>
-              <h4 className="text-[10px] font-semibold uppercase tracking-wide text-white/80 mb-2 flex items-center gap-1"><ListChecks size={12} className="text-orange-400"/> Tasks</h4>
-              <p className="text-white/60">Active tasks: {detail.activeTasks} (placeholder – integrate tasks list)</p>
+              <h4 className="text-[10px] font-semibold uppercase tracking-wide mk-text-primary mb-2 flex items-center gap-1"><ListChecks size={12} className="text-orange-400"/> Tasks</h4>
+              <p className="mk-text-muted">Active tasks: {detail.activeTasks} (placeholder – integrate tasks list)</p>
             </div>
           </div>
         )}
@@ -203,10 +203,10 @@ const Volunteers = () => {
 
       {/* Assign Zone Modal */}
       <Modal open={assignOpen} onClose={()=>setAssignOpen(false)} title="Assign Zones" actions={[
-        <button key="cancel" onClick={()=>setAssignOpen(false)} className="px-3 py-1.5 rounded border border-white/10 bg-white/5 text-xs text-white/70 hover:bg-white/10">Cancel</button>,
+        <button key="cancel" onClick={()=>setAssignOpen(false)} className="px-3 py-1.5 rounded border mk-border mk-surface-alt text-xs mk-text-muted hover:bg-orange-50 dark:hover:bg-white/10">Cancel</button>,
         <button key="save" onClick={saveAssign} className="px-3 py-1.5 rounded bg-orange-500 text-white text-xs font-medium flex items-center gap-1 hover:bg-orange-600"><CheckCircle2 size={14}/> Save</button>
       ]}>
-        <div className="space-y-3 text-[11px] text-white/70">
+        <div className="space-y-3 text-[11px] mk-text-secondary">
           <div className="flex flex-wrap gap-2">
             {zones.map(z => {
               const active = assignZones.includes(z);
@@ -215,7 +215,7 @@ const Volunteers = () => {
                   key={z}
                   type="button"
                   onClick={()=>toggleZoneAssign(z)}
-                  className={`px-2 py-1 rounded-full border text-[10px] flex items-center gap-1 transition ${active? 'bg-orange-500 text-white border-orange-500 shadow-sm':'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
+                  className={`px-2 py-1 rounded-full border text-[10px] flex items-center gap-1 transition ${active? 'bg-orange-500 text-white border-orange-500 shadow-sm':'mk-surface-alt mk-text-secondary mk-border hover:bg-orange-50 dark:hover:bg-white/10'}`}
                   aria-pressed={active}
                 >
                   <MapPin size={12}/> {z}
@@ -223,7 +223,7 @@ const Volunteers = () => {
               );
             })}
           </div>
-          <div className="text-[10px] text-white/50">Select one or more zones to assign to this volunteer.</div>
+          <div className="text-[10px] mk-text-fainter">Select one or more zones to assign to this volunteer.</div>
         </div>
       </Modal>
     </div>

@@ -41,10 +41,10 @@ const defaultPolicy = /** @type {GlobalPolicy} */ ({
 const skeletonCard = (key) => (
   <div
     key={key}
-    className="p-4 rounded-lg border border-white/10 bg-white/5 animate-pulse space-y-3"
+    className="p-4 rounded-lg mk-subtle animate-pulse space-y-3"
   >
-    <div className="h-4 w-32 bg-white/10 rounded" />
-    <div className="h-6 w-20 bg-white/10 rounded" />
+    <div className="h-4 w-32 rounded bg-[var(--mk-muted)]/30" />
+    <div className="h-6 w-20 rounded bg-[var(--mk-muted)]/30" />
   </div>
 );
 
@@ -121,6 +121,35 @@ const Policies = () => {
     setEditOpen(true);
   };
 
+  const retentionCards = () => (
+    <div className="grid md:grid-cols-3 gap-4">
+      {["framesDays", "embeddingsDays", "logsDays"].map((k) => (
+        <div key={k} className="p-4 rounded-lg mk-subtle flex flex-col gap-3">
+          <div className="text-xs font-semibold uppercase tracking-wide mk-text-faint">
+            {k.replace("Days", "").replace(/([A-Z])/g, " $1") } (days)
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1}
+              max={180}
+              value={policy.retention[k]}
+              onChange={(e) =>
+                setPolicy((p) => ({
+                  ...p,
+                  retention: { ...p.retention, [k]: Number(e.target.value) },
+                }))
+              }
+              className="flex-1 accent-orange-500"
+            />
+            <div className="w-12 text-right tabular-nums text-sm font-medium mk-text-primary">
+              {policy.retention[k]}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   const resetDefaults = () => {
     setForm(defaultPolicy);
   };
@@ -142,7 +171,6 @@ const Policies = () => {
       ]);
       setEditOpen(false);
       setSaving(false);
-      // TODO POST /api/v1/policies/global
     }, 900);
   };
 
@@ -161,41 +189,9 @@ const Policies = () => {
     form.thresholds.normalPct < form.thresholds.busyPct &&
     form.thresholds.busyPct < form.thresholds.criticalPct;
 
-  const retentionCards = () => (
-    <div className="grid md:grid-cols-3 gap-4">
-      {["framesDays", "embeddingsDays", "logsDays"].map((k) => (
-        <div
-          key={k}
-          className="p-4 rounded-lg border border-white/10 bg-white/5 flex flex-col gap-3"
-        >
-          <div className="text-xs font-semibold text-white/60 uppercase tracking-wide">
-            {k.replace("Days", "").replace(/([A-Z])/g, " $1")} (days)
-          </div>
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={1}
-              max={180}
-              value={policy.retention[k]}
-              onChange={(e) =>
-                setPolicy((p) => ({
-                  ...p,
-                  retention: { ...p.retention, [k]: Number(e.target.value) },
-                }))
-              }
-              className="flex-1 accent-orange-500"
-            />
-            <div className="w-12 text-right tabular-nums text-sm font-medium text-white">
-              {policy.retention[k]}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   const thresholdsCard = () => (
-    <div className="p-4 rounded-lg border border-white/10 bg-white/5 space-y-4">
+    <div className="p-4 rounded-lg mk-subtle space-y-4">
       <div className="flex items-center gap-2 text-xs font-semibold text-white/60 uppercase tracking-wide">
         <SlidersHorizontal size={14} className="text-orange-400" /> Crowd
         Thresholds (%)
@@ -249,9 +245,9 @@ const Policies = () => {
   );
 
   const overridesTable = () => (
-    <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
-      <table className="min-w-full text-xs">
-        <thead className="bg-white/5 backdrop-blur text-white/60 text-[11px] uppercase tracking-wide">
+    <div className="rounded-lg mk-panel overflow-hidden">
+      <table className="min-w-full text-xs mk-table-zebra">
+        <thead className="mk-subtle backdrop-blur text-[11px] uppercase tracking-wide mk-text-faint">
           <tr>
             <th className="px-3 py-2 text-left font-medium">Tenant</th>
             <th className="px-3 py-2 text-left font-medium">
@@ -264,31 +260,31 @@ const Policies = () => {
             <th className="px-3 py-2 text-left font-medium">Action</th>
           </tr>
         </thead>
-        <tbody className="text-white/80">
+        <tbody className="mk-text-primary/90">
           {overrides.map((o) => (
             <tr
               key={o.tenant}
-              className="even:bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
+              className="mk-row-hover-accent cursor-pointer transition-colors"
             >
               <td className="px-3 py-2 font-medium text-white">{o.tenant}</td>
               <td className="px-3 py-2">
                 {o.retention ? (
-                  <span className="px-2 py-0.5 rounded bg-orange-500/10 text-orange-300 text-[11px]">
+                  <span className="mk-badge mk-badge-accent text-[9px]">
                     Yes
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded bg-white/10 text-white/60 text-[11px]">
+                  <span className="mk-badge mk-text-fainter text-[9px]">
                     No
                   </span>
                 )}
               </td>
               <td className="px-3 py-2">
                 {o.thresholds ? (
-                  <span className="px-2 py-0.5 rounded bg-orange-500/10 text-orange-300 text-[11px]">
+                  <span className="mk-badge mk-badge-accent text-[9px]">
                     Yes
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded bg-white/10 text-white/60 text-[11px]">
+                  <span className="mk-badge mk-text-fainter text-[9px]">
                     No
                   </span>
                 )}
@@ -299,7 +295,7 @@ const Policies = () => {
               <td className="px-3 py-2">
                 <button
                   onClick={() => setTenantDrawer(o)}
-                  className="text-orange-400 hover:underline text-[11px] flex items-center gap-1"
+                  className="text-[var(--mk-accent)] hover:underline text-[11px] flex items-center gap-1"
                 >
                   View <ExternalLink size={12} />
                 </button>
@@ -322,8 +318,8 @@ const Policies = () => {
   );
 
   const auditList = () => (
-    <div className="rounded-lg border border-white/10 bg-white/5 max-h-72 overflow-auto">
-      <ul className="divide-y divide-white/5 text-[11px]">
+    <div className="rounded-lg mk-panel max-h-72 overflow-auto">
+      <ul className="divide-y divide-white/5 text-[11px] mk-text-primary">
         {audit.map((a) => (
           <li key={a.id} className="px-3 py-2 flex items-start gap-3">
             <span className="mt-0.5 text-white/30">•</span>
@@ -348,13 +344,13 @@ const Policies = () => {
   return (
     <div className="space-y-8" aria-label="Global Policies">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+  <h2 className="text-sm font-semibold mk-text-primary flex items-center gap-2">
           <ShieldCheck size={18} className="text-orange-400" /> Global Policies
         </h2>
         {!loading && !error && policy && (
           <button
             onClick={openEditor}
-            className="ml-auto px-3 h-9 rounded-md bg-orange-500/90 hover:bg-orange-500 text-white text-xs font-medium flex items-center gap-1 transition-colors"
+            className="ml-auto px-3 h-9 rounded-md bg-[var(--mk-accent)]/90 hover:bg-[var(--mk-accent)] text-white text-xs font-medium flex items-center gap-1 transition-colors"
           >
             <Edit3 size={14} /> Edit Policies
           </button>
@@ -367,23 +363,23 @@ const Policies = () => {
         </div>
       )}
       {error && (
-        <div className="p-4 rounded border border-red-500/40 bg-red-500/10 text-sm text-red-300 flex items-center gap-3">
+        <div className="p-4 rounded mk-subtle ring-1 ring-red-500/30 bg-red-500/10 text-sm text-red-400 flex items-center gap-3">
           <XCircle size={18} /> {error}
           <button
             onClick={() => window.location.reload()}
-            className="ml-auto px-3 py-1.5 rounded bg-red-600/80 hover:bg-red-600 text-white text-xs"
+            className="ml-auto px-3 py-1.5 rounded bg-red-500/80 hover:bg-red-500 text-white text-xs"
           >
             Retry
           </button>
         </div>
       )}
       {!loading && !error && !policy && (
-        <div className="p-6 rounded-lg border-2 border-dashed border-white/20 text-center text-sm text-white/70 flex flex-col items-center gap-4">
+    <div className="p-6 rounded-lg border-2 border-dashed border-[var(--mk-border)]/40 text-center text-sm mk-text-faint flex flex-col items-center gap-4">
           <ShieldCheck size={40} className="text-orange-400" />
           <div>No global policies defined yet.</div>
           <button
             onClick={openEditor}
-            className="px-4 py-2 rounded-md bg-orange-500/90 hover:bg-orange-500 text-white text-xs font-medium"
+      className="px-4 py-2 rounded-md bg-[var(--mk-accent)]/90 hover:bg-[var(--mk-accent)] text-white text-xs font-medium"
           >
             Set Defaults
           </button>
@@ -395,31 +391,28 @@ const Policies = () => {
           <section className="space-y-5" aria-labelledby="retention-heading">
             <h3
               id="retention-heading"
-              className="text-xs font-semibold text-white/60 tracking-wide uppercase flex items-center gap-2"
+              className="text-xs font-semibold mk-text-faint tracking-wide uppercase flex items-center gap-2"
             >
               <Database size={14} className="text-orange-400" /> Retention
             </h3>
             <div className="grid md:grid-cols-3 gap-4">
               {["framesDays", "embeddingsDays", "logsDays"].map((k) => (
-                <div
-                  key={k}
-                  className="p-4 rounded-lg border border-white/10 bg-white/5 flex flex-col gap-2"
-                >
+                <div key={k} className="p-4 rounded-lg mk-subtle flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-white/60 uppercase tracking-wide">
+                    <span className="text-[11px] font-medium mk-text-faint uppercase tracking-wide">
                       {k.replace("Days", "").replace(/([A-Z])/g, " $1")}
                     </span>
-                    <span className="text-xs font-semibold tabular-nums text-white/90">
+                    <span className="text-xs font-semibold tabular-nums mk-text-primary">
                       {policy.retention[k]}d
                     </span>
                   </div>
-                  <div className="h-2 rounded bg-white/10 overflow-hidden">
+                  <div className="h-2 rounded bg-[var(--mk-muted)]/30 overflow-hidden">
                     <div
-                      className="h-full bg-orange-500"
+                      className="h-full bg-[var(--mk-accent)]"
                       style={{ width: (policy.retention[k] / 180) * 100 + "%" }}
                     />
                   </div>
-                  <div className="text-[10px] text-white/40">
+                  <div className="text-[10px] mk-text-fainter">
                     Storage retention horizon.
                   </div>
                 </div>
@@ -430,30 +423,30 @@ const Policies = () => {
           <section className="space-y-5" aria-labelledby="thresholds-heading">
             <h3
               id="thresholds-heading"
-              className="text-xs font-semibold text-white/60 tracking-wide uppercase flex items-center gap-2"
+              className="text-xs font-semibold mk-text-faint tracking-wide uppercase flex items-center gap-2"
             >
               <AlertTriangle size={14} className="text-orange-400" /> Crowd
               Thresholds
             </h3>
-            <div className="p-4 rounded-lg border border-white/10 bg-white/5 grid md:grid-cols-3 gap-4 text-sm">
+            <div className="p-4 rounded-lg mk-subtle grid md:grid-cols-3 gap-4 text-sm">
               <div className="space-y-1">
-                <div className="text-xs text-white/50 uppercase tracking-wide">
+                <div className="text-xs mk-text-fainter uppercase tracking-wide">
                   Normal (&lt;{policy.thresholds.normalPct}%)
                 </div>
-                <div className="h-2 bg-green-500/30 rounded" />
+        <div className="h-2 bg-green-500/40 rounded" />
               </div>
               <div className="space-y-1">
-                <div className="text-xs text-white/50 uppercase tracking-wide">
+                <div className="text-xs mk-text-fainter uppercase tracking-wide">
                   Busy ({policy.thresholds.normalPct}–
                   {policy.thresholds.busyPct}%)
                 </div>
-                <div className="h-2 bg-orange-500/40 rounded" />
+        <div className="h-2 bg-orange-500/50 rounded" />
               </div>
               <div className="space-y-1">
-                <div className="text-xs text-white/50 uppercase tracking-wide">
+                <div className="text-xs mk-text-fainter uppercase tracking-wide">
                   Critical (&gt;{policy.thresholds.busyPct}%)
                 </div>
-                <div className="h-2 bg-red-500/40 rounded" />
+        <div className="h-2 bg-red-500/50 rounded" />
               </div>
             </div>
           </section>
@@ -462,12 +455,12 @@ const Policies = () => {
             <div className="flex items-center gap-2">
               <h3
                 id="overrides-heading"
-                className="text-xs font-semibold text-white/60 tracking-wide uppercase flex items-center gap-2"
+                className="text-xs font-semibold mk-text-faint tracking-wide uppercase flex items-center gap-2"
               >
                 <Layers size={14} className="text-orange-400" /> Tenant
                 Overrides
               </h3>
-              <span className="px-2 py-0.5 rounded bg-white/10 text-white/60 text-[10px]">
+                <span className="mk-badge text-[10px] mk-text-faint">
                 {overrides.length}
               </span>
             </div>
@@ -477,7 +470,7 @@ const Policies = () => {
           <section className="space-y-4" aria-labelledby="audit-heading">
             <h3
               id="audit-heading"
-              className="text-xs font-semibold text-white/60 tracking-wide uppercase flex items-center gap-2"
+              className="text-xs font-semibold mk-text-faint tracking-wide uppercase flex items-center gap-2"
             >
               <ListTree size={14} className="text-orange-400" /> Audit Trail
             </h3>
@@ -496,7 +489,7 @@ const Policies = () => {
             key="reset"
             onClick={resetDefaults}
             type="button"
-            className="px-3 py-1.5 rounded border border-white/10 bg-white/5 text-xs text-white/70 hover:bg-white/10"
+            className="px-3 py-1.5 rounded mk-subtle text-xs mk-text-faint hover:brightness-110 transition"
           >
             Reset to Default
           </button>,
@@ -504,7 +497,7 @@ const Policies = () => {
             key="save"
             onClick={handleSave}
             disabled={!thresholdRangesValid || saving}
-            className="px-3 py-1.5 rounded bg-orange-500/90 hover:bg-orange-500 text-white text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+            className="px-3 py-1.5 rounded bg-[var(--mk-accent)]/90 hover:bg-[var(--mk-accent)] text-white text-xs font-medium flex items-center gap-1 disabled:opacity-50"
           >
             {saving ? (
               <RefreshCcw size={14} className="animate-spin" />
@@ -517,17 +510,17 @@ const Policies = () => {
       >
         <form onSubmit={handleSave} className="space-y-8 text-sm">
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-white/80 uppercase tracking-wide flex items-center gap-2">
+            <h4 className="text-xs font-semibold mk-text-primary uppercase tracking-wide flex items-center gap-2">
               <Database size={14} className="text-orange-400" /> Retention Days
             </h4>
             <div className="grid md:grid-cols-3 gap-4">
               {["framesDays", "embeddingsDays", "logsDays"].map((k) => (
                 <div key={k} className="space-y-2">
-                  <label className="text-xs text-white/50 uppercase tracking-wide flex justify-between">
+                  <label className="text-xs mk-text-fainter uppercase tracking-wide flex justify-between">
                     <span>
                       {k.replace("Days", "").replace(/([A-Z])/g, " $1")}
                     </span>
-                    <span className="tabular-nums text-white/80">
+                    <span className="tabular-nums mk-text-primary">
                       {form.retention[k]}d
                     </span>
                   </label>
@@ -545,7 +538,7 @@ const Policies = () => {
                         },
                       }))
                     }
-                    className="w-full h-8 rounded border border-white/10 bg-white/5 px-2 text-white/90 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                    className="w-full h-8 rounded mk-subtle px-2 mk-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]/40"
                   />
                   <input
                     type="range"
@@ -561,20 +554,20 @@ const Policies = () => {
                         },
                       }))
                     }
-                    className="w-full accent-orange-500"
+                    className="w-full accent-[var(--mk-accent)]"
                   />
                 </div>
               ))}
             </div>
           </div>
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-white/80 uppercase tracking-wide flex items-center gap-2">
+            <h4 className="text-xs font-semibold mk-text-primary uppercase tracking-wide flex items-center gap-2">
               <SlidersHorizontal size={14} className="text-orange-400" /> Crowd
               Thresholds (%)
             </h4>
             {["normalPct", "busyPct", "criticalPct"].map((k) => (
               <div key={k} className="flex items-center gap-4">
-                <label className="w-24 capitalize text-xs text-white/50">
+                <label className="w-24 capitalize text-xs mk-text-fainter">
                   {k.replace("Pct", "")}
                 </label>
                 <input
@@ -591,7 +584,7 @@ const Policies = () => {
                       },
                     }))
                   }
-                  className="h-8 w-20 rounded border border-white/10 bg-white/5 px-2 text-white/90 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                  className="h-8 w-20 rounded mk-subtle px-2 mk-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]/40"
                 />
                 <input
                   type="range"
@@ -607,7 +600,7 @@ const Policies = () => {
                       },
                     }))
                   }
-                  className="flex-1 accent-orange-500"
+                  className="flex-1 accent-[var(--mk-accent)]"
                 />
               </div>
             ))}
@@ -617,7 +610,7 @@ const Policies = () => {
               </div>
             )}
           </div>
-          <p className="text-[11px] text-white/50">
+          <p className="text-[11px] mk-text-fainter">
             Saving updates global defaults and notifies tenants (policy:update).
           </p>
         </form>
@@ -631,37 +624,37 @@ const Policies = () => {
       >
         {tenantDrawer && (
           <div className="space-y-4 text-sm">
-            <div className="grid grid-cols-2 gap-4 text-xs">
+      <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <div className="text-white/50">Retention Override</div>
-                <div className="font-medium text-white/90">
+        <div className="mk-text-fainter">Retention Override</div>
+        <div className="font-medium mk-text-primary">
                   {tenantDrawer.retention ? "Yes" : "No"}
                 </div>
               </div>
               <div>
-                <div className="text-white/50">Threshold Override</div>
-                <div className="font-medium text-white/90">
+        <div className="mk-text-fainter">Threshold Override</div>
+        <div className="font-medium mk-text-primary">
                   {tenantDrawer.thresholds ? "Yes" : "No"}
                 </div>
               </div>
               <div>
-                <div className="text-white/50">Updated</div>
-                <div className="font-medium text-white/90">
+        <div className="mk-text-fainter">Updated</div>
+        <div className="font-medium mk-text-primary">
                   {relative(tenantDrawer.updatedAt)}
                 </div>
               </div>
               <div>
-                <div className="text-white/50">By</div>
-                <div className="font-medium text-white/90">
+        <div className="mk-text-fainter">By</div>
+        <div className="font-medium mk-text-primary">
                   {tenantDrawer.updatedBy}
                 </div>
               </div>
             </div>
-            <p className="text-xs text-white/60 leading-relaxed">
+      <p className="text-xs mk-text-faint leading-relaxed">
               Future enhancement: show diff versus global defaults & allow
               clearing overrides.
             </p>
-            <button className="px-3 py-1.5 rounded border border-white/10 text-xs text-white/80 hover:bg-white/10">
+      <button className="px-3 py-1.5 rounded mk-subtle text-xs mk-text-primary hover:brightness-110 transition">
               Open Tenant Detail
             </button>
           </div>

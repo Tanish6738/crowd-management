@@ -6,128 +6,503 @@
 	Exposed as CSS variables so components can consume them without relying on Tailwind config changes.
 	Utility helper classes provided for rapid usage inside JSX.
 */
-:root {
-	--mk-bg: #071126;
-	--mk-surface: #0e2033;
-	--mk-surface-2: #142a3e;
-	--mk-muted: #1b394d;
+:root,
+.theme-dark {
+  --mk-bg: #071126;
+  --mk-surface: #0e2033;
+  --mk-surface-2: #142a3e;
+  --mk-muted: #1b394d;
 
-	--mk-text-primary: #e6eef6;
-	--mk-text-secondary: #b9ccd9;
-	--mk-text-muted: #8ea6b8;
+  --mk-text-primary: #e6eef6;
+  --mk-text-secondary: #b9ccd9;
+  --mk-text-muted: #8ea6b8;
 
-	--mk-accent: #ff8f2a;
-	--mk-accent-strong: #ffb84d;
-	--mk-gold: #d4a017;
-	--mk-indigo: #4b6cc0;
+  --mk-accent: #ff8f2a;
+  --mk-accent-strong: #ffb84d;
+  --mk-gold: #d4a017;
+  --mk-indigo: #4b6cc0;
 
-	--mk-success: #37b24d;
-	--mk-danger: #ff5c6c;
-	--mk-warning: #ffb020;
+  --mk-success: #37b24d;
+  --mk-danger: #ff5c6c;
+  --mk-warning: #ffb020;
 
-	--mk-focus-ring: 0 0 0 2px var(--mk-bg), 0 0 0 4px var(--mk-accent);
-	--mk-radius-xs: 4px;
-	--mk-radius-sm: 6px;
-	--mk-radius: 10px;
-	--mk-radius-lg: 18px;
-	--mk-transition: 160ms cubic-bezier(.4,0,.2,1);
+  --mk-focus-ring: 0 0 0 2px var(--mk-bg), 0 0 0 4px var(--mk-accent);
+  --mk-radius-xs: 4px;
+  --mk-radius-sm: 6px;
+  --mk-radius: 10px;
+  --mk-radius-lg: 18px;
+  --mk-transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base page styling leveraging tokens */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+body {
+  background: var(--mk-bg);
+  color: var(--mk-text-primary);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01";
+  transition:
+    background-color var(--mk-transition),
+    color var(--mk-transition);
+}
+body {
+  color-scheme: light dark;
+}
+
+/* Light Theme Tokens */
+.theme-light {
+  --mk-bg: #f5f8fb;
+  --mk-surface: #ffffff;
+  --mk-surface-2: #eef3f8;
+  --mk-muted: #dce5ed;
+
+  --mk-text-primary: #1b2735;
+  --mk-text-secondary: #2f4557;
+  --mk-text-muted: #607588;
+
+  --mk-accent: #ff7a00;
+  --mk-accent-strong: #ff9f33;
+  --mk-gold: #c79012;
+  --mk-indigo: #3557a8;
+
+  --mk-success: #2f9e44;
+  --mk-danger: #e03131;
+  --mk-warning: #f08c00;
+
+  --mk-focus-ring: 0 0 0 2px var(--mk-bg), 0 0 0 4px var(--mk-accent);
+  --mk-radius-xs: 4px;
+  --mk-radius-sm: 6px;
+  --mk-radius: 10px;
+  --mk-radius-lg: 18px;
+  --mk-transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Background helpers */
-.mk-bg-base { background-color: var(--mk-bg); }
-.mk-bg-surface { background-color: var(--mk-surface); }
-.mk-bg-surface-2 { background-color: var(--mk-surface-2); }
-.mk-bg-muted { background-color: var(--mk-muted); }
+.mk-bg-base {
+  background-color: var(--mk-bg);
+}
+.mk-bg-surface {
+  background-color: var(--mk-surface);
+}
+.mk-bg-surface-2 {
+  background-color: var(--mk-surface-2);
+}
+.mk-bg-muted {
+  background-color: var(--mk-muted);
+}
 
 /* Text helpers */
-.mk-text-primary { color: var(--mk-text-primary); }
-.mk-text-secondary { color: var(--mk-text-secondary); }
-.mk-text-muted { color: var(--mk-text-muted); }
+.mk-text-primary {
+  color: var(--mk-text-primary);
+}
+.mk-text-secondary {
+  color: var(--mk-text-secondary);
+}
+.mk-text-muted {
+  color: var(--mk-text-muted);
+}
 
 /* Accent */
-.mk-accent { color: var(--mk-accent); }
-.mk-bg-accent { background-color: var(--mk-accent); }
-.mk-bg-accent-strong { background-color: var(--mk-accent-strong); }
+.mk-accent {
+  color: var(--mk-accent);
+}
+.mk-bg-accent {
+  background-color: var(--mk-accent);
+}
+.mk-bg-accent-strong {
+  background-color: var(--mk-accent-strong);
+}
 
 /* Modern gradient backdrop */
+/*
+  Dark theme: warm accent glow + indigo cloud over deep navy blend.
+  Light theme override below swaps to softer neutrals while keeping brand accent presence.
+  Exposed custom properties allow fine-tuning without editing multiple gradient layers.
+*/
 .mk-gradient-bg {
-	background: radial-gradient(circle at 20% 20%, rgba(255,143,42,0.12), transparent 60%),
-							radial-gradient(circle at 80% 70%, rgba(75,108,192,0.18), transparent 65%),
-							linear-gradient(145deg, var(--mk-bg), #050b18 55%, #0a1a30);
+  --mk-grad-accent-1: rgba(255, 143, 42, 0.12);
+  --mk-grad-accent-2: rgba(75, 108, 192, 0.18);
+  --mk-grad-base-from: var(--mk-bg);
+  --mk-grad-base-mid: #050b18; /* dark only mid */
+  --mk-grad-base-to: #0a1a30;  /* dark only end */
+  background:
+    radial-gradient(circle at 20% 20%, var(--mk-grad-accent-1), transparent 60%),
+    radial-gradient(circle at 80% 70%, var(--mk-grad-accent-2), transparent 65%),
+    linear-gradient(145deg, var(--mk-grad-base-from), var(--mk-grad-base-mid) 55%, var(--mk-grad-base-to));
+}
+
+/* Light theme variant: brighter subtle backdrop using soft accent + indigo tint and elevated surfaces */
+.theme-light .mk-gradient-bg {
+  --mk-grad-accent-1: rgba(255, 122, 0, 0.18);
+  --mk-grad-accent-2: rgba(53, 87, 168, 0.20);
+  --mk-grad-base-from: var(--mk-bg); /* light bg token */
+  --mk-grad-base-mid: #ffffff;
+  --mk-grad-base-to: #eef3f8;
+  background:
+    radial-gradient(circle at 18% 18%, var(--mk-grad-accent-1), transparent 62%),
+    radial-gradient(circle at 82% 72%, var(--mk-grad-accent-2), transparent 68%),
+    linear-gradient(150deg, var(--mk-grad-base-from), var(--mk-grad-base-mid) 48%, var(--mk-grad-base-to));
 }
 
 /* Glass / panel */
 .mk-panel {
-	background: linear-gradient(145deg, rgba(14,32,51,0.9), rgba(20,42,62,0.85));
-	backdrop-filter: blur(18px) saturate(140%);
-	-webkit-backdrop-filter: blur(18px) saturate(140%);
-	border: 1px solid rgba(255,255,255,0.045);
-	border-radius: var(--mk-radius);
-	box-shadow: 0 4px 18px -6px rgba(0,0,0,0.55), 0 2px 6px -2px rgba(0,0,0,0.4);
+  background: linear-gradient(
+    145deg,
+    rgba(14, 32, 51, 0.9),
+    rgba(20, 42, 62, 0.85)
+  );
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: var(--mk-radius);
+  box-shadow:
+    0 4px 18px -6px rgba(0, 0, 0, 0.55),
+    0 2px 6px -2px rgba(0, 0, 0, 0.4);
+}
+.theme-light .mk-panel {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(238, 243, 248, 0.88)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 18px -6px rgba(0, 0, 0, 0.12),
+    0 2px 6px -2px rgba(0, 0, 0, 0.08);
 }
 
 /* Divider */
-.mk-divider { border-color: rgba(255,255,255,0.07); }
+.mk-divider {
+  border-color: rgba(255, 255, 255, 0.07);
+}
 
 /* Interactive base */
 .mk-btn-tab {
-	position: relative;
-	display: inline-flex;
-	align-items: center;
-	gap: .5rem;
-	font-weight: 500;
-	font-size: .7rem;
-	letter-spacing: .5px;
-	padding: .55rem .9rem .5rem;
-	line-height: 1;
-	border-radius: 999px;
-	background: var(--mk-surface-2);
-	color: var(--mk-text-secondary);
-	border: 1px solid rgba(255,255,255,0.05);
-	transition: var(--mk-transition);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  padding: 0.55rem 0.9rem 0.5rem;
+  line-height: 1;
+  border-radius: 999px;
+  background: var(--mk-surface-2);
+  color: var(--mk-text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: var(--mk-transition);
 }
-.mk-btn-tab:hover { color: var(--mk-text-primary); background: var(--mk-muted); }
-.mk-btn-tab[aria-current="page"], .mk-btn-tab-active {
-	background: linear-gradient(135deg, var(--mk-accent) -10%, var(--mk-accent-strong) 110%);
-	color: #09121f;
-	box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 14px -4px rgba(255,139,42,0.65), 0 0 0 1px var(--mk-accent) inset;
+.theme-light .mk-btn-tab {
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
-.mk-btn-tab:focus-visible { outline: none; box-shadow: var(--mk-focus-ring); }
+.mk-btn-tab:hover {
+  color: var(--mk-text-primary);
+  background: var(--mk-muted);
+}
+.mk-btn-tab[aria-current="page"],
+.mk-btn-tab-active {
+  background: linear-gradient(
+    135deg,
+    var(--mk-accent) -10%,
+    var(--mk-accent-strong) 110%
+  );
+  color: #09121f;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 14px -4px rgba(255, 139, 42, 0.65),
+    0 0 0 1px var(--mk-accent) inset;
+}
+.mk-btn-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--mk-focus-ring);
+}
 
 /* Navigation route card */
 .mk-route-card {
-	position: relative;
-	overflow: hidden;
-	border-radius: var(--mk-radius);
-	background: linear-gradient(150deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-	border: 1px solid rgba(255,255,255,0.06);
-	color: var(--mk-text-secondary);
-	transition: var(--mk-transition);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--mk-radius);
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.02)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--mk-text-secondary);
+  transition: var(--mk-transition);
+}
+.theme-light .mk-route-card {
+  background: linear-gradient(
+    150deg,
+    rgba(0, 0, 0, 0.035),
+    rgba(0, 0, 0, 0.02)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 .mk-route-card::before {
-	content: '';
-	position: absolute; inset: 0;
-	background: radial-gradient(circle at 35% 15%, rgba(255,143,42,0.18), transparent 70%);
-	opacity: 0; transition: var(--mk-transition);
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 35% 15%,
+    rgba(255, 143, 42, 0.18),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: var(--mk-transition);
 }
-.mk-route-card:hover::before { opacity: 1; }
-.mk-route-card:hover { color: var(--mk-text-primary); border-color: var(--mk-accent); box-shadow: 0 4px 18px -8px rgba(255,143,42,0.5); transform: translateY(-2px); }
-.mk-route-card:focus-visible { outline: none; box-shadow: var(--mk-focus-ring); }
-.mk-route-card-active { border-color: var(--mk-accent); background: linear-gradient(165deg, rgba(255,143,42,0.12), rgba(255,143,42,0.05)); color: var(--mk-text-primary); }
+.theme-light .mk-divider {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.mk-route-card:hover::before {
+  opacity: 1;
+}
+.mk-route-card:hover {
+  color: var(--mk-text-primary);
+  border-color: var(--mk-accent);
+  box-shadow: 0 4px 18px -8px rgba(255, 143, 42, 0.5);
+  transform: translateY(-2px);
+}
+.mk-route-card:focus-visible {
+  outline: none;
+  box-shadow: var(--mk-focus-ring);
+}
+.mk-route-card-active {
+  border-color: var(--mk-accent);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 143, 42, 0.12),
+    rgba(255, 143, 42, 0.05)
+  );
+  color: var(--mk-text-primary);
+}
 
 /* Scrollbar subtle styling */
-::-webkit-scrollbar { width: 10px; height:10px; }
-::-webkit-scrollbar-track { background: var(--mk-bg); }
-::-webkit-scrollbar-thumb { background: var(--mk-muted); border-radius: 20px; border: 2px solid var(--mk-bg); }
-::-webkit-scrollbar-thumb:hover { background: var(--mk-surface-2); }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--mk-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mk-muted);
+  border-radius: 20px;
+  border: 2px solid var(--mk-bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mk-surface-2);
+}
 
 /* Selection */
-::selection { background: var(--mk-accent); color: #09121f; }
+::selection {
+  background: var(--mk-accent);
+  color: #09121f;
+}
 
 /* Animations helpers */
-@keyframes mkFadeInUp { from { opacity:0; transform: translateY(8px);} to {opacity:1; transform: translateY(0);} }
-.mk-animate-in { animation: mkFadeInUp .5s var(--mk-transition); }
+@keyframes mkFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mk-animate-in {
+  animation: mkFadeInUp 0.5s var(--mk-transition);
+}
 
-@keyframes mkSlideIn { from { transform: translateX(40px); opacity:0;} to { transform: translateX(0); opacity:1; } }
+@keyframes mkSlideIn {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
 
+/* Theme adaptive translucent surfaces & borders */
+.mk-surface-alt {
+  background: rgba(255, 255, 255, 0.05);
+}
+.theme-light .mk-surface-alt {
+  background: rgba(0, 0, 0, 0.04);
+}
 
+.mk-border {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.theme-light .mk-border {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Interactive panel */
+.mk-interactive {
+  background: rgba(255, 255, 255, 0.05);
+  transition: var(--mk-transition);
+}
+.mk-interactive:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.theme-light .mk-interactive {
+  background: rgba(0, 0, 0, 0.04);
+}
+.theme-light .mk-interactive:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Muted separators */
+.mk-separator {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.theme-light .mk-separator {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Subtle text helpers mapping to tokens */
+.mk-text-faint {
+  color: var(--mk-text-muted);
+  opacity: 0.75;
+}
+.mk-text-fainter {
+  color: var(--mk-text-muted);
+  opacity: 0.55;
+}
+
+/* --------------------------------------------------
+	 Additional Theme-Aware Utility Classes (Added)
+	 These help migrate components away from hard coded
+	 transparent white overlays so they render correctly
+	 in both dark and light themes.
+-------------------------------------------------- */
+
+/* Generic card surface (neutral panel) */
+.mk-card {
+  background: var(--mk-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--mk-radius);
+  box-shadow:
+    0 2px 4px -2px rgba(0, 0, 0, 0.4),
+    0 4px 14px -6px rgba(0, 0, 0, 0.35);
+}
+.theme-light .mk-card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 2px 4px -2px rgba(0, 0, 0, 0.12),
+    0 4px 14px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Sub-surface (used for soft inset elements) */
+.mk-subtle {
+  background: var(--mk-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--mk-radius-sm);
+}
+.theme-light .mk-subtle {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Muted pill / badge base */
+.mk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--mk-surface-2);
+  text-transform: uppercase;
+}
+.theme-light .mk-badge {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+/* Accent badge */
+.mk-badge-accent {
+  background: linear-gradient(
+    135deg,
+    var(--mk-accent),
+    var(--mk-accent-strong)
+  );
+  color: #09121f;
+  border-color: var(--mk-accent);
+}
+
+/* Status colors mapping to tokens */
+.mk-status-success {
+  background: rgba(55, 178, 77, 0.15);
+  color: var(--mk-success);
+  border: 1px solid rgba(55, 178, 77, 0.4);
+}
+.mk-status-danger {
+  background: rgba(255, 92, 108, 0.15);
+  color: var(--mk-danger);
+  border: 1px solid rgba(255, 92, 108, 0.4);
+}
+.mk-status-warn {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--mk-warning);
+  border: 1px solid rgba(255, 176, 32, 0.45);
+}
+
+/* Interactive hover row */
+.mk-hover-row {
+  transition: var(--mk-transition);
+}
+.mk-hover-row:hover {
+  background: var(--mk-surface-2);
+}
+
+/* Adaptive zebra table & hover accent utilities */
+.mk-table-zebra tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.theme-light .mk-table-zebra tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.03);
+}
+.mk-row-hover-accent {
+  transition: var(--mk-transition);
+}
+.mk-row-hover-accent:hover {
+  background: rgba(255, 143, 42, 0.12);
+}
+.theme-light .mk-row-hover-accent:hover {
+  background: rgba(255, 122, 0, 0.18);
+}
+
+/* Focus ring helper */
+.mk-focusable:focus-visible {
+  outline: none;
+  box-shadow: var(--mk-focus-ring);
+}
+
+/* Token driven scroll fading mask (optional utility) */
+.mk-scroll-fade {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent
+  );
+}

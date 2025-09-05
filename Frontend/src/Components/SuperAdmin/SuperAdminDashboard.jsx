@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useTheme } from "../../Context/ThemeContext";
 import Tenants from "./Tenants/Tenants";
 import Users from "./Users/Users";
 import Policies from "./Policies/Policies";
@@ -50,8 +51,13 @@ const SuperAdminDashboard = () => {
     audit: renderAuditTab(),
   }[activeTab];
 
+  const { theme } = useTheme();
+
+  // Use dark gradient only in dark mode; in light mode rely on token background to keep contrast.
+  const containerClass = `min-h-screen flex flex-col ${theme === 'dark' ? 'mk-gradient-bg' : 'mk-bg-base'}`;
+
   return (
-    <div className="mk-gradient-bg min-h-screen flex flex-col">
+    <div className={containerClass}>
       <LayoutShell
         topBar={
           <TopBar

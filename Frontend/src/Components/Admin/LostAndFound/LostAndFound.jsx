@@ -22,11 +22,11 @@ import {
 // Contracts reference
 // LostReport, Match (pending review)
 
-// Dark tinted status badge styles
+// Theme aware status badge styles
 const statusStyles = {
-  open:'bg-orange-500/15 text-orange-300 border-orange-400/30',
-  matched:'bg-blue-500/15 text-blue-300 border-blue-400/30',
-  closed:'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'
+  open:'bg-orange-500/15 text-orange-600 dark:text-orange-300 border-orange-400/30',
+  matched:'bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-400/30',
+  closed:'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-400/30'
 };
 
 const LostAndFound = () => {
@@ -106,9 +106,9 @@ const LostAndFound = () => {
   }), [reports, matches]);
 
   // States rendering helpers ----------------------------------------------
-  const loadingCards = <div className="grid [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))] gap-4">{Array.from({length:8}).map((_,i)=>(<div key={i} className="h-48 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"/>))}</div>;
-  const emptyState = <div className="p-10 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur flex flex-col gap-3 items-center"><PackageSearch size={40} className="text-orange-400"/>No lost reports found.</div>;
-  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading data <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Retry</button></div>;
+  const loadingCards = <div className="grid [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))] gap-4">{Array.from({length:8}).map((_,i)=>(<div key={i} className="h-48 rounded-lg bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"/>))}</div>;
+  const emptyState = <div className="p-10 text-sm mk-text-muted text-center border border-dashed mk-border rounded-lg mk-surface-alt backdrop-blur flex flex-col gap-3 items-center"><PackageSearch size={40} className="text-orange-600 dark:text-orange-400"/>No lost reports found.</div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-600 dark:text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading data <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Retry</button></div>;
 
   // Cards ------------------------------------------------------------------
   const reportCards = (
@@ -125,7 +125,7 @@ const LostAndFound = () => {
               whileHover={{y:-4}}
               whileTap={{scale:0.97}}
               onClick={()=>setSelectedReport(r)}
-              className="relative bg-white/5 backdrop-blur border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:bg-white/7 hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+              className="relative mk-surface-alt backdrop-blur border mk-border rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50 hover:bg-black/5 dark:hover:bg-white/7"
               aria-label={`Open lost report for ${r.person.name}`}
             >
               <div className="flex items-start gap-2">
@@ -134,14 +134,14 @@ const LostAndFound = () => {
                   <span className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow border border-gray-200"><ImageIcon size={12} className="text-orange-600"/></span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-white/90 truncate flex items-center gap-1"><UserSearch size={14} className="text-orange-400"/> {r.person.name}</div>
-                  <div className="text-[11px] text-white/60">{r.person.age} yrs • {r.person.gender}</div>
-                  <div className="text-[11px] text-white/50 line-clamp-2">{r.person.description}</div>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-white/90 truncate flex items-center gap-1"><UserSearch size={14} className="text-orange-600 dark:text-orange-400"/> {r.person.name}</div>
+                  <div className="text-[11px] text-gray-600 dark:text-white/60">{r.person.age} yrs • {r.person.gender}</div>
+                  <div className="text-[11px] text-gray-500 dark:text-white/50 line-clamp-2">{r.person.description}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[10px] mt-auto">
                 <span className={`px-2 py-0.5 rounded border uppercase ${statusStyles[r.status]}`}>{r.status}</span>
-                <span className="ml-auto text-white/50 inline-flex items-center gap-1"><Clock size={11}/> {new Date(r.lastUpdated).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                <span className="ml-auto text-gray-500 dark:text-white/50 inline-flex items-center gap-1"><Clock size={11}/> {new Date(r.lastUpdated).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
               </div>
               <motion.span layoutId={`bar-${r.id}`} className="absolute left-0 top-0 h-full w-0.5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-r" />
             </motion.button>
@@ -165,7 +165,7 @@ const LostAndFound = () => {
               whileHover={{y:-4}}
               whileTap={{scale:0.97}}
               onClick={()=>setMatchModal(m)}
-              className="relative bg-white/5 backdrop-blur border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:bg-white/7 hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+              className="relative mk-surface-alt backdrop-blur border mk-border rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50 hover:bg-black/5 dark:hover:bg-white/7"
               aria-label={`Open match review for ${m.lostPersonName}`}
             >
               <div className="flex items-center gap-2">
@@ -178,9 +178,9 @@ const LostAndFound = () => {
                   <span className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow border border-gray-200"><Sparkles size={12} className="text-orange-600"/></span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-white/90 truncate">{m.lostPersonName}</div>
-                  <div className="text-[11px] text-white/60">Similarity: {(m.score*100).toFixed(1)}%</div>
-                  <div className="text-[10px] text-white/50">Threshold: {(m.threshold*100).toFixed(0)}%</div>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-white/90 truncate">{m.lostPersonName}</div>
+                  <div className="text-[11px] text-gray-600 dark:text-white/60">Similarity: {(m.score*100).toFixed(1)}%</div>
+                  <div className="text-[10px] text-gray-500 dark:text-white/50">Threshold: {(m.threshold*100).toFixed(0)}%</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[10px] mt-auto">

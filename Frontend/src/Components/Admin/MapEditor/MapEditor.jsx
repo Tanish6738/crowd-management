@@ -261,18 +261,18 @@ const MapEditor = () => {
 	const zoneStrokeColor = (z) => '#f97316';
 
 	// UI helpers ------------------------------------------------------------
-	const toolActive = (t) => mode===t ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 hover:bg-orange-50';
+	const toolActive = (t) => mode===t ? 'bg-orange-500 text-white border-orange-500' : 'mk-surface-alt mk-text-primary hover:bg-orange-50 dark:hover:bg-orange-500/10';
 
 	const loadingState = loading && (
-		<div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm z-30">
+		<div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm z-30">
 			<div className="animate-spin h-8 w-8 border-2 border-orange-500 border-t-transparent rounded-full" />
 		</div>
 	);
 	const errorBanner = error && (
-		<div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-2 rounded shadow z-30 flex items-center gap-3">{error}<button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white">Retry</button></div>
+		<div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-400/30 text-red-700 dark:text-red-300 text-xs px-4 py-2 rounded shadow z-30 flex items-center gap-3">{error}<button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white">Retry</button></div>
 	);
 	const emptyState = (!loading && zones.length===0 && gates.length===0 && services.length===0 && cameras.length===0) && (
-		<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 border border-dashed border-gray-300 rounded-lg p-6 text-xs text-gray-600 text-center z-30 w-60">No map data configured yet.<br/>Start by drawing a zone (shortcut Z).</div>
+		<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mk-surface-alt border border-dashed mk-border rounded-lg p-6 text-xs mk-text-muted text-center z-30 w-60">No map data configured yet.<br/>Start by drawing a zone (shortcut Z).</div>
 	);
 
 	// Side drawer content ---------------------------------------------------
@@ -326,14 +326,14 @@ const MapEditor = () => {
 
 			{/* Toolbar */}
 			<div className="absolute top-4 left-4 z-40 flex flex-col gap-2">
-				<div className="flex flex-col bg-white/90 backdrop-blur rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+				<div className="flex flex-col mk-surface-alt backdrop-blur rounded-lg mk-border shadow-sm overflow-hidden">
 					<button onClick={()=>setMode(TOOL_MODES.SELECT)} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.SELECT)}`}>Select</button>
 					<button onClick={()=>{setMode(TOOL_MODES.DRAW_ZONE);}} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.DRAW_ZONE)}`}>Draw Zone (Z)</button>
 					<button onClick={()=>setMode(TOOL_MODES.ADD_GATE)} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.ADD_GATE)}`}>Add Gate (G)</button>
 					<button onClick={()=>setMode(TOOL_MODES.ADD_SERVICE)} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.ADD_SERVICE)}`}>Add Service (S)</button>
 					<button onClick={()=>setMode(TOOL_MODES.ADD_CAMERA)} className={`px-3 py-2 text-[11px] ${toolActive(TOOL_MODES.ADD_CAMERA)}`}>Link Camera (C)</button>
 				</div>
-				<div className="bg-white/90 backdrop-blur rounded-lg border border-gray-200 shadow-sm p-2 flex flex-col gap-2 text-[10px]">
+				<div className="mk-surface-alt backdrop-blur rounded-lg mk-border shadow-sm p-2 flex flex-col gap-2 text-[10px]">
 					<div className="font-semibold text-gray-700">Layers</div>
 					{Object.entries(layerVisibility).map(([k,v]) => (
 						<label key={k} className="flex items-center gap-1">
@@ -356,7 +356,7 @@ const MapEditor = () => {
 						<button onClick={redo} disabled={historyIndex>=history.length-1} className="flex-1 px-2 py-1 rounded bg-white border border-gray-300 disabled:opacity-40">Redo</button>
 					</div>
 				</div>
-				<div className="bg-white/90 backdrop-blur rounded-lg border border-gray-200 shadow-sm p-2 text-[10px] space-y-1 w-40">
+				<div className="mk-surface-alt backdrop-blur rounded-lg mk-border shadow-sm p-2 text-[10px] space-y-1 w-40">
 					<div className="font-semibold text-gray-700 mb-1">Legend</div>
 					<div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-orange-500" /> Zone</div>
 					<div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-white border border-orange-500" /> Gate</div>
@@ -367,27 +367,27 @@ const MapEditor = () => {
 
 			{/* Side Drawer */}
 			<div className={`fixed inset-0 z-40 ${drawerOpen ? '' : 'pointer-events-none'}`}> 
-				<div className={`absolute inset-0 bg-black/30 transition-opacity ${drawerOpen ? 'opacity-100' : 'opacity-0'}`} onClick={()=>setSelectedEntity(null)} />
-				<div className={`absolute right-0 top-0 h-full w-full sm:w-[420px] bg-white border-l border-gray-200 shadow-xl transform transition-transform duration-300 flex flex-col ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-					<div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-						<h2 className="text-sm font-semibold text-gray-800 capitalize">{se?.type} Detail</h2>
-						<button onClick={()=>setSelectedEntity(null)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded">✕</button>
+				<div className={`absolute inset-0 bg-black/30 dark:bg-black/60 transition-opacity ${drawerOpen ? 'opacity-100' : 'opacity-0'}`} onClick={()=>setSelectedEntity(null)} />
+				<div className={`absolute right-0 top-0 h-full w-full sm:w-[420px] mk-surface-alt border-l mk-border shadow-xl transform transition-transform duration-300 flex flex-col ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+					<div className="px-4 py-3 border-b mk-border flex items-center justify-between">
+						<h2 className="text-sm font-semibold mk-text-primary capitalize">{se?.type} Detail</h2>
+						<button onClick={()=>setSelectedEntity(null)} className="mk-text-muted hover:mk-text-primary focus:outline-none focus:ring-2 focus:ring-orange-500 rounded">✕</button>
 					</div>
 					<div className="flex-1 overflow-y-auto p-4 space-y-5 text-[11px]">
-						{!se && <div className="text-gray-500">No selection.</div>}
+						{!se && <div className="mk-text-muted">No selection.</div>}
 						{se?.type==='zone' && (
 							<div className="space-y-3">
 								<div>
 									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border border-gray-300 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
 								</div>
 								<div>
 									<label className="block font-medium mb-1">Capacity</label>
-									<input type="number" value={se.data.capacity} onChange={e=>updateSelectedField('capacity', Number(e.target.value))} className="w-full h-8 rounded border border-gray-300 px-2" />
+									<input type="number" value={se.data.capacity} onChange={e=>updateSelectedField('capacity', Number(e.target.value))} className="w-full h-8 rounded border mk-border px-2" />
 								</div>
 								<div>
 									<h4 className="font-medium mb-1">Coordinates</h4>
-									<pre className="bg-gray-900 text-gray-100 p-2 rounded max-h-40 overflow-auto text-[10px]">{JSON.stringify(se.data.polygon.coordinates[0], null, 2)}</pre>
+									<pre className="bg-black/80 dark:bg-gray-900 text-white p-2 rounded max-h-40 overflow-auto text-[10px]">{JSON.stringify(se.data.polygon.coordinates[0], null, 2)}</pre>
 								</div>
 							</div>
 						)}
@@ -395,43 +395,43 @@ const MapEditor = () => {
 							<div className="space-y-3">
 								<div>
 									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border border-gray-300 px-2" />
+									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
 								</div>
-								<div className="text-gray-600">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
+								<div className="mk-text-muted">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
 							</div>
 						)}
 						{se?.type==='service' && (
 							<div className="space-y-3">
 								<div>
 									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border border-gray-300 px-2" />
+									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
 								</div>
 								<div>
 									<label className="block font-medium mb-1">Type</label>
-									<select value={se.data.type} onChange={e=>updateSelectedField('type', e.target.value)} className="w-full h-8 rounded border border-gray-300 px-2">{SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}</select>
+									<select value={se.data.type} onChange={e=>updateSelectedField('type', e.target.value)} className="w-full h-8 rounded border mk-border px-2">{SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}</select>
 								</div>
-								<div className="text-gray-600">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
+								<div className="mk-text-muted">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
 							</div>
 						)}
 						{se?.type==='camera' && (
 							<div className="space-y-3">
 								<div>
 									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border border-gray-300 px-2" />
+									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
 								</div>
 								<div>
 									<label className="block font-medium mb-1">RTSP URL</label>
-									<input value={se.data.rtspUrl} onChange={e=>updateSelectedField('rtspUrl', e.target.value)} className="w-full h-8 rounded border border-gray-300 px-2" />
+									<input value={se.data.rtspUrl} onChange={e=>updateSelectedField('rtspUrl', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
 								</div>
-								<div className="text-gray-600">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
-								<div className="text-gray-600">Status: {se.data.status}</div>
+								<div className="mk-text-muted">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
+								<div className="mk-text-muted">Status: {se.data.status}</div>
 							</div>
 						)}
 					</div>
 					{se && (
-						<div className="border-t border-gray-200 p-3 flex items-center gap-2">
+						<div className="border-t mk-border p-3 flex items-center gap-2">
 							<button onClick={deleteEntity} className="px-3 py-1.5 rounded bg-red-600 text-white text-xs">Delete</button>
-							<button onClick={()=>setSelectedEntity(null)} className="ml-auto px-3 py-1.5 rounded border border-gray-300 bg-white text-xs">Close</button>
+							<button onClick={()=>setSelectedEntity(null)} className="ml-auto px-3 py-1.5 rounded border mk-border mk-surface-alt text-xs">Close</button>
 						</div>
 					)}
 				</div>

@@ -75,14 +75,14 @@ const Reports = () => {
   const alertSeverityPie = useMemo(() => alertSeverity.map(a => ({ name:a.severity, value:a.count })), [alertSeverity]);
   const pieColors = ['#6b7280','#f59e0b','#f97316','#dc2626'];
 
-  const loadingTable = <div className="space-y-2">{Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />))}</div>;
+  const loadingTable = <div className="space-y-2">{Array.from({length:6}).map((_,i)=>(<div key={i} className="h-10 rounded bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse" />))}</div>;
   const emptyState = (
-    <div className="p-8 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur-sm flex flex-col items-center gap-3">
-      <PackageSearch className="text-orange-400" size={40} />
+    <div className="p-8 text-sm mk-text-muted text-center border border-dashed mk-border rounded-lg mk-surface-alt backdrop-blur-sm flex flex-col items-center gap-3">
+      <PackageSearch className="text-orange-600 dark:text-orange-400" size={40} />
       <p>No reports match your filters.</p>
     </div>
   );
-  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading reports <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white/90 text-xs hover:bg-red-500">Retry</button></div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-600 dark:text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading reports <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white/90 text-xs hover:bg-red-500">Retry</button></div>;
 
   const filteredLost = lostReports.filter(r => search.trim()==='' || r.person.toLowerCase().includes(search.toLowerCase()) || r.lastSeen.toLowerCase().includes(search.toLowerCase()));
   const filteredIncidents = incidents.filter(i => (
@@ -108,10 +108,10 @@ const Reports = () => {
   };
 
   return (
-    <div className="space-y-6 text-white/90" aria-label="Reports">
+  <div className="space-y-6 mk-text-primary" aria-label="Reports">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-white flex items-center gap-2"><FileBarChart2 size={18} className="text-orange-500"/> Reports</h2>
+        <h2 className="text-sm font-semibold mk-text-primary flex items-center gap-2"><FileBarChart2 size={18} className="text-orange-500"/> Reports</h2>
         <div className="flex flex-wrap gap-2 text-xs">
           {[
             {k:'lostfound', label:'Lost & Found', icon:ClipboardList},
@@ -119,34 +119,34 @@ const Reports = () => {
             {k:'tasks', label:'Tasks', icon:ListChecks},
             {k:'export', label:'Export', icon:Download},
           ].map(t => (
-            <button key={t.k} onClick={()=>setTab(t.k)} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition-colors ${tab===t.k ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'}`}> <t.icon size={14}/> {t.label}</button>
+            <button key={t.k} onClick={()=>setTab(t.k)} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition-colors ${tab===t.k ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'mk-surface-alt mk-border mk-text-muted hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-text-primary'}`}> <t.icon size={14}/> {t.label}</button>
           ))}
         </div>
-        <div className="hidden md:flex items-center gap-2 ml-auto text-xs">
-          <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+  <div className="hidden md:flex items-center gap-2 ml-auto text-xs">
+          <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="h-9 rounded-md border mk-border mk-surface-alt px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
             {['24h','48h','7d','30d'].map(r => <option key={r} value={r}>{r}</option>)}
           </select>
-          <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+          <select value={zoneFilter} onChange={e=>setZoneFilter(e.target.value)} className="h-9 rounded-md border mk-border mk-surface-alt px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
             {['all','Gate A','Riverbank','Transit Hub','Food Court'].map(z => <option key={z} value={z}>{z==='all' ? 'All Zones' : z}</option>)}
           </select>
-          <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+          <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="h-9 rounded-md border mk-border mk-surface-alt px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
             {['all','lostfound','crowd','tasks'].map(c => <option key={c} value={c}>{c==='all' ? 'All Categories' : c}</option>)}
           </select>
           {tab==='alerts' && (
-            <select value={severityFilter} onChange={e=>setSeverityFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+            <select value={severityFilter} onChange={e=>setSeverityFilter(e.target.value)} className="h-9 rounded-md border mk-border mk-surface-alt px-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50">
               {['all','low','medium','high','critical'].map(s => <option key={s} value={s}>{s==='all'?'All Severities':s}</option>)}
             </select>
           )}
           <div className="relative">
-            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40"/>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-9 pl-7 pr-2 w-40 rounded-md border border-white/10 bg-white/5 focus:bg-white/10 text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
+            <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 mk-text-muted"/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search" className="h-9 pl-7 pr-2 w-40 rounded-md border mk-border mk-surface-alt focus:bg-orange-50 dark:focus:bg-white/10 mk-text-primary placeholder:mk-text-muted focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
           </div>
-          <button onClick={()=>setDensity(d=>d==='compact'?'comfortable':'compact')} className="h-9 px-3 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 flex items-center gap-1 text-white/70 hover:text-white" aria-label="Toggle density">
+          <button onClick={()=>setDensity(d=>d==='compact'?'comfortable':'compact')} className="h-9 px-3 rounded-md border mk-border mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 flex items-center gap-1 mk-text-muted hover:mk-text-primary" aria-label="Toggle density">
             <ListIcon size={14}/> {density==='compact'?'Comfort':'Compact'}
           </button>
         </div>
         <div className="flex md:hidden ml-auto gap-2">
-          <button onClick={()=>setShowFilters(f=>!f)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 ${showFilters? 'bg-orange-500 text-white border-orange-500':'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><Filter size={14}/> Filters</button>
+          <button onClick={()=>setShowFilters(f=>!f)} className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 ${showFilters? 'bg-orange-500 text-white border-orange-500':'mk-surface-alt mk-border mk-text-muted hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-text-primary'}`}><Filter size={14}/> Filters</button>
         </div>
       </div>
       {/* Mobile Filter Panel */}

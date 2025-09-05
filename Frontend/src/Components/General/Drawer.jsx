@@ -12,9 +12,9 @@ const Drawer = ({ open, onClose, title, children }) => {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-40" role="dialog" aria-modal="true">
+  <div className="fixed inset-0 z-40" role="dialog" aria-modal="true">
       <div
-        className="absolute inset-0 bg-[rgba(5,12,24,0.72)] backdrop-blur-sm"
+    className="absolute inset-0 bg-[rgba(0,0,0,0.55)] theme-light:bg-[rgba(0,0,0,0.35)] backdrop-blur-sm"
         onClick={onClose}
       />
       <aside

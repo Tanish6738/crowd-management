@@ -57,8 +57,8 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
   };
 
   return (
-    <div aria-label="My lost reports" className="space-y-4 text-white/85">
-      <div className="hidden md:grid grid-cols-12 text-[11px] font-semibold text-white/55 px-3">
+  <div aria-label="My lost reports" className="space-y-4 mk-text-primary">
+  <div className="hidden md:grid grid-cols-12 text-[11px] font-semibold mk-text-fainter px-3">
         <div className="col-span-2">Case ID</div>
         <div className="col-span-2">Type</div>
         <div className="col-span-3">Status</div>
@@ -70,11 +70,11 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
           Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-12 rounded bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"
+              className="h-12 rounded bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"
             />
           ))}
         {!loading && sorted.length === 0 && (
-          <div className="p-8 text-center text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg">
+          <div className="p-8 text-center text-xs mk-text-muted mk-surface-alt mk-border rounded-lg">
             No reports yet.
           </div>
         )}
@@ -88,25 +88,25 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") setDetail(r);
               }}
-              className={`grid grid-cols-12 items-center border rounded-md px-3 py-2 text-[11px] cursor-pointer transition backdrop-blur-sm ${detail?.id === r.id ? "bg-white/10 border-orange-400/60" : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}`}
+              className={`grid grid-cols-12 items-center mk-border rounded-md px-3 py-2 text-[11px] cursor-pointer transition backdrop-blur-sm ${detail?.id === r.id ? "bg-orange-50 dark:bg-white/10 border-orange-400/60" : "mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border"}`}
             >
               <div
-                className="col-span-2 font-mono truncate text-white/55"
+                className="col-span-2 font-mono truncate mk-text-fainter"
                 title={r.id}
               >
                 {r.id}
               </div>
-              <div className="col-span-2 capitalize text-white/80">
+              <div className="col-span-2 capitalize mk-text-primary">
                 {r.type}
               </div>
               <div className="col-span-3">
                 <StatusBadge value={r.status} />
               </div>
-              <div className="col-span-3 flex items-center gap-1 text-white/60">
-                <Clock size={12} className="text-white/40" />
+              <div className="col-span-3 flex items-center gap-1 mk-text-muted">
+                <Clock size={12} className="mk-text-fainter" />
                 {relative(r.createdAt)}
               </div>
-              <div className="col-span-2 text-right font-medium text-white/75">
+              <div className="col-span-2 text-right font-medium mk-text-secondary">
                 {r.location}
               </div>
             </div>
@@ -117,11 +117,11 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
           Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-24 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"
+              className="h-24 rounded-lg bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"
             />
           ))}
         {!loading && sorted.length === 0 && (
-          <div className="p-8 text-center text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg">
+          <div className="p-8 text-center text-xs mk-text-muted mk-surface-alt mk-border rounded-lg">
             No reports yet.
           </div>
         )}
@@ -135,24 +135,24 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") setDetail(r);
               }}
-              className={`border rounded-lg p-3 flex flex-col gap-2 text-[11px] cursor-pointer backdrop-blur-sm transition ${detail?.id === r.id ? "border-orange-400/60 bg-white/10" : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20"}`}
+              className={`mk-border rounded-lg p-3 flex flex-col gap-2 text-[11px] cursor-pointer backdrop-blur-sm transition ${detail?.id === r.id ? "border-orange-400/60 bg-orange-50 dark:bg-white/10" : "mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border"}`}
             >
               <div className="flex justify-between items-start">
-                <span className="font-mono text-[10px] text-white/45">
+                <span className="font-mono text-[10px] mk-text-fainter">
                   {r.id}
                 </span>
                 <StatusBadge value={r.status} />
               </div>
-              <div className="font-medium capitalize text-white/85">
+              <div className="font-medium capitalize mk-text-primary">
                 {r.type}
               </div>
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 mk-text-muted">
                 <span className="inline-flex items-center gap-1">
-                  <Clock size={12} className="text-white/40" />
+                  <Clock size={12} className="mk-text-fainter" />
                   {relative(r.createdAt)}
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <MapPin size={12} className="text-white/40" />
+                  <MapPin size={12} className="mk-text-fainter" />
                   {r.location}
                 </span>
               </div>
@@ -168,9 +168,9 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
         title={detail ? (editing ? "Editing " : "Report ") + detail.id : ""}
       >
         {detail && (
-          <div className="space-y-4 text-sm text-white/80">
+          <div className="space-y-4 text-sm mk-text-secondary">
             {!editing && (
-              <div className="text-xs text-white/75 whitespace-pre-wrap">
+              <div className="text-xs mk-text-secondary whitespace-pre-wrap">
                 {detail.description}
               </div>
             )}
@@ -180,7 +180,7 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
                   rows={4}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full rounded-md border border-white/10 bg-white/5 p-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+                  className="w-full rounded-md mk-border mk-surface-alt p-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
                 />
                 <div className="flex gap-2">
                   <button
@@ -191,21 +191,21 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
                   </button>
                   <button
                     onClick={() => setEditing(false)}
-                    className="flex-1 h-9 rounded-md bg-white/10 hover:bg-white/20 text-white/70 text-xs font-medium"
+                    className="flex-1 h-9 rounded-md mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/20 mk-text-muted text-xs font-medium"
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             )}
-            <div className="flex flex-wrap gap-2 text-[10px] text-white/60">
+            <div className="flex flex-wrap gap-2 text-[10px] mk-text-muted">
               <StatusBadge value={detail.status} />
               <span className="inline-flex items-center gap-1">
-                <Clock size={12} className="text-white/40" />
+                <Clock size={12} className="mk-text-fainter" />
                 {relative(detail.createdAt)}
               </span>
               <span className="inline-flex items-center gap-1">
-                <MapPin size={12} className="text-white/40" />
+                <MapPin size={12} className="mk-text-fainter" />
                 {detail.location}
               </span>
             </div>

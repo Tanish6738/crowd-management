@@ -56,12 +56,12 @@ const Profile = ({ volunteer:initialVolunteer, online:initialOnline, onStatusCha
   ];
 
   return (
-  <div className="w-full text-white/90" aria-label="Volunteer profile">
+  <div className="w-full mk-text-primary" aria-label="Volunteer profile">
       <div className="flex flex-col lg:grid lg:grid-cols-5 lg:gap-8">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6 mb-6 lg:mb-0">
           {/* Profile Card */}
-          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-5 flex flex-col gap-5">
+          <div className="rounded-lg mk-border mk-surface-alt backdrop-blur-sm p-5 flex flex-col gap-5">
             <div className="flex items-start gap-4">
               <div className="relative">
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 text-[#081321] flex items-center justify-center font-semibold text-xl select-none">
@@ -70,7 +70,7 @@ const Profile = ({ volunteer:initialVolunteer, online:initialOnline, onStatusCha
                 <span className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-[#0d1623] flex items-center justify-center text-white text-[10px] ${v.status==='online'? 'bg-green-500':'bg-white/30'}`}>{v.status==='online'? <Wifi size={12}/> : <WifiOff size={12}/>}</span>
               </div>
               <div className="flex-1 min-w-0 space-y-1">
-                <h2 className="text-lg font-semibold text-white truncate flex items-center gap-2">{v.name} <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">Volunteer</span></h2>
+                <h2 className="text-lg font-semibold mk-text-primary truncate flex items-center gap-2">{v.name} <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">Volunteer</span></h2>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {(v.assignedZones||[]).map(z => (
                     <span key={z} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 text-[11px] font-medium"><MapPin size={12}/>{z}</span>
@@ -94,18 +94,18 @@ const Profile = ({ volunteer:initialVolunteer, online:initialOnline, onStatusCha
               <div className="flex items-center gap-3">
                 <Mail size={14} className="text-white/40"/>
                 <div className="flex-1">
-                  <div className="font-medium text-white/80">Email</div>
-                  <div className="text-white/60 break-all">{v.email}</div>
+                  <div className="font-medium mk-text-primary">Email</div>
+                  <div className="mk-text-muted break-all">{v.email}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Phone size={14} className="text-white/40"/>
                 <div className="flex-1">
-                  <div className="font-medium text-white/80">Phone</div>
-                  <div className="text-white/60">{v.phone}</div>
+                  <div className="font-medium mk-text-primary">Phone</div>
+                  <div className="mk-text-muted">{v.phone}</div>
                 </div>
               </div>
-              <button className="w-full h-10 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"><Lock size={14}/> Change Password</button>
+              <button className="w-full h-10 rounded-md mk-border mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 text-xs font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"><Lock size={14}/> Change Password</button>
             </div>
             <button className="w-full h-11 rounded-md bg-red-600/80 hover:bg-red-600 text-white font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"><LogOut size={16}/> Logout</button>
           </div>
@@ -116,17 +116,17 @@ const Profile = ({ volunteer:initialVolunteer, online:initialOnline, onStatusCha
           {/* Performance Stats */}
             <div className="grid sm:grid-cols-3 gap-3">
               {stats.map(s => (
-                <div key={s.label} className="rounded-lg border border-white/10 bg-white/5 p-4 flex flex-col gap-2 backdrop-blur-sm">
-                  <div className="text-[11px] font-medium text-white/50 uppercase tracking-wide">{s.label}</div>
+                <div key={s.label} className="rounded-lg mk-border mk-surface-alt p-4 flex flex-col gap-2 backdrop-blur-sm">
+                  <div className="text-[11px] font-medium mk-text-fainter uppercase tracking-wide">{s.label}</div>
                   <div className={`text-2xl font-semibold tabular-nums ${s.color.replace('text-','text-')}`}>{s.value}</div>
                 </div>
               ))}
             </div>
 
             {/* Recent Activity */}
-            <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Clock size={16} className="text-orange-400"/> Recent Activity</h3>
-              <ul className="space-y-3 text-xs text-white/65">
+            <div className="rounded-lg mk-border mk-surface-alt backdrop-blur-sm p-5 space-y-4">
+              <h3 className="text-sm font-semibold mk-text-primary flex items-center gap-2"><Clock size={16} className="text-orange-400"/> Recent Activity</h3>
+              <ul className="space-y-3 text-xs mk-text-secondary">
                 <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-green-400"/> Completed task "Water distribution" 25m ago</li>
                 <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-blue-400"/> Responded to alert in Zone 5 40m ago</li>
                 <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-white/30"/> Went online 2h ago</li>

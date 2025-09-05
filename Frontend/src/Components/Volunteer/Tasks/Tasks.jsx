@@ -10,10 +10,10 @@ const relative = (iso) => {
 };
 
 const statusColors = {
-  new: 'bg-blue-500/15 text-blue-300 border-blue-400/30',
-  in_progress: 'bg-amber-500/15 text-amber-300 border-amber-400/30',
-  done: 'bg-green-500/15 text-green-300 border-green-400/30',
-  cancelled: 'bg-white/10 text-white/55 border-white/15'
+  new: 'bg-blue-500/15 mk-text-secondary border-blue-400/30',
+  in_progress: 'bg-amber-500/15 mk-text-secondary border-amber-400/30',
+  done: 'bg-green-500/15 mk-text-secondary border-green-400/30',
+  cancelled: 'mk-surface-alt mk-text-fainter mk-border'
 };
 
 const Tasks = ({ volunteerId }) => {
@@ -83,36 +83,36 @@ const Tasks = ({ volunteerId }) => {
   const TaskCard = ({ task }) => (
     <button
       onClick={()=>openDetail(task)}
-      className="w-full text-left rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex flex-col gap-3 active:scale-[0.99] transition group hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+      className="w-full text-left rounded-lg mk-border mk-surface-alt backdrop-blur-sm p-4 flex flex-col gap-3 active:scale-[0.99] transition group hover:bg-orange-50 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
       aria-label={task.title}
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-sm text-white leading-snug line-clamp-2 flex-1 group-hover:text-white">{task.title}</h3>
         {statusPill(task.status)}
       </div>
-      <div className="flex items-center gap-2 text-[11px] text-white/60">
+      <div className="flex items-center gap-2 text-[11px] mk-text-muted">
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium">{task.zone}</span>
-        <span className="flex items-center gap-1"><Clock size={12} className="text-white/40"/>{relative(task.assignedAt)}</span>
+        <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>{relative(task.assignedAt)}</span>
       </div>
     </button>
   );
 
   const skeleton = Array.from({length:4}).map((_,i)=>(
-    <div key={i} className="h-24 bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse rounded-lg"/>
+    <div key={i} className="h-24 bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse rounded-lg"/>
   ));
 
   return (
-  <div className="space-y-4 text-white/90" aria-label="Volunteer tasks">
+  <div className="space-y-4 mk-text-primary" aria-label="Volunteer tasks">
       {/* Tab Switch */}
       <div className="flex gap-2 text-xs font-medium">
-        <button onClick={()=>setActiveTab('active')} className={`px-3 py-1.5 rounded-full border transition ${activeTab==='active'? 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] border-[var(--mk-accent)] shadow hover:brightness-110':'bg-white/5 border-white/10 text-white/65 hover:bg-white/10'}`}>Active</button>
-        <button onClick={()=>setActiveTab('history')} className={`px-3 py-1.5 rounded-full border transition ${activeTab==='history'? 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] border-[var(--mk-accent)] shadow hover:brightness-110':'bg-white/5 border-white/10 text-white/65 hover:bg-white/10'}`}>History</button>
-        <div className="ml-auto text-[11px] text-white/50 flex items-center gap-1"><AlertCircle size={12} className="text-orange-400"/> Updated live</div>
+        <button onClick={()=>setActiveTab('active')} className={`px-3 py-1.5 rounded-full border transition ${activeTab==='active'? 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] border-[var(--mk-accent)] shadow hover:brightness-110':'mk-surface-alt mk-border mk-text-muted hover:bg-orange-50 dark:hover:bg-white/10'}`}>Active</button>
+        <button onClick={()=>setActiveTab('history')} className={`px-3 py-1.5 rounded-full border transition ${activeTab==='history'? 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] border-[var(--mk-accent)] shadow hover:brightness-110':'mk-surface-alt mk-border mk-text-muted hover:bg-orange-50 dark:hover:bg-white/10'}`}>History</button>
+        <div className="ml-auto text-[11px] mk-text-fainter flex items-center gap-1"><AlertCircle size={12} className="text-orange-400"/> Updated live</div>
       </div>
 
       {loading && <div className="grid gap-3">{skeleton}</div>}
       {!loading && error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40 text-sm flex justify-between items-center text-red-300">
+  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40 text-sm flex justify-between items-center text-red-300">
           <span>{error}</span>
           <button onClick={load} className="underline hover:text-red-200">Retry</button>
         </div>
@@ -120,23 +120,23 @@ const Tasks = ({ volunteerId }) => {
 
       {!loading && !error && activeTab==='active' && (
         <div className="grid gap-3">
-          {activeTasks.length === 0 && <div className="p-10 text-center text-sm text-white/50 bg-white/5 border border-white/10 rounded-lg">No active tasks yet.</div>}
+          {activeTasks.length === 0 && <div className="p-10 text-center text-sm mk-text-muted mk-surface-alt mk-border rounded-lg">No active tasks yet.</div>}
           {activeTasks.map(t => <TaskCard key={t.id} task={t} />)}
         </div>
       )}
 
       {!loading && !error && activeTab==='history' && (
         <div className="grid gap-3">
-          {history.length === 0 && <div className="p-10 text-center text-sm text-white/50 bg-white/5 border border-white/10 rounded-lg">No past tasks.</div>}
+          {history.length === 0 && <div className="p-10 text-center text-sm mk-text-muted mk-surface-alt mk-border rounded-lg">No past tasks.</div>}
           {history.map(t => (
-            <div key={t.id} className="rounded-lg border border-white/10 bg-white/5 p-4 flex flex-col gap-2">
+            <div key={t.id} className="rounded-lg mk-border mk-surface-alt p-4 flex flex-col gap-2">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-medium text-sm text-white line-clamp-2">{t.title}</h3>
+                <h3 className="font-medium text-sm mk-text-primary line-clamp-2">{t.title}</h3>
                 {statusPill(t.status)}
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-white/60">
+              <div className="flex items-center gap-2 text-[11px] mk-text-muted">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium">{t.zone}</span>
-                <span className="flex items-center gap-1"><Clock size={12} className="text-white/40"/>Assigned {relative(t.assignedAt)}</span>
+                <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>Assigned {relative(t.assignedAt)}</span>
                 {t.completedAt && <span className="flex items-center gap-1 text-green-300"><CheckCircle2 size={12} className="text-green-300"/>Done {relative(t.completedAt)}</span>}
               </div>
             </div>

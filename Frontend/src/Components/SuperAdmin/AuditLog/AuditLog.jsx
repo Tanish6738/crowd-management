@@ -227,14 +227,14 @@ const AuditLogs = () => {
     return (
       <tbody>
         <AnimatePresence initial={false}>
-          {pageRows.map((l) => (
+      {pageRows.map((l) => (
             <motion.tr
               key={l.id}
               layout
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="even:bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,143,42,0.12)] cursor-pointer"
+        className="mk-row-hover-accent cursor-pointer"
               onClick={() => setDetail(l)}
             >
               <td className="px-3 py-2 whitespace-nowrap tabular-nums">
@@ -242,7 +242,7 @@ const AuditLogs = () => {
               </td>
               <td className="px-3 py-2">{l.actor}</td>
               <td className="px-3 py-2">
-                <span className="px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.08)] text-[10px] uppercase border border-[rgba(255,255,255,0.16)] mk-text-secondary/90 tracking-wide">
+                <span className="mk-badge text-[9px] tracking-wide uppercase">
                   {l.role}
                 </span>
               </td>
@@ -343,7 +343,7 @@ const AuditLogs = () => {
 
   return (
     <div className="space-y-6 mk-text-secondary" aria-label="Audit Logs">
-      <div className="flex flex-wrap items-center gap-3 mk-panel p-4 rounded-xl">
+  <div className="flex flex-wrap items-center gap-3 mk-panel p-4 rounded-xl">
         <h2 className="text-sm font-semibold mk-text-primary flex items-center gap-2 tracking-wide">
           <ListTree size={18} className="text-[var(--mk-accent)]" /> Audit Logs
         </h2>
@@ -355,7 +355,7 @@ const AuditLogs = () => {
               setDateFrom(e.target.value);
               setPage(1);
             }}
-            className="h-9 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-9 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           />
           <input
             type="date"
@@ -364,7 +364,7 @@ const AuditLogs = () => {
               setDateTo(e.target.value);
               setPage(1);
             }}
-            className="h-9 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-9 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           />
           <select
             value={tenantFilter}
@@ -372,7 +372,7 @@ const AuditLogs = () => {
               setTenantFilter(e.target.value);
               setPage(1);
             }}
-            className="h-9 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-9 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           >
             <option value="all">All Tenants</option>
             {tenantsList.map((t) => (
@@ -387,7 +387,7 @@ const AuditLogs = () => {
               setUserFilter(e.target.value);
               setPage(1);
             }}
-            className="h-9 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-9 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           >
             <option value="all">All Users</option>
             {usersList.map((u) => (
@@ -402,7 +402,7 @@ const AuditLogs = () => {
               setActionFilter(e.target.value);
               setPage(1);
             }}
-            className="h-9 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-9 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           >
             <option value="all">All Actions</option>
             {actionsList.map((a) => (
@@ -423,7 +423,7 @@ const AuditLogs = () => {
                 setPage(1);
               }}
               placeholder="Search"
-              className="h-9 w-52 pl-7 pr-2 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] focus:bg-[rgba(255,255,255,0.12)] text-xs focus:outline-none focus:border-[var(--mk-accent)]"
+              className="h-9 w-52 pl-7 pr-2 mk-subtle focus:bg-[var(--mk-surface-2)] text-xs focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
             />
           </div>
           <button
@@ -468,7 +468,7 @@ const AuditLogs = () => {
                   setDateFrom(e.target.value);
                   setPage(1);
                 }}
-                className="h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+                className="h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
               />
               <input
                 type="date"
@@ -477,7 +477,7 @@ const AuditLogs = () => {
                   setDateTo(e.target.value);
                   setPage(1);
                 }}
-                className="h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+                className="h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -487,7 +487,7 @@ const AuditLogs = () => {
                   setTenantFilter(e.target.value);
                   setPage(1);
                 }}
-                className="h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+                className="h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
               >
                 <option value="all">Tenants</option>
                 {tenantsList.map((t) => (
@@ -502,7 +502,7 @@ const AuditLogs = () => {
                   setUserFilter(e.target.value);
                   setPage(1);
                 }}
-                className="h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+                className="h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
               >
                 <option value="all">Users</option>
                 {usersList.map((u) => (
@@ -519,7 +519,7 @@ const AuditLogs = () => {
                   setActionFilter(e.target.value);
                   setPage(1);
                 }}
-                className="flex-1 h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+                className="flex-1 h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
               >
                 <option value="all">Actions</option>
                 {actionsList.map((a) => (
@@ -540,7 +540,7 @@ const AuditLogs = () => {
                     setPage(1);
                   }}
                   placeholder="Search"
-                  className="h-8 w-full pl-7 pr-2 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] focus:bg-[rgba(255,255,255,0.12)] focus:outline-none focus:border-[var(--mk-accent)]"
+                  className="h-8 w-full pl-7 pr-2 mk-subtle focus:bg-[var(--mk-surface-2)] focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
                 />
               </div>
             </div>
@@ -549,9 +549,9 @@ const AuditLogs = () => {
       </AnimatePresence>
 
       <div className="mk-panel rounded-xl overflow-hidden">
-        <div className="overflow-auto max-h-[600px]">
-          <table className="min-w-full text-xs">
-            <thead className="bg-[rgba(255,255,255,0.05)] backdrop-blur text-[var(--mk-text-secondary)] sticky top-0 z-10">
+    <div className="overflow-auto max-h-[600px]">
+          <table className="min-w-full text-xs mk-table-zebra">
+      <thead className="mk-subtle backdrop-blur text-[var(--mk-text-secondary)] sticky top-0 z-10">
               <tr>
                 {headerCell("Time", "ts")}
                 {headerCell("Actor", "actor")}

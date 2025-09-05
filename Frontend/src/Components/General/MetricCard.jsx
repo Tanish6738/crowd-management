@@ -25,7 +25,7 @@ const MetricCard = ({ title, value, delta, loading, icon }) => {
         )}
       </div>
       {loading ? (
-        <div className="h-6 w-20 rounded bg-[rgba(255,255,255,0.08)] animate-pulse" />
+  <div className="h-6 w-20 rounded mk-subtle animate-pulse" aria-label="Loading metric" />
       ) : (
         <div className="text-xl sm:text-2xl font-semibold mk-text-primary tabular-nums tracking-wide">{value}</div>
       )}

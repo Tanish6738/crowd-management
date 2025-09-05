@@ -24,14 +24,14 @@ import {
 // type ZoneOccupancy = { zoneId:string; name:string; occupancyPct:number; capacity:number; status:'normal'|'busy'|'critical'|'closed'; deltaPct:number; lastUpdated:string }
 // type GateCount = { gateId:string; name:string; in:number; out:number; ts:string }
 
-// Small status dot colors (keep vivid for readability on dark glass)
+// Small status dot colors (vivid neutral to theme backgrounds)
 const statusColor = (s) =>
   ({
     normal: "bg-emerald-500",
-    busy: "bg-amber-400",
-    critical: "bg-red-500",
+    busy: "bg-amber-500",
+    critical: "bg-red-600",
     closed: "bg-gray-500",
-  })[s] || "bg-gray-500";
+  })[s] || "bg-gray-400";
 
 const CrowdAnalytics = () => {
   const [loading, setLoading] = useState(true);
@@ -169,19 +169,19 @@ const CrowdAnalytics = () => {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="h-10 rounded-md bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"
+          className="h-10 rounded-md bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"
         />
       ))}
     </div>
   );
   const emptyState = (
-    <div className="p-6 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur-sm">
+    <div className="p-6 text-sm mk-text-muted text-center border border-dashed mk-border rounded-lg mk-surface-alt backdrop-blur-sm">
       No data available yet.
     </div>
   );
   const errorBanner = (
-    <div className="p-4 bg-red-500/10 text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">
-      Error loading analytics{" "}
+    <div className="p-4 bg-red-500/10 text-red-600 dark:text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">
+      Error loading analytics{' '}
       <button
         onClick={() => window.location.reload()}
         className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500"

@@ -215,13 +215,13 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
   ];
 
   return (
-    <div className="space-y-5 text-white/90" aria-label="Lost and Found module">
+    <div className="space-y-5 mk-text-primary" aria-label="Lost and Found module">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-white">Lost & Found</h2>
+        <h2 className="text-sm font-semibold mk-text-primary">Lost & Found</h2>
         <div
           role="tablist"
           aria-label="Lost & Found tabs"
-          className="flex flex-wrap gap-1 text-xs rounded-md border border-white/10 bg-white/5 backdrop-blur-sm p-1"
+          className="flex flex-wrap gap-1 text-xs rounded-md mk-border mk-surface-alt backdrop-blur-sm p-1"
         >
           {tabs.map((t) => (
             <button
@@ -232,7 +232,7 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
                 setTab(t.key);
                 if (t.key === "lostReport") setShowLostReportModal(true);
               }}
-              className={`px-3 py-1.5 rounded-md font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 transition ${tab === t.key ? "bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] shadow" : "text-white/65 hover:bg-white/10"}`}
+              className={`px-3 py-1.5 rounded-md font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 transition ${tab === t.key ? "bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] shadow" : "mk-text-muted hover:bg-orange-50 dark:hover:bg-white/10"}`}
             >
               {t.label}
             </button>

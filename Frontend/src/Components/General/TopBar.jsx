@@ -3,15 +3,15 @@ import React from 'react';
 // TopBar: mobile-first; optional menu button; accessible landmarks
 const TopBar = ({ onSearch, searchTerm, modelVersion, onMenu }) => {
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-xl border-b mk-divider flex items-center gap-3 px-3 sm:px-5 h-14 md:h-16 shadow-[0_4px_18px_-8px_rgba(0,0,0,.6)] bg-[rgba(10,22,39,.85)]" role="banner">
+  <header className="sticky top-0 z-30 backdrop-blur-xl border-b mk-divider flex items-center gap-3 px-3 sm:px-5 h-14 md:h-16 shadow-[0_4px_18px_-8px_rgba(0,0,0,.35)] mk-surface-alt/80" role="banner">
       <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
           onClick={onMenu}
-          className="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(255,255,255,0.05)] text-[13px] font-semibold mk-text-secondary hover:mk-text-primary hover:bg-[rgba(255,255,255,0.09)] focus:outline-none focus-visible:shadow-[var(--mk-focus-ring)] border border-[rgba(255,255,255,0.12)]"
+          className="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-full mk-interactive text-[13px] font-semibold mk-text-secondary hover:mk-text-primary focus:outline-none focus-visible:shadow-[var(--mk-focus-ring)] mk-border"
           aria-label="Toggle navigation"
         >☰</button>
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-[var(--mk-accent)] to-[var(--mk-accent-strong)] flex items-center justify-center text-[#09121f] font-bold text-sm shadow-[0_4px_14px_-4px_rgba(255,139,42,0.55)] ring-1 ring-[rgba(255,255,255,0.18)]" aria-label="Dhruv AI Logo">DA</div>
+  <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-[var(--mk-accent)] to-[var(--mk-accent-strong)] flex items-center justify-center text-[#09121f] font-bold text-sm shadow-[0_4px_14px_-4px_rgba(255,139,42,0.45)] ring-1 ring-[var(--mk-accent)]/50" aria-label="Dhruv AI Logo">DA</div>
         <span className="hidden xs:block truncate font-semibold mk-text-primary text-sm sm:text-[15px] tracking-wide">Dhruv AI Super Admin</span>
       </div>
       <div className="flex-1 min-w-[120px]" />
@@ -19,7 +19,7 @@ const TopBar = ({ onSearch, searchTerm, modelVersion, onMenu }) => {
         <input
           value={searchTerm}
           onChange={e => onSearch?.(e.target.value)}
-          className="peer w-full h-10 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] focus:border-[var(--mk-accent)] focus:outline-none px-3 text-xs sm:text-[13px] mk-text-secondary placeholder:mk-text-muted/60 tracking-wide focus:bg-[rgba(255,255,255,0.12)] transition-colors"
+          className="peer w-full h-10 rounded-xl mk-subtle focus:border-[var(--mk-accent)] focus:outline-none px-3 text-xs sm:text-[13px] mk-text-secondary placeholder:mk-text-muted/60 tracking-wide focus:bg-[var(--mk-surface-2)] transition-colors border"
           placeholder="Search..."
           aria-label="Search"
         />
@@ -31,7 +31,7 @@ const TopBar = ({ onSearch, searchTerm, modelVersion, onMenu }) => {
       >
         Model {modelVersion}
       </button>
-      <div className="w-10 h-10 rounded-xl bg-[rgba(255,255,255,0.08)] flex items-center justify-center text-[11px] sm:text-[12px] font-semibold mk-text-secondary ring-1 ring-[rgba(255,255,255,0.1)] select-none">SA</div>
+  <div className="w-10 h-10 rounded-xl mk-subtle flex items-center justify-center text-[11px] sm:text-[12px] font-semibold mk-text-secondary ring-1 ring-[var(--mk-muted)]/40 select-none">SA</div>
     </header>
   );
 };

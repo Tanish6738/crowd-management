@@ -308,7 +308,7 @@ const Analytics = () => {
       aria-label="Platform Analytics"
     >
       {/* Filters Row */}
-      <div className="flex flex-wrap gap-2 items-center text-xs mk-panel p-3 sm:p-4 rounded-xl border border-transparent">
+  <div className="flex flex-wrap gap-2 items-center text-xs mk-panel p-3 sm:p-4 rounded-xl border border-transparent">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold mk-text-primary flex items-center gap-1 tracking-wide">
             <Filter size={14} className="text-[var(--mk-accent)]" />
@@ -317,7 +317,7 @@ const Analytics = () => {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           >
             <option value="24h">Last 24h</option>
             <option value="7d">Last 7d</option>
@@ -326,7 +326,7 @@ const Analytics = () => {
           <select
             value={tenantFilter}
             onChange={(e) => setTenantFilter(e.target.value)}
-            className="h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           >
             {tenantOptions.map((t) => (
               <option key={t} value={t}>
@@ -337,7 +337,7 @@ const Analytics = () => {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-8 rounded-md bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-2 focus:outline-none focus:border-[var(--mk-accent)]"
+            className="h-8 mk-subtle px-2 focus:outline-none focus:border-[var(--mk-accent)] bg-transparent"
           >
             {roleOptions.map((r) => (
               <option key={r} value={r}>
@@ -403,7 +403,7 @@ const Analytics = () => {
                 data={alertsTrend}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mk-muted)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip wrapperClassName="text-xs" />
@@ -431,7 +431,7 @@ const Analytics = () => {
                 data={throughput}
                 margin={{ top: 10, right: 20, left: -10, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mk-muted)" />
                 <XAxis dataKey="ts" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip wrapperClassName="text-xs" />
@@ -465,7 +465,7 @@ const Analytics = () => {
                   .slice(0, 6)}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mk-muted)" />
                 <XAxis dataKey="tenant" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip wrapperClassName="text-xs" />
@@ -487,7 +487,7 @@ const Analytics = () => {
                 data={filteredGrowth}
                 margin={{ top: 10, right: 20, left: -10, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mk-muted)" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip wrapperClassName="text-xs" />
@@ -550,7 +550,7 @@ const Analytics = () => {
             style={{ maxHeight: containerHeight }}
             className="overflow-auto relative"
           >
-            <table className="min-w-full text-xs">
+            <table className="min-w-full text-xs mk-table-zebra">
               <thead className="sticky top-0 bg-[rgba(255,255,255,0.05)] backdrop-blur z-10 mk-text-muted">
                 <tr>
                   {[
@@ -593,7 +593,7 @@ const Analytics = () => {
                 {visibleRows.map((r) => (
                   <tr
                     key={r.tenant}
-                    className="even:bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,143,42,0.12)] transition-colors"
+                    className="mk-row-hover-accent transition-colors"
                   >
                     <td className="px-3 py-2 font-medium mk-text-secondary">
                       {r.tenant}

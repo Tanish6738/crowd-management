@@ -19,12 +19,12 @@ import {
 
 // type Task = { id:string; title:string; zoneName:string; volunteerName:string; status:'pending'|'in_progress'|'done'|'cancelled'; createdAt:string; ackAt?:string; doneAt?:string; evidenceCount?:number };
 
-const statusStyles = {
-  pending: 'bg-orange-500/15 text-orange-300 border-orange-400/30',
-  in_progress: 'bg-blue-500/15 text-blue-300 border-blue-400/30',
-  done: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
-  cancelled: 'bg-gray-500/15 text-gray-300 border-gray-400/30'
-};
+  const statusStyles = {
+    pending: 'bg-orange-500/15 mk-text-secondary border-orange-400/30',
+    in_progress: 'bg-blue-500/15 mk-text-secondary border-blue-400/30',
+    done: 'bg-emerald-500/15 mk-text-secondary border-emerald-400/30',
+    cancelled: 'bg-gray-500/15 mk-text-muted border-gray-400/30'
+  };
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -90,21 +90,21 @@ const Tasks = () => {
 
   const loadingCards = (
     <div className="grid [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {Array.from({length:8}).map((_,i)=>(<div key={i} className="h-40 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"/>))}
+      {Array.from({length:8}).map((_,i)=>(<div key={i} className="h-40 rounded-lg bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"/>))}
     </div>
   );
   const emptyState = (
-    <div className="p-10 text-sm text-white/60 text-center border border-dashed border-white/15 rounded-lg bg-white/5 backdrop-blur flex flex-col items-center gap-3">
+    <div className="p-10 text-sm mk-text-muted text-center border border-dashed mk-border rounded-lg mk-surface-alt backdrop-blur flex flex-col items-center gap-3">
       <Inbox className="text-orange-400" size={36} />
       <p>No tasks match your filters.</p>
       <button onClick={()=>setCreateOpen(true)} className="px-3 py-1.5 rounded-md bg-orange-500 text-white text-xs font-medium flex items-center gap-1 hover:bg-orange-600"><Plus size={14}/> Create Task</button>
     </div>
   );
-  const errorBanner = <div className="p-4 bg-red-500/10 text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading tasks <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Retry</button></div>;
+  const errorBanner = <div className="p-4 bg-red-500/10 text-red-600 dark:text-red-300 text-sm flex items-center justify-between rounded border border-red-500/30">Error loading tasks <button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Retry</button></div>;
 
   const cardGrid = (
     <LayoutGroup>
-      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))] gap-4">
+  <div className="grid [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))] gap-4">
         <AnimatePresence initial={false}>
           {filtered.map(t => (
             <motion.button
@@ -116,22 +116,22 @@ const Tasks = () => {
               whileHover={{y:-4}}
               whileTap={{scale:0.97}}
               onClick={()=>setDetailTask(t)}
-              className="relative bg-white/5 backdrop-blur border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:bg-white/7 hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+              className="relative mk-surface-alt backdrop-blur mk-border rounded-lg p-3 flex flex-col gap-2 text-left shadow-sm hover:bg-orange-50 dark:hover:bg-white/7 hover:border-orange-400/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
               aria-label={`Open task ${t.title}`}
             >
               <div className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-white/90 truncate flex items-center gap-1"><ClipboardList size={14} className="text-orange-400"/> {t.title}</div>
-                  <div className="text-[11px] text-white/60 flex items-center gap-2 flex-wrap">
-                    <span className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 flex items-center gap-1 text-white/70"><MapPin size={11}/> {t.zoneName}</span>
-                    <span className="flex items-center gap-1 text-white/60"><UserIcon size={11}/> {t.volunteerName}</span>
+                  <div className="text-xs font-semibold mk-text-primary truncate flex items-center gap-1"><ClipboardList size={14} className="text-orange-400"/> {t.title}</div>
+                  <div className="text-[11px] mk-text-muted flex items-center gap-2 flex-wrap">
+                    <span className="px-1.5 py-0.5 rounded mk-surface-alt mk-border flex items-center gap-1 mk-text-secondary"><MapPin size={11}/> {t.zoneName}</span>
+                    <span className="flex items-center gap-1 mk-text-muted"><UserIcon size={11}/> {t.volunteerName}</span>
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded border text-[10px] uppercase whitespace-nowrap ${statusStyles[t.status]}`}>{t.status.replace('_',' ')}</span>
               </div>
-              <div className="mt-auto flex items-center justify-between text-[10px] text-white/50">
+              <div className="mt-auto flex items-center justify-between text-[10px] mk-text-fainter">
                 <span className="inline-flex items-center gap-1"><Clock size={11}/> {new Date(t.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                {t.evidenceCount ? <span className="text-orange-300 font-medium">Ev: {t.evidenceCount}</span> : null}
+                {t.evidenceCount ? <span className="text-orange-400 font-medium">Ev: {t.evidenceCount}</span> : null}
               </div>
               <motion.span layoutId={`bar-${t.id}`} className="absolute left-0 top-0 h-full w-0.5 rounded-r bg-gradient-to-b from-orange-400 to-orange-600" />
             </motion.button>
@@ -142,9 +142,9 @@ const Tasks = () => {
   );
 
   const tableList = (
-    <div className="overflow-x-auto border border-white/10 rounded-lg bg-white/5 backdrop-blur shadow-sm">
+    <div className="overflow-x-auto mk-border rounded-lg mk-surface-alt backdrop-blur shadow-sm">
       <table className="min-w-full text-xs">
-        <thead className="bg-white/5 text-white/70 sticky top-0">
+        <thead className="mk-surface-alt mk-text-secondary sticky top-0">
           <tr>
             {['Task','Zone','Volunteer','Status','Created','Evidence'].map(h => (
               <th key={h} className="px-3 py-2 font-medium text-[10px] uppercase tracking-wide text-left">{h}</th>
@@ -159,15 +159,15 @@ const Tasks = () => {
                 initial={{opacity:0, y:8}}
                 animate={{opacity:1, y:0}}
                 exit={{opacity:0, y:-6}}
-                className="even:bg-white/5 hover:bg-white/8 cursor-pointer"
+                className="even:mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/8 cursor-pointer"
                 onClick={()=>setDetailTask(t)}
               >
-                <td className="px-3 py-2 whitespace-nowrap font-medium text-white/85">{t.title}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-white/70">{t.zoneName}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-white/70">{t.volunteerName}</td>
+                <td className="px-3 py-2 whitespace-nowrap font-medium mk-text-primary">{t.title}</td>
+                <td className="px-3 py-2 whitespace-nowrap mk-text-secondary">{t.zoneName}</td>
+                <td className="px-3 py-2 whitespace-nowrap mk-text-secondary">{t.volunteerName}</td>
                 <td className="px-3 py-2 whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase ${statusStyles[t.status]}`}>{t.status.replace('_',' ')}</span></td>
-                <td className="px-3 py-2 whitespace-nowrap text-white/60">{new Date(t.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-white/60">{t.evidenceCount || '-'}</td>
+                <td className="px-3 py-2 whitespace-nowrap mk-text-fainter">{new Date(t.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+                <td className="px-3 py-2 whitespace-nowrap mk-text-fainter">{t.evidenceCount || '-'}</td>
               </motion.tr>
             ))}
           </AnimatePresence>

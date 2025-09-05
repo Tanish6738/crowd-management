@@ -54,7 +54,7 @@ const TabButton = ({ active, onClick, children }) => (
     role="tab"
     aria-selected={active}
     onClick={onClick}
-    className={`px-3 py-1.5 rounded-md text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 transition ${active ? "bg-orange-600 text-white shadow" : "text-white/60 hover:bg-white/10"}`}
+  className={`px-3 py-1.5 rounded-md text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 transition ${active ? 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] shadow' : 'mk-text-muted hover:mk-surface-alt'}`}
   >
     {children}
   </button>
@@ -430,24 +430,24 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
 
   return (
     <div
-      className="min-h-dvh flex flex-col lg:flex-row bg-[#0b111b] text-white/90 lg:max-w-7xl lg:mx-auto lg:border-x lg:border-white/10"
+      className="min-h-dvh flex flex-col lg:flex-row mk-gradient-bg mk-text-secondary lg:max-w-7xl lg:mx-auto lg:border-x mk-border"
       aria-label="User dashboard"
     >
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col w-64 border-r border-white/10 bg-white/5 backdrop-blur-sm">
-        <div className="px-5 py-5 border-b border-white/10 flex items-center gap-3">
+      <aside className="hidden lg:flex lg:flex-col w-64 mk-border-r mk-surface-alt backdrop-blur-sm">
+        <div className="px-5 py-5 border-b mk-border flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 text-white flex items-center justify-center font-semibold text-lg shadow-inner">
             {profile.name.slice(0, 1)}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-white truncate">
+            <span className="text-sm font-semibold mk-text-primary truncate">
               {profile.name}
             </span>
-            <span className="text-[11px] text-white/50">User Portal</span>
+            <span className="text-[11px] mk-text-fainter">User Portal</span>
           </div>
         </div>
         <nav
-          className="flex-1 overflow-y-auto py-4 text-sm text-white/80"
+          className="flex-1 overflow-y-auto py-4 text-sm mk-text-secondary"
           role="tablist"
         >
           <ul className="space-y-0.5 px-3">
@@ -460,7 +460,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                     onClick={() => setTab(t.key)}
                     role="tab"
                     aria-selected={active}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${active ? "bg-orange-600 text-white shadow-sm" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${active ? 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] shadow-sm' : 'mk-text-muted hover:mk-surface-alt hover:mk-text-primary'}`}
                   >
                     <Icon size={18} strokeWidth={active ? 2.2 : 1.8} />
                     <span className="flex-1 truncate text-[13px] font-medium">
@@ -477,36 +477,36 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
             })}
           </ul>
         </nav>
-        <div className="p-4 border-t border-white/10 flex flex-col gap-2">
-          <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-            <div className="p-2 rounded-md bg-white/5 border border-white/10">
-              <div className="text-xs font-semibold text-white">
+        <div className="p-4 border-t mk-border flex flex-col gap-2">
+          <div className="grid grid-cols-3 gap-2 text-center text-[10px] mk-text-secondary">
+            <div className="p-2 rounded-md mk-surface-alt mk-border">
+              <div className="text-xs font-semibold mk-text-primary">
                 {totalReports}
               </div>
-              <div className="text-[10px] text-white/50">Total</div>
+              <div className="text-[10px] mk-text-fainter">Total</div>
             </div>
-            <div className="p-2 rounded-md bg-white/5 border border-white/10">
-              <div className="text-xs font-semibold text-orange-400">
+            <div className="p-2 rounded-md mk-surface-alt mk-border">
+              <div className="text-xs font-semibold mk-accent">
                 {openReports}
               </div>
-              <div className="text-[10px] text-white/50">Open</div>
+              <div className="text-[10px] mk-text-fainter">Open</div>
             </div>
-            <div className="p-2 rounded-md bg-white/5 border border-white/10">
+            <div className="p-2 rounded-md mk-surface-alt mk-border">
               <div className="text-xs font-semibold text-green-400">
                 {resolvedReports}
               </div>
-              <div className="text-[10px] text-white/50">Resolved</div>
+              <div className="text-[10px] mk-text-fainter">Resolved</div>
             </div>
           </div>
           <button
             onClick={startReport}
-            className="h-10 w-full rounded-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+            className="h-10 w-full rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321] text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
           >
             <Plus size={16} /> Report Lost
           </button>
           <button
             onClick={() => onLogout?.()}
-            className="h-10 w-full rounded-md bg-white/10 hover:bg-white/20 text-white/70 text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="h-10 w-full rounded-md mk-surface-alt hover:mk-surface text-sm font-medium flex items-center justify-center gap-2 mk-text-muted hover:mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
           >
             <LogOut size={16} /> Logout
           </button>
@@ -516,7 +516,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
       {/* Right side content */}
       <div className="flex-1 flex flex-col min-h-dvh">
         {/* Mobile Header */}
-        <header className="px-4 py-3 bg-white/5 backdrop-blur-sm border-b border-white/10 flex items-center gap-3 lg:hidden">
+        <header className="px-4 py-3 mk-surface-alt backdrop-blur-sm border-b mk-border flex items-center gap-3 lg:hidden">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={() => setTab("profile")}
@@ -526,15 +526,15 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
               {profile.name.slice(0, 1)}
             </button>
             <div className="flex flex-col truncate">
-              <span className="text-sm font-semibold text-white truncate">
+              <span className="text-sm font-semibold mk-text-primary truncate">
                 {profile.name}
               </span>
-              <span className="text-[11px] text-white/50">User Portal</span>
+              <span className="text-[11px] mk-text-fainter">User Portal</span>
             </div>
           </div>
           <button
             onClick={startReport}
-            className="h-10 px-3 rounded-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white text-xs font-semibold flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+            className="h-10 px-3 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321] text-xs font-semibold flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
           >
             <Plus size={14} />
             <span className="hidden sm:inline">Report</span>
@@ -549,13 +549,13 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto pb-20 px-3 pt-3" id="user-main">
+  <main className="flex-1 overflow-y-auto pb-20 px-3 pt-3" id="user-main">
           {content}
         </main>
 
         {/* Bottom Navigation (mobile) */}
         <nav
-          className="fixed bottom-0 inset-x-0 z-20 bg-white/5 backdrop-blur-sm border-t border-white/10 shadow-sm flex lg:hidden text-white/70"
+          className="fixed bottom-0 inset-x-0 z-20 mk-surface-alt backdrop-blur-sm border-t mk-border shadow-sm flex lg:hidden mk-text-muted"
           role="tablist"
           aria-label="User navigation"
         >
@@ -568,13 +568,13 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setTab(t.key)}
-                className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${active ? "text-orange-400" : "text-white/50"} hover:text-orange-300`}
+                className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${active ? 'mk-accent' : 'mk-text-fainter'} hover:mk-accent`}
               >
                 <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
                 <span>{t.label}</span>
                 <span
                   aria-hidden="true"
-                  className={`h-0.5 w-8 rounded-full mt-0.5 transition-colors ${active ? "bg-orange-500" : "bg-transparent"}`}
+                  className={`h-0.5 w-8 rounded-full mt-0.5 transition-colors ${active ? 'bg-[var(--mk-accent)]' : 'bg-transparent'}`}
                 />
                 {t.badge ? (
                   <span className="absolute top-1.5 right-5 h-4 min-w-[1rem] px-1 rounded-full bg-red-600/80 text-white text-[9px] leading-4 font-semibold">
@@ -593,14 +593,14 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
         onClose={() => setShowReportModal(false)}
         title="New Lost Report"
       >
-        <div className="space-y-4 text-sm text-white/80">
+  <div className="space-y-4 text-sm mk-text-secondary">
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-[11px] font-medium text-white/60">
               Type
               <select
                 value={formType}
                 onChange={(e) => setFormType(e.target.value)}
-                className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-sm text-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+    className="h-9 rounded-md mk-border mk-surface-alt px-2 text-sm mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
               >
                 <option value="item">Item</option>
                 <option value="person">Person</option>
@@ -611,7 +611,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
               <select
                 value={formLocation}
                 onChange={(e) => setFormLocation(e.target.value)}
-                className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-sm text-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+    className="h-9 rounded-md mk-border mk-surface-alt px-2 text-sm mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
               >
                 {[
                   "Zone 1",
@@ -626,20 +626,20 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
               </select>
             </label>
           </div>
-          <label className="flex flex-col gap-1 text-[11px] font-medium text-white/60">
+          <label className="flex flex-col gap-1 text-[11px] font-medium mk-text-faint">
             Description
             <textarea
               rows={4}
               value={formDesc}
               onChange={(e) => setFormDesc(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-white/5 p-2 text-sm resize-none text-white/80 placeholder-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+              className="w-full rounded-md mk-border mk-surface-alt p-2 text-sm resize-none mk-text-primary placeholder:mk-text-fainter focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
               placeholder="Describe the lost item/person, last seen details..."
             />
           </label>
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-white/60 font-medium">
+            <div className="flex items-center justify-between text-[11px] mk-text-faint font-medium">
               Photos{" "}
-              <span className="font-normal text-white/40">(URLs for now)</span>
+              <span className="font-normal mk-text-fainter">(URLs for now)</span>
             </div>
             <div className="space-y-2">
               {formPhotos.map((p, i) => (
@@ -651,13 +651,13 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                         arr.map((v, idx) => (idx === i ? e.target.value : v))
                       )
                     }
-                    className="flex-1 h-9 rounded-md border border-white/10 bg-white/5 px-2 text-xs text-white/80 placeholder-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+                    className="flex-1 h-9 rounded-md mk-border mk-surface-alt px-2 text-xs mk-text-primary placeholder:mk-text-fainter focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
                   />
                   <button
                     onClick={() =>
                       setFormPhotos((arr) => arr.filter((_, idx) => idx !== i))
                     }
-                    className="h-8 px-2 rounded-md bg-white/10 hover:bg-white/20 text-white/70 text-[10px] font-medium"
+                    className="h-8 px-2 rounded-md mk-surface-alt hover:mk-surface mk-text-muted hover:mk-text-primary"
                   >
                     Remove
                   </button>
@@ -665,7 +665,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
               ))}
               <button
                 onClick={() => setFormPhotos((p) => [...p, ""])}
-                className="h-8 px-3 rounded-md bg-blue-600/80 hover:bg-blue-600 text-white text-[11px] font-medium flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                className="h-8 px-3 rounded-md bg-blue-600 text-white hover:brightness-110 text-[11px] font-medium flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
               >
                 <ImageIcon size={14} /> Add Photo URL
               </button>
@@ -675,7 +675,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
             <button
               disabled={formSubmitting}
               onClick={submitReport}
-              className={`flex-1 h-9 rounded-md text-xs font-semibold flex items-center justify-center gap-2 ${formSubmitting ? "bg-white/10 text-white/40" : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white"}`}
+              className={`flex-1 h-9 rounded-md text-xs font-semibold flex items-center justify-center gap-2 ${formSubmitting ? 'mk-surface-alt mk-text-fainter' : 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321]'}`}
             >
               {formSubmitting ? (
                 "Submitting..."
@@ -687,7 +687,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
             </button>
             <button
               onClick={() => setShowReportModal(false)}
-              className="h-9 px-4 rounded-md bg-white/10 hover:bg-white/20 text-white/70 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              className="h-9 px-4 rounded-md mk-surface-alt hover:mk-surface mk-text-muted hover:mk-text-primary text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
             >
               Cancel
             </button>

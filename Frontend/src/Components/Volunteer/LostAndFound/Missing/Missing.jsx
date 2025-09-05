@@ -12,21 +12,21 @@ const Missings = ({ data, loading, onMarkFound }) => {
   const sorted = useMemo(()=>[...data].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)), [data]);
 
   return (
-    <div className="flex flex-col md:grid md:grid-cols-5 md:gap-5 text-white/90" aria-label="Missing cases">
+  <div className="flex flex-col md:grid md:grid-cols-5 md:gap-5 mk-text-primary" aria-label="Missing cases">
       <div className="md:col-span-2 space-y-3 mb-4 md:mb-0">
-        {loading && Array.from({length:4}).map((_,i)=>(<div key={i} className="h-24 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"/>))}
-        {!loading && sorted.length===0 && <div className="p-10 text-center text-sm text-white/50 bg-white/5 border border-white/10 rounded-lg">No missing cases.</div>}
+        {loading && Array.from({length:4}).map((_,i)=>(<div key={i} className="h-24 rounded-lg bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"/>))}
+        {!loading && sorted.length===0 && <div className="p-10 text-center text-sm mk-text-muted mk-surface-alt mk-border rounded-lg">No missing cases.</div>}
         {sorted.map(c => (
-          <div key={c.id} role="button" tabIndex={0} onClick={()=>setDetail(c)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(c); }} className={`border rounded-lg p-3 flex gap-3 items-center cursor-pointer backdrop-blur-sm transition ${detail?.id===c.id? 'border-orange-400/60 bg-white/10':'border-white/10 bg-white/5 hover:bg-white/10'}`}>
-            <div className="h-14 w-14 rounded-md bg-white/5 flex items-center justify-center overflow-hidden text-white/40 text-[10px] font-medium border border-white/10">
+          <div key={c.id} role="button" tabIndex={0} onClick={()=>setDetail(c)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(c); }} className={`mk-border rounded-lg p-3 flex gap-3 items-center cursor-pointer backdrop-blur-sm transition ${detail?.id===c.id? 'border-orange-400/60 bg-orange-50 dark:bg-white/10':'mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border'}`}>
+            <div className="h-14 w-14 rounded-md mk-surface-alt flex items-center justify-center overflow-hidden mk-text-fainter text-[10px] font-medium mk-border">
               {c.photoUrls.length? <img src={c.photoUrls[0]} alt={c.type+' thumbnail'} className="h-full w-full object-cover"/> : c.type==='person'? 'PERSON':'ITEM'}
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-1">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm font-semibold text-white leading-tight line-clamp-2">{c.description}</h3>
+                <h3 className="text-sm font-semibold mk-text-primary leading-tight line-clamp-2">{c.description}</h3>
                 <StatusBadge value={c.status} />
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/60">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] mk-text-muted">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 font-medium">Missing</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{c.location}</span>
                 <span className="flex items-center gap-1"><Clock size={12} className="text-white/40"/>{relative(c.createdAt)}</span>
@@ -37,11 +37,11 @@ const Missings = ({ data, loading, onMarkFound }) => {
       </div>
       <div className="hidden md:block md:col-span-3">
         {detail ? (
-          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm h-full p-5 flex flex-col" aria-label="Missing case detail">
+          <div className="rounded-lg mk-border mk-surface-alt backdrop-blur-sm h-full p-5 flex flex-col" aria-label="Missing case detail">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="space-y-1 flex-1 min-w-0">
-                <h2 className="text-sm font-semibold text-white leading-snug">Missing {detail.type==='person'? 'Person':'Item'}</h2>
-                <div className="flex flex-wrap gap-2 text-[11px] text-white/60">
+                <h2 className="text-sm font-semibold mk-text-primary leading-snug">Missing {detail.type==='person'? 'Person':'Item'}</h2>
+                <div className="flex flex-wrap gap-2 text-[11px] mk-text-muted">
                   <StatusBadge value={detail.status} />
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{detail.location}</span>
                   <span className="flex items-center gap-1"><Clock size={12} className="text-white/40"/>{relative(detail.createdAt)}</span>
@@ -49,7 +49,7 @@ const Missings = ({ data, loading, onMarkFound }) => {
               </div>
               <button onClick={()=>setDetail(null)} className="text-white/40 hover:text-white/70 text-sm px-2 py-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60">✕</button>
             </div>
-            <div className="text-xs leading-relaxed text-white/75 mb-4 whitespace-pre-wrap flex-1">{detail.description}</div>
+            <div className="text-xs leading-relaxed mk-text-secondary mb-4 whitespace-pre-wrap flex-1">{detail.description}</div>
             {detail.photoUrls.length>0 && (
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {detail.photoUrls.map((p,i)=>(<img key={i} src={p} alt={`Missing photo ${i+1}`} className="h-20 w-full object-cover rounded" />))}
@@ -63,13 +63,13 @@ const Missings = ({ data, loading, onMarkFound }) => {
             </div>
           </div>
         ) : (
-          <div className="h-full border border-dashed border-white/15 rounded-lg flex items-center justify-center text-xs text-white/50">Select a missing case</div>
+          <div className="h-full border border-dashed mk-border rounded-lg flex items-center justify-center text-xs mk-text-muted">Select a missing case</div>
         )}
       </div>
       <Drawer open={!!detail && window.innerWidth<768} onClose={()=>setDetail(null)} title={detail? 'Missing '+(detail.type==='person'? 'Person':'Item'):''}>
         {detail && (
-          <div className="space-y-4 text-sm text-white/80">
-            <div className="flex flex-wrap gap-2 text-[11px] text-white/60">
+          <div className="space-y-4 text-sm mk-text-secondary">
+            <div className="flex flex-wrap gap-2 text-[11px] mk-text-muted">
               <StatusBadge value={detail.status} />
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{detail.location}</span>
               <span className="flex items-center gap-1"><Clock size={12} className="text-white/40"/>{relative(detail.createdAt)}</span>

@@ -30,7 +30,7 @@ const DataTable = ({ columns, data, onRowClick, rowKey = 'id', empty, caption })
               tabIndex={0}
               onClick={() => onRowClick?.(row)}
               onKeyDown={e => { if (e.key === 'Enter') onRowClick?.(row); }}
-              className="focus:outline-none focus-visible:shadow-[var(--mk-focus-ring)] cursor-pointer even:bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,143,42,0.12)] transition-colors border-b last:border-0 border-[rgba(255,255,255,0.05)]"
+              className="focus:outline-none focus-visible:shadow-[var(--mk-focus-ring)] cursor-pointer mk-row-hover-accent mk-table-zebra transition-colors border-b last:border-0 mk-separator"
             >
               {columns.map(col => (
                 <td

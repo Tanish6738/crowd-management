@@ -69,12 +69,12 @@ const seedModels = () => [
   },
 ];
 
-// Dark theme badge styles
+// Theme-aware badge styles (leveraging global utilities)
 const typeBadge = (t) =>
   ({
-    face: "bg-purple-500/10 text-purple-300 border border-purple-500/30",
-    crowd: "bg-orange-500/10 text-orange-300 border border-orange-500/30",
-    other: "bg-white/5 text-white/60 border border-white/10",
+    face: "mk-badge mk-status-success",
+    crowd: "mk-badge mk-status-warn",
+    other: "mk-badge",
   })[t];
 
 const Models = () => {
@@ -260,11 +260,11 @@ const Models = () => {
     <th
       key={key}
       onClick={() => sortable && toggleSort(key)}
-      className={`px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wide cursor-${sortable ? "pointer" : "default"} select-none text-white/70 hover:text-white/90 transition-colors`}
+      className={`px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wide cursor-${sortable ? "pointer" : "default"} select-none mk-text-faint hover:mk-text-primary transition-colors`}
     >
       {label}{" "}
       {sort.key === key && (
-        <span className="text-orange-400">
+        <span className="text-[var(--mk-accent)]">
           {sort.dir === "asc" ? "▲" : "▼"}
         </span>
       )}
@@ -318,16 +318,12 @@ const Models = () => {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="even:bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
+              className="mk-row-hover-accent cursor-pointer transition-colors"
               onClick={() => setDetail(m)}
             >
               <td className="px-3 py-2 font-medium text-white">{m.name}</td>
               <td className="px-3 py-2">
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] uppercase inline-flex items-center gap-1 ${typeBadge(m.type)}`}
-                >
-                  {m.type}
-                </span>
+                <span className={`${typeBadge(m.type)} inline-flex items-center gap-1`}>{m.type}</span>
               </td>
               <td className="px-3 py-2 tabular-nums text-white/80">
                 {m.version}
@@ -395,36 +391,23 @@ const Models = () => {
   const kpiTiles = (
     <div className="grid sm:grid-cols-3 gap-3 text-[11px]">
       {[
-        {
-          label: "Total Models",
-          value: kpis.total,
-          style:
-            "from-orange-500/25 to-orange-500/5 border-orange-400/30 text-orange-200",
-        },
-        {
-          label: "With Deployments",
-          value: kpis.deployed,
-          style:
-            "from-green-500/25 to-green-500/5 border-green-400/30 text-green-200",
-        },
-        {
-          label: "Face Models",
-          value: kpis.face,
-          style:
-            "from-purple-500/25 to-purple-500/5 border-purple-400/30 text-purple-200",
-        },
-      ].map((t) => (
-        <div
-          key={t.label}
-          className={`p-2 rounded-lg border bg-gradient-to-br flex items-center gap-2 ${t.style}`}
-        >
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-wide font-medium text-white/70">
-              {t.label}
-            </div>
-            <div className="text-sm font-semibold tabular-nums text-white">
-              {t.value}
-            </div>
+        { label: "Total Models", value: kpis.total, variant: "accent" },
+        { label: "With Deployments", value: kpis.deployed, variant: "success" },
+        { label: "Face Models", value: kpis.face, variant: "purple" },
+      ].map((k) => (
+        <div key={k.label} className="p-2 rounded-lg mk-subtle flex items-center gap-2 relative overflow-hidden group">
+          <div
+            className={`absolute inset-0 pointer-events-none opacity-60 transition group-hover:opacity-80 ${
+              k.variant === "accent"
+                ? "bg-[linear-gradient(135deg,var(--mk-accent)/30,transparent)]"
+                : k.variant === "success"
+                ? "bg-[linear-gradient(135deg,rgba(55,178,77,0.35),transparent)]"
+                : "bg-[linear-gradient(135deg,rgba(168,85,247,0.35),transparent)]"
+            }`}
+          />
+          <div className="flex-1 min-w-0 relative">
+            <div className="text-[10px] uppercase tracking-wide font-medium mk-text-fainter">{k.label}</div>
+            <div className="text-sm font-semibold tabular-nums mk-text-primary">{k.value}</div>
           </div>
         </div>
       ))}
@@ -437,11 +420,11 @@ const Models = () => {
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <Layers3 size={18} className="text-orange-400" /> Models
         </h2>
-        <div className="hidden md:flex items-center gap-2 ml-auto text-xs">
+    <div className="hidden md:flex items-center gap-2 ml-auto text-xs">
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="h-9 rounded-md border border-white/10 bg-white/5 px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+      className="h-9 rounded-md px-2 mk-subtle focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
           >
             <option value="all">All Types</option>
             <option value="face">Face</option>
@@ -452,7 +435,7 @@ const Models = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search models"
-            className="h-9 w-52 rounded-md border border-white/10 bg-white/5 px-3 text-xs text-white/80 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+            className="h-9 w-52 rounded-md mk-subtle px-3 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)] placeholder:mk-text-fainter"
           />
           <button
             onClick={() => setUploadOpen(true)}
@@ -475,8 +458,8 @@ const Models = () => {
 
       <div className="mk-panel rounded-lg border border-white/10 shadow-sm overflow-hidden">
         <div className="overflow-auto max-h-[560px] scrollbar-thin scrollbar-thumb-white/10">
-          <table className="min-w-full text-xs">
-            <thead className="bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/5 text-white/70 sticky top-0 z-10">
+          <table className="min-w-full text-xs mk-table-zebra">
+            <thead className="mk-subtle backdrop-blur sticky top-0 z-10">
               <tr>
                 {headerCell("Model Name", "name")}
                 {headerCell("Type", "type")}
@@ -484,7 +467,7 @@ const Models = () => {
                 {headerCell("Accuracy %", "accuracy")}
                 {headerCell("Deployed Tenants", "#deploy")}
                 {headerCell("Last Updated", "createdAt")}
-                <th className="px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-left text-white/70">
+                <th className="px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-left mk-text-faint">
                   Actions
                 </th>
               </tr>

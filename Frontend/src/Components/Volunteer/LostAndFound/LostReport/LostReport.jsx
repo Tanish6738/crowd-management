@@ -52,27 +52,27 @@ const LostReport = ({ volunteerId='vol123', onCreated }) => {
   };
 
   return (
-    <div className="space-y-5 text-xs text-white/80">
-      {success && <div className="p-2 rounded-md bg-green-500/10 text-green-300 border border-green-400/40 text-[11px]">Report submitted.</div>}
-      {error && <div className="p-2 rounded-md bg-red-500/10 text-red-300 border border-red-400/40 text-[11px]">{error}</div>}
+  <div className="space-y-5 text-xs mk-text-secondary">
+  {success && <div className="p-2 rounded-md bg-green-500/10 text-green-300 border border-green-400/40 text-[11px]">Report submitted.</div>}
+  {error && <div className="p-2 rounded-md bg-red-500/10 text-red-300 border border-red-400/40 text-[11px]">{error}</div>}
       <div className="space-y-2">
-        <label className="text-[11px] font-medium text-white/70">Type</label>
-        <select value={type} onChange={e=>setType(e.target.value)} className="h-10 rounded-md border border-white/10 bg-white/5 px-2 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 text-white">
+        <label className="text-[11px] font-medium mk-text-secondary">Type</label>
+        <select value={type} onChange={e=>setType(e.target.value)} className="h-10 rounded-md mk-border mk-surface-alt px-2 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 mk-text-primary">
           <option value="person">Person</option>
           <option value="item">Item</option>
         </select>
       </div>
       <div className="space-y-2">
-        <label className="text-[11px] font-medium text-white/70">Photos <span className="text-white/40">(max 3)</span></label>
+        <label className="text-[11px] font-medium mk-text-secondary">Photos <span className="mk-text-fainter">(max 3)</span></label>
         <div className="flex flex-wrap gap-3">
           {photos.map(f => (
-            <div key={f.name} className="relative h-20 w-20 rounded-md overflow-hidden border border-white/10 bg-white/5">
+            <div key={f.name} className="relative h-20 w-20 rounded-md overflow-hidden mk-border mk-surface-alt">
               <img src={URL.createObjectURL(f)} alt="preview" className="object-cover h-full w-full" />
               <button onClick={()=>setPhotos(p=>p.filter(x=>x.name!==f.name))} className="absolute -top-1 -right-1 bg-red-600/80 hover:bg-red-600 text-white h-5 w-5 rounded-full text-[11px] flex items-center justify-center">✕</button>
             </div>
           ))}
           {photos.length<3 && (
-            <label className="h-20 w-20 flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-white/15 text-white/50 text-[11px] cursor-pointer hover:border-orange-400/60 hover:text-orange-300">
+            <label className="h-20 w-20 flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed mk-border mk-text-muted text-[11px] cursor-pointer hover:border-orange-400/60 hover:mk-text-accent">
               <Camera size={18} />
               <span>Add</span>
               <input ref={inputRef} onChange={handlePhotoInput} accept="image/*" capture="environment" type="file" multiple hidden />
@@ -81,16 +81,16 @@ const LostReport = ({ volunteerId='vol123', onCreated }) => {
         </div>
       </div>
       <div className="space-y-2">
-        <label className="text-[11px] font-medium text-white/70">Description</label>
-        <textarea rows={4} value={description} onChange={e=>setDescription(e.target.value)} className="w-full rounded-md border border-white/10 bg-white/5 p-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 placeholder:text-white/40 text-white" placeholder="Describe missing person/item, clothing, distinctive marks, etc." />
-        <p className="text-[10px] text-white/40">At least 10 characters.</p>
+        <label className="text-[11px] font-medium mk-text-secondary">Description</label>
+        <textarea rows={4} value={description} onChange={e=>setDescription(e.target.value)} className="w-full rounded-md mk-border mk-surface-alt p-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 placeholder:mk-text-fainter mk-text-primary" placeholder="Describe missing person/item, clothing, distinctive marks, etc." />
+        <p className="text-[10px] mk-text-fainter">At least 10 characters.</p>
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-medium text-white/70">Location / Zone</label>
-          <button type="button" onClick={detectLocation} className="text-[10px] underline text-orange-300 hover:text-orange-200">Auto-detect</button>
+          <label className="text-[11px] font-medium mk-text-secondary">Location / Zone</label>
+          <button type="button" onClick={detectLocation} className="text-[10px] underline mk-text-accent hover:mk-text-accent-strong">Auto-detect</button>
         </div>
-        <input value={location} onChange={e=>setLocation(e.target.value)} placeholder="Zone 5 or coordinates" className="w-full h-10 rounded-md border border-white/10 bg-white/5 px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 placeholder:text-white/40 text-white" />
+        <input value={location} onChange={e=>setLocation(e.target.value)} placeholder="Zone 5 or coordinates" className="w-full h-10 rounded-md mk-border mk-surface-alt px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 placeholder:mk-text-fainter mk-text-primary" />
       </div>
       <div className="pt-2 flex justify-end">
         <button disabled={!canSubmit || submitting} onClick={submit} className="h-10 px-5 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] text-xs font-semibold flex items-center gap-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 hover:brightness-110">{submitting && <Loader2 size={14} className="animate-spin"/>} Submit Report</button>

@@ -37,7 +37,7 @@ const NavigationRoutes = () => {
                   <span className="text-sm font-medium tracking-wide uppercase mk-text-secondary group-hover:mk-text-primary">
                     {l.label}
                   </span>
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.12)] text-[rgba(255,255,255,0.55)] group-hover:text-[rgba(255,255,255,0.8)]">
+                  <span className="text-[10px] px-2 py-1 rounded-full mk-badge mk-text-muted group-hover:mk-text-secondary">
                     Dash
                   </span>
                 </span>

@@ -13,19 +13,19 @@ const Alerts = ({ alerts, onMarkRead, onMarkAll, unread }) => {
     return da + "d";
   };
   return (
-    <div className="space-y-4 text-white/90" aria-label="Alerts">
+    <div className="space-y-4 mk-text-secondary" aria-label="Alerts">
       <div className="flex items-center gap-2">
         <button
           onClick={onMarkAll}
           disabled={!unread}
-          className={`h-8 px-3 rounded-md text-[11px] font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 ${unread ? "bg-blue-600/80 hover:bg-blue-600 text-white shadow" : "bg-white/10 text-white/40 cursor-not-allowed"}`}
+          className={`h-8 px-3 rounded-md text-[11px] font-medium transition mk-focusable ${unread ? 'bg-blue-600 text-white hover:bg-blue-500 shadow' : 'mk-subtle opacity-50 cursor-not-allowed'}`}
         >
           Mark All Read
         </button>
       </div>
-      <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm divide-y divide-white/5">
+      <div className="mk-card mk-surface-alt backdrop-blur divide-y divide-white/5 theme-light:divide-black/5">
         {alerts.length === 0 && (
-          <div className="p-6 text-xs text-white/50">No alerts.</div>
+          <div className="p-6 text-xs mk-text-faint">No alerts.</div>
         )}
         {alerts.map((al) => (
           <div
@@ -36,24 +36,24 @@ const Alerts = ({ alerts, onMarkRead, onMarkAll, unread }) => {
             onKeyDown={(e) => {
               if (e.key === "Enter") onMarkRead(al.id);
             }}
-            className={`p-3 flex gap-3 items-start text-xs cursor-pointer transition rounded-md first:rounded-t-lg last:rounded-b-lg ${!al.read ? "bg-white/8 hover:bg-white/12" : "hover:bg-white/8"}`}
+            className={`p-3 flex gap-3 items-start text-xs cursor-pointer transition rounded-md first:rounded-t-lg last:rounded-b-lg mk-hover-row ${!al.read ? 'mk-subtle' : ''}`}
             aria-label={`Alert ${al.id}`}
           >
             <Bell
               size={14}
-              className={al.read ? "text-white/40" : "text-orange-400"}
+              className={al.read ? 'mk-text-fainter' : 'mk-accent'}
             />
             <div className="flex-1 min-w-0">
               <div
-                className={`leading-snug ${al.read ? "text-white/70" : "text-white"}`}
+                className={`leading-snug ${al.read ? 'mk-text-faint' : 'mk-text-primary'}`}
               >
                 {al.message}
               </div>
-              <div className="text-[10px] text-white/50 mt-1">{rel(al.ts)}</div>
+              <div className="text-[10px] mk-text-fainter mt-1">{rel(al.ts)}</div>
             </div>
             {!al.read && (
               <span
-                className="h-2 w-2 rounded-full bg-orange-400 mt-1"
+                className="h-2 w-2 rounded-full mk-bg-accent mt-1"
                 aria-label="Unread"
               />
             )}

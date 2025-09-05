@@ -183,7 +183,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
 
   return (
     <div
-      className="flex flex-col md:grid md:grid-cols-5 md:gap-5 text-white/90"
+      className="flex flex-col md:grid md:grid-cols-5 md:gap-5 mk-text-primary"
       aria-label="Matched cases"
     >
       <div className="md:col-span-2 space-y-3 mb-4 md:mb-0">
@@ -191,7 +191,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
           Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 rounded-lg bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"
+              className="h-28 rounded-lg bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"
             />
           ))}
         {!loading && error && (
@@ -206,7 +206,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
           </div>
         )}
         {!loading && !error && sorted.length === 0 && (
-          <div className="p-10 text-center text-sm text-white/50 bg-white/5 border border-white/10 rounded-lg">
+          <div className="p-10 text-center text-sm mk-text-muted mk-surface-alt mk-border rounded-lg">
             No matches to review right now.
           </div>
         )}
@@ -221,7 +221,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") setDetail(m);
               }}
-              className={`border rounded-lg p-3 flex flex-col gap-3 cursor-pointer backdrop-blur-sm transition ${detail?.id === m.id ? "border-orange-400/60 bg-white/10" : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20"}`}
+              className={`mk-border rounded-lg p-3 flex flex-col gap-3 cursor-pointer backdrop-blur-sm transition ${detail?.id === m.id ? "border-orange-400/60 bg-orange-50 dark:bg-white/10" : "mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border"}`}
             >
               <div className="flex justify-between items-start gap-2">
                 <div className="flex items-center gap-2 text-[11px]">
@@ -244,7 +244,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-mono text-white/40">
+                <span className="text-[10px] font-mono mk-text-fainter">
                   {m.id}
                 </span>
               </div>
@@ -264,10 +264,10 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col gap-1">
-                    <p className="text-[11px] font-medium line-clamp-3 text-white/80">
+                    <p className="text-[11px] font-medium line-clamp-3 mk-text-secondary">
                       {m.lostCase?.description || "—"}
                     </p>
-                    <span className="inline-flex items-center gap-1 text-[10px] text-white/55">
+                    <span className="inline-flex items-center gap-1 text-[10px] mk-text-fainter">
                       <MapPin size={12} />
                       {m.lostCase?.location || "—"}
                     </span>
@@ -288,10 +288,10 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col gap-1">
-                    <p className="text-[11px] font-medium line-clamp-3 text-white/80">
+                    <p className="text-[11px] font-medium line-clamp-3 mk-text-secondary">
                       {m.foundCase?.description || "—"}
                     </p>
-                    <span className="inline-flex items-center gap-1 text-[10px] text-white/55">
+                    <span className="inline-flex items-center gap-1 text-[10px] mk-text-fainter">
                       <MapPin size={12} />
                       {m.foundCase?.location || "—"}
                     </span>
@@ -304,15 +304,15 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
       <div className="hidden md:block md:col-span-3">
         {detail ? (
           <div
-            className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm h-full p-5 flex flex-col"
+            className="rounded-lg mk-border mk-surface-alt backdrop-blur-sm h-full p-5 flex flex-col"
             aria-label="Match detail panel"
           >
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="space-y-1 flex-1 min-w-0">
-                <h2 className="text-sm font-semibold text-white leading-snug">
+                <h2 className="text-sm font-semibold mk-text-primary leading-snug">
                   Match Review
                 </h2>
-                <div className="flex flex-wrap gap-3 text-[11px] text-white/60 items-center">
+                <div className="flex flex-wrap gap-3 text-[11px] mk-text-muted items-center">
                   <StatusBadge value={detail.status} />
                   {detail.confidence != null && (
                     <span className="flex items-center gap-2">
@@ -337,7 +337,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
             </div>
             <div className="grid grid-cols-2 gap-5 flex-1 overflow-auto pr-1">
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-white/70">
+                <h3 className="text-xs font-semibold mk-text-secondary">
                   Lost Report
                 </h3>
                 {detail.lostCase?.photoUrls?.length > 0 && (
@@ -352,10 +352,10 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
                     ))}
                   </div>
                 )}
-                <p className="text-[11px] text-white/75 whitespace-pre-wrap leading-relaxed">
+                <p className="text-[11px] mk-text-secondary whitespace-pre-wrap leading-relaxed">
                   {detail.lostCase?.description || "—"}
                 </p>
-                <div className="flex flex-wrap gap-2 text-[10px] text-white/55">
+                <div className="flex flex-wrap gap-2 text-[10px] mk-text-fainter">
                   <span className="inline-flex items-center gap-1">
                     <MapPin size={12} className="text-white/40" />
                     {detail.lostCase?.location || "—"}
@@ -369,7 +369,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
                 </div>
               </div>
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-white/70">
+                <h3 className="text-xs font-semibold mk-text-secondary">
                   Found Report
                 </h3>
                 {detail.foundCase?.photoUrls?.length > 0 && (
@@ -384,10 +384,10 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
                     ))}
                   </div>
                 )}
-                <p className="text-[11px] text-white/75 whitespace-pre-wrap leading-relaxed">
+                <p className="text-[11px] mk-text-secondary whitespace-pre-wrap leading-relaxed">
                   {detail.foundCase?.description || "—"}
                 </p>
-                <div className="flex flex-wrap gap-2 text-[10px] text-white/55">
+                <div className="flex flex-wrap gap-2 text-[10px] mk-text-fainter">
                   <span className="inline-flex items-center gap-1">
                     <MapPin size={12} className="text-white/40" />
                     {detail.foundCase?.location || "—"}
@@ -433,7 +433,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
             </div>
           </div>
         ) : (
-          <div className="h-full border border-dashed border-white/15 rounded-lg flex items-center justify-center text-xs text-white/50">
+          <div className="h-full border border-dashed mk-border rounded-lg flex items-center justify-center text-xs mk-text-muted">
             Select a match to review
           </div>
         )}
@@ -444,8 +444,8 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
         title={detail ? "Match " + detail.id : ""}
       >
         {detail && (
-          <div className="space-y-5 text-sm text-white/80">
-            <div className="flex flex-wrap gap-2 text-[11px] text-white/60 items-center">
+          <div className="space-y-5 text-sm mk-text-secondary">
+            <div className="flex flex-wrap gap-2 text-[11px] mk-text-muted items-center">
               <StatusBadge value={detail.status} />
               {detail.confidence != null && (
                 <span className="inline-flex items-center gap-1">

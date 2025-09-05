@@ -27,7 +27,8 @@ import {
 // Alert type contract reference (see spec)
 // type Alert = { id:string; type:'overcrowding'|'lost_person_match'|'camera_offline'|'incident'|'sos'; severity:'low'|'medium'|'high'|'critical'; zoneName:string; ts:string; status:'new'|'ack'|'resolved'|'dismissed'; assignees:string[] };
 
-// Design tokens (dark theme) ----------------------------------------------
+// Design tokens (theme aware using Tailwind + light overrides) ------------
+// We keep strong colors identical; only foreground contrast changes in light mode via parent .theme-light selectors defined in css.
 const severityStyles = {
   low: "bg-emerald-500",
   medium: "bg-amber-500",
@@ -35,16 +36,16 @@ const severityStyles = {
   critical: "bg-red-600 animate-pulse",
 };
 const severityBgSoft = {
-  low: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
-  medium: "bg-amber-500/15 text-amber-300 border-amber-400/30",
-  high: "bg-orange-500/15 text-orange-300 border-orange-400/30",
-  critical: "bg-red-600/15 text-red-300 border-red-400/30",
+  low: "bg-emerald-500/15 text-emerald-300 dark:text-emerald-300 border-emerald-400/30",
+  medium: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-400/30",
+  high: "bg-orange-500/15 text-orange-600 dark:text-orange-300 border-orange-400/30",
+  critical: "bg-red-600/15 text-red-600 dark:text-red-300 border-red-400/30",
 };
 const statusBadgeStyles = {
-  new: "bg-orange-500/15 text-orange-300 border-orange-400/30",
-  ack: "bg-blue-500/15 text-blue-300 border-blue-400/30",
-  resolved: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
-  dismissed: "bg-gray-500/15 text-gray-300 border-gray-400/30",
+  new: "bg-orange-500/15 text-orange-600 dark:text-orange-300 border-orange-400/30",
+  ack: "bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-400/30",
+  resolved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-400/30",
+  dismissed: "bg-gray-500/15 text-gray-600 dark:text-gray-300 border-gray-400/30",
 };
 
 const TYPE_META = {
@@ -381,23 +382,19 @@ const Alerts = ({ onActiveCountChange, fullPage = false }) => {
     </div>
   );
   const renderEmpty = (msg) => (
-    <div className="p-6 flex flex-col items-center justify-center text-center text-sm text-white/50 gap-2">
-      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-500/10 to-rose-500/10 border border-white/10 flex items-center justify-center text-orange-300">
+    <div className="p-6 flex flex-col items-center justify-center text-center text-sm mk-text-muted gap-2">
+      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-500/10 to-rose-500/10 mk-border flex items-center justify-center text-orange-500 dark:text-orange-300">
         <AlertTriangle size={26} />
       </div>
       <p>{msg}</p>
     </div>
   );
   const renderError = () => (
-    <div className="p-4 bg-red-500/15 text-red-300 text-sm flex items-center justify-between border border-red-400/30">
+    <div className="p-4 bg-red-500/10 text-red-600 dark:text-red-300 text-sm flex items-center justify-between border border-red-400/30 rounded-md">
       <span className="font-medium">Error loading alerts.</span>
       <button
-        onClick={() => {
-          setError(null);
-          setLoading(true);
-          setTimeout(() => setLoading(false), 600);
-        }}
-        className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500"
+        onClick={() => window.location.reload()}
+        className="px-2 py-1 rounded bg-red-600 dark:bg-red-600 text-white text-xs hover:bg-red-500"
       >
         Retry
       </button>

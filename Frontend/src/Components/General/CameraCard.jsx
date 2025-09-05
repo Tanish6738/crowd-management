@@ -1,10 +1,11 @@
 import React from 'react';
 
+// Map camera status to semantic token colors so it adapts to theme.
 const statusRing = (s) => ({
-  Online: 'ring-green-500',
-  Degraded: 'ring-orange-400',
-  Offline: 'ring-red-600'
-}[s] || 'ring-[rgba(255,255,255,0.25)]');
+  Online: 'ring-[var(--mk-success)]',
+  Degraded: 'ring-[var(--mk-warning)]',
+  Offline: 'ring-[var(--mk-danger)]'
+}[s] || 'ring-[var(--mk-muted)]/60');
 
 const CameraCard = ({ camera, onClick }) => (
   <button
@@ -19,8 +20,11 @@ const CameraCard = ({ camera, onClick }) => (
         <span className="inline-block w-2 h-2 rounded-full bg-[var(--mk-accent)] opacity-70" /> {camera.facesPerMin} faces/min
       </div>
     </div>
-    <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 rounded-full bg-[rgba(0,0,0,0.45)] backdrop-blur-sm mk-text-secondary border border-[rgba(255,255,255,0.12)] tracking-wide">{camera.status}</span>
-    <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-[rgba(255,143,42,0.18)]/20 via-transparent to-transparent" />
+    {/* Theme-adaptive badge using subtle surface token */}
+    <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 rounded-full mk-subtle/70 backdrop-blur-sm mk-text-secondary tracking-wide">
+      {camera.status}
+    </span>
+    <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-[var(--mk-accent)]/20 via-transparent to-transparent" />
   </button>
 );
 

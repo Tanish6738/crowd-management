@@ -295,27 +295,31 @@ const Users = () => {
               <td className="px-3 py-2 whitespace-nowrap font-medium">
                 {u.name}
               </td>
-              <td className="px-3 py-2 whitespace-nowrap text-white/70">
+              <td className="px-3 py-2 whitespace-nowrap mk-text-faint">
                 {u.email}
               </td>
               <td className="px-3 py-2 whitespace-nowrap">
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] uppercase border backdrop-blur ${u.role === "superadmin" ? "bg-purple-500/20 text-purple-300 border-purple-400/30" : u.role === "admin" ? "bg-[var(--mk-accent)]/15 text-[var(--mk-accent-strong)] border-[var(--mk-accent)]/30" : u.role === "volunteer" ? "bg-blue-500/20 text-blue-300 border-blue-400/30" : "bg-green-500/20 text-green-300 border-green-400/30"}`}
+                  className={`mk-badge ${
+                    u.role === "superadmin"
+                      ? "mk-status-warn"
+                      : u.role === "admin"
+                      ? "mk-badge-accent"
+                      : u.role === "volunteer"
+                      ? "mk-status-success"
+                      : "mk-status-success"
+                  }`}
                 >
                   {u.role}
                 </span>
               </td>
-              <td className="px-3 py-2 whitespace-nowrap text-white/70">
+              <td className="px-3 py-2 whitespace-nowrap mk-text-faint">
                 {u.tenantName}
               </td>
               <td className="px-3 py-2 whitespace-nowrap">
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] uppercase border ${u.status === "active" ? "bg-green-500/15 text-green-300 border-green-400/30" : "bg-white/10 text-white/60 border-white/15"}`}
-                >
-                  {u.status}
-                </span>
+                <span className={`mk-badge ${u.status === "active" ? "mk-status-success" : "mk-status-danger"}`}>{u.status}</span>
               </td>
-              <td className="px-3 py-2 whitespace-nowrap tabular-nums text-white/70">
+              <td className="px-3 py-2 whitespace-nowrap tabular-nums mk-text-faint">
                 {relative(u.lastLogin)}
               </td>
               <td
@@ -325,19 +329,19 @@ const Users = () => {
                 <div className="flex gap-2 text-[11px]">
                   <button
                     onClick={() => setDetailUser(u)}
-                    className="text-[var(--mk-accent)] hover:underline"
+                    className="mk-text-fainter hover:opacity-100 hover:underline"
                   >
                     View
                   </button>
                   <button
                     onClick={() => setResetUser(u)}
-                    className="text-white/60 hover:text-white/90 hover:underline"
+                    className="mk-text-fainter hover:opacity-100 hover:underline"
                   >
                     Reset
                   </button>
                   <button
                     onClick={() => setPendingSuspend(u)}
-                    className="text-white/60 hover:text-white/90 hover:underline"
+                    className="mk-text-fainter hover:opacity-100 hover:underline"
                   >
                     {u.status === "active" ? "Suspend" : "Resume"}
                   </button>
@@ -351,7 +355,7 @@ const Users = () => {
   };
 
   const pagination = (
-    <div className="flex items-center gap-3 px-3 py-2 border-t border-white/10 bg-white/5 text-[11px]">
+    <div className="flex items-center gap-3 px-3 py-2 border-t mk-subtle text-[11px]">
       <div>
         Page <span className="font-semibold">{currentPage}</span> / {totalPages}
       </div>
@@ -359,14 +363,14 @@ const Users = () => {
         <button
           disabled={currentPage === 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className={`h-7 w-7 flex items-center justify-center rounded border border-white/10 text-white/70 ${currentPage === 1 ? "opacity-40" : "hover:bg-[var(--mk-muted)]/50"}`}
+          className={`h-7 w-7 flex items-center justify-center rounded border mk-text-faint ${currentPage === 1 ? "opacity-40" : "hover:bg-[var(--mk-muted)]/40"}`}
         >
           &lt;
         </button>
         <button
           disabled={currentPage === totalPages}
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          className={`h-7 w-7 flex items-center justify-center rounded border border-white/10 text-white/70 ${currentPage === totalPages ? "opacity-40" : "hover:bg-[var(--mk-muted)]/50"}`}
+          className={`h-7 w-7 flex items-center justify-center rounded border mk-text-faint ${currentPage === totalPages ? "opacity-40" : "hover:bg-[var(--mk-muted)]/40"}`}
         >
           &gt;
         </button>
@@ -390,34 +394,29 @@ const Users = () => {
 
   const kpiTiles = (
     <div className="grid sm:grid-cols-3 gap-3 text-[11px]">
-      {[
-        {
-          label: "Total Users",
-          value: kpis.total,
-          color:
-            "from-[var(--mk-accent)]/25 via-[var(--mk-accent)]/10 to-transparent text-[var(--mk-accent-strong)]",
-        },
-        {
-          label: "Admins",
-          value: kpis.admins,
-          color:
-            "from-purple-500/30 via-purple-500/10 to-transparent text-purple-300",
-        },
-        {
-          label: "Suspended",
-          value: kpis.suspended,
-          color: "from-white/20 via-white/5 to-transparent text-white/60",
-        },
+      { [
+        { label: "Total Users", value: kpis.total, variant: "accent" },
+        { label: "Admins", value: kpis.admins, variant: "purple" },
+        { label: "Suspended", value: kpis.suspended, variant: "muted" },
       ].map((k) => (
         <div
           key={k.label}
-          className={`p-2 rounded-lg border border-white/10 flex items-center gap-2 bg-gradient-to-br ${k.color}`}
+          className="p-2 rounded-lg mk-subtle flex items-center gap-2 relative overflow-hidden group"
         >
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-wide font-medium text-white/70">
+          <div
+            className={`absolute inset-0 pointer-events-none opacity-60 mix-blend-luminosity transition group-hover:opacity-80 ${
+              k.variant === "accent"
+                ? "bg-[linear-gradient(135deg,var(--mk-accent)/30,transparent)]"
+                : k.variant === "purple"
+                ? "bg-[linear-gradient(135deg,rgba(168,85,247,0.35),transparent)]"
+                : "bg-[linear-gradient(135deg,var(--mk-muted)/35,transparent)]"
+            }`}
+          />
+          <div className="flex-1 min-w-0 relative">
+            <div className="text-[10px] uppercase tracking-wide font-medium mk-text-fainter">
               {k.label}
             </div>
-            <div className="text-sm font-semibold tabular-nums">{k.value}</div>
+            <div className="text-sm font-semibold tabular-nums mk-text-primary">{k.value}</div>
           </div>
         </div>
       ))}
@@ -433,65 +432,44 @@ const Users = () => {
         <div className="hidden md:flex items-center gap-2 text-xs ml-auto">
           <select
             value={tenantFilter}
-            onChange={(e) => {
-              setTenantFilter(e.target.value);
-              setPage(1);
-            }}
-            className="h-9 rounded-md px-2 bg-[var(--mk-surface-2)] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
+            onChange={(e) => { setTenantFilter(e.target.value); setPage(1); }}
+            className="h-9 rounded-md px-2 mk-subtle focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
           >
             <option value="all">All Tenants</option>
             {tenantsList.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
+              <option key={t} value={t}>{t}</option>
             ))}
           </select>
           <select
             value={roleFilter}
-            onChange={(e) => {
-              setRoleFilter(e.target.value);
-              setPage(1);
-            }}
-            className="h-9 rounded-md px-2 bg-[var(--mk-surface-2)] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
+            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+            className="h-9 rounded-md px-2 mk-subtle focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
           >
             {["all", "superadmin", "admin", "volunteer", "pilgrim"].map((r) => (
-              <option key={r} value={r}>
-                {r === "all" ? "All Roles" : r}
-              </option>
+              <option key={r} value={r}>{r === "all" ? "All Roles" : r}</option>
             ))}
           </select>
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="h-9 rounded-md px-2 bg-[var(--mk-surface-2)] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            className="h-9 rounded-md px-2 mk-subtle focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
           >
             {["all", "active", "suspended"].map((s) => (
-              <option key={s} value={s}>
-                {s === "all" ? "All Statuses" : s}
-              </option>
+              <option key={s} value={s}>{s === "all" ? "All Statuses" : s}</option>
             ))}
           </select>
           <div className="relative">
-            <Search
-              size={14}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-white/30"
-            />
+            <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 mk-text-fainter" />
             <input
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search users"
-              className="h-9 w-56 pl-7 pr-2 rounded-md bg-[var(--mk-surface-2)] border border-white/10 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)] placeholder:text-white/30"
+              className="h-9 w-56 pl-7 pr-2 rounded-md mk-subtle text-xs focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)] placeholder:text-[var(--mk-text-muted)]/60"
             />
           </div>
           <button
             onClick={() => setInviteOpen(true)}
-            className="h-9 px-3 rounded-md bg-[var(--mk-accent)] text-[#09121f] font-medium flex items-center gap-1 shadow hover:brightness-110 transition"
+            className="h-9 px-3 rounded-md mk-badge-accent font-medium flex items-center gap-1 shadow hover:brightness-110 transition"
           >
             <UserPlus size={14} /> Invite Admin
           </button>
@@ -499,13 +477,13 @@ const Users = () => {
         <div className="flex md:hidden gap-2 ml-auto">
           <button
             onClick={() => setShowFilters((f) => !f)}
-            className={`h-9 px-3 rounded-md border text-xs flex items-center gap-1 transition ${showFilters ? "bg-[var(--mk-accent)] text-[#09121f] border-[var(--mk-accent)]" : "bg-[var(--mk-surface-2)] border-white/10 text-white/70 hover:bg-[var(--mk-muted)]"}`}
+            className={`h-9 px-3 rounded-md text-xs flex items-center gap-1 transition border ${showFilters ? "mk-badge-accent" : "mk-subtle hover:bg-[var(--mk-muted)]/60"}`}
           >
             <Filter size={14} /> Filters
           </button>
           <button
             onClick={() => setInviteOpen(true)}
-            className="h-9 px-3 rounded-md bg-[var(--mk-accent)] text-[#09121f] text-xs font-medium flex items-center gap-1 shadow hover:brightness-110"
+            className="h-9 px-3 rounded-md mk-badge-accent text-xs font-medium flex items-center gap-1 shadow hover:brightness-110"
           >
             <UserPlus size={14} /> Invite
           </button>
@@ -523,64 +501,41 @@ const Users = () => {
             <div className="flex gap-2">
               <select
                 value={tenantFilter}
-                onChange={(e) => {
-                  setTenantFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="flex-1 h-8 rounded bg-[var(--mk-surface-2)] border border-white/10 px-2 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
+                onChange={(e) => { setTenantFilter(e.target.value); setPage(1); }}
+                className="flex-1 h-8 rounded mk-subtle px-2 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
               >
                 <option value="all">All Tenants</option>
                 {tenantsList.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
               <select
                 value={roleFilter}
-                onChange={(e) => {
-                  setRoleFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="flex-1 h-8 rounded bg-[var(--mk-surface-2)] border border-white/10 px-2 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
+                onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+                className="flex-1 h-8 rounded mk-subtle px-2 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
               >
-                {["all", "superadmin", "admin", "volunteer", "pilgrim"].map(
-                  (r) => (
-                    <option key={r} value={r}>
-                      {r === "all" ? "All Roles" : r}
-                    </option>
-                  )
-                )}
+                {["all", "superadmin", "admin", "volunteer", "pilgrim"].map((r) => (
+                  <option key={r} value={r}>{r === "all" ? "All Roles" : r}</option>
+                ))}
               </select>
             </div>
             <div className="flex gap-2">
               <select
                 value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="flex-1 h-8 rounded bg-[var(--mk-surface-2)] border border-white/10 px-2 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                className="flex-1 h-8 rounded mk-subtle px-2 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)]"
               >
                 {["all", "active", "suspended"].map((s) => (
-                  <option key={s} value={s}>
-                    {s === "all" ? "All Statuses" : s}
-                  </option>
+                  <option key={s} value={s}>{s === "all" ? "All Statuses" : s}</option>
                 ))}
               </select>
               <div className="relative flex-1">
-                <Search
-                  size={14}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-white/30"
-                />
+                <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 mk-text-fainter" />
                 <input
                   value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   placeholder="Search"
-                  className="h-8 w-full pl-7 pr-2 rounded bg-[var(--mk-surface-2)] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)] placeholder:text-white/30"
+                  className="h-8 w-full pl-7 pr-2 rounded mk-subtle focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)] placeholder:text-[var(--mk-text-muted)]/60"
                 />
               </div>
             </div>
@@ -590,10 +545,10 @@ const Users = () => {
 
       {kpiTiles}
 
-      <div className="mk-panel rounded-xl border border-white/5 shadow-lg overflow-hidden">
+      <div className="mk-panel rounded-xl overflow-hidden">
         <div className="overflow-auto max-h-[600px]">
-          <table className="min-w-full text-xs">
-            <thead className="sticky top-0 z-10 bg-white/5 backdrop-blur text-[var(--mk-text-secondary)]">
+          <table className="min-w-full text-xs mk-table-zebra">
+            <thead className="sticky top-0 z-10 mk-subtle backdrop-blur text-[var(--mk-text-secondary)]">
               <tr>
                 {headerCell("Name", "name")}
                 {headerCell("Email", "email")}
