@@ -1,17 +1,20 @@
 // Centralized API service for Lost & Found system endpoints.
 // Covers endpoints documented in COMPLETE_API_DOCUMENTATION.md
 // Endpoints:
-// 1. POST /upload_found
-// 2. GET  /search_face/{face_id}
-// 3. GET  /get_all_lost
-// 4. GET  /get_all_found
-// 5. GET  /get_all_matches
-// 6. GET  /health
-// 7. GET  /stats
-// 8. GET  /check_matches/{face_id}
-// 9. POST /cleanup_found_duplicates?threshold=<float>
-// (Additional) POST /lost-reports (create lost report)
-// (Additional) GET  /lost-reports (list lost reports)
+// 1. POST /upload_found vol
+// 2. GET  /search_face/{face_id} vol
+// 3. GET  /get_all_lost (read-only; no documented POST for creating lost records) vol
+// 4. GET  /get_all_found admin
+// 5. GET  /get_all_matches admin
+// 6. GET  /health super admin
+// 7. GET  /stats super admin
+// 8. GET  /check_matches/{face_id} vol
+// 9. POST /cleanup_found_duplicates?threshold=<float> admin
+// NOTE: There is currently NO official endpoint in the provided spec for
+// creating/uploading a new lost person report. Previous optimistic logic
+// attempted /upload_lost or /lost-reports; this has been removed to avoid
+// relying on undocumented routes. If/when the backend adds such an endpoint,
+// implement it here and update the UI component.
 
 import axios from 'axios';
 
@@ -179,40 +182,21 @@ export const cleanupFoundDuplicates = async (threshold, config) => {
 };
 
 /**
- * Create Lost Report (POST /lost-reports)
- * Accepts photos[], description, type, last_known_location (assumed field names based on DEVELOPER_SPEC.md)
- * @param {Object} payload
- * @param {File[]} payload.photos
- * @param {string} payload.description
- * @param {string} payload.type - 'person' | 'item'
- * @param {string} payload.location
- * @param {string} [payload.name]
- * @param {number|string} [payload.age]
- * @param {string} [payload.gender]
+ * createLostReport (stub)
+ * The current public API specification does NOT define an endpoint for creating
+ * lost person reports (only retrieval via GET /get_all_lost). This stub exists
+ * so existing imports do not break and will surface a clear developer-facing error.
+ * @throws ApiError always until a supported endpoint is added.
  */
-export const createLostReport = async (payload = {}, config) => {
-	if (!payload.description || !payload.location) throw new ApiError('description & location are required');
-	const form = new FormData();
-	form.append('description', payload.description.trim());
-	form.append('type', payload.type || 'person');
-	form.append('last_known_location', payload.location.trim());
-	if (payload.name) form.append('name', payload.name);
-	if (payload.age !== undefined && payload.age !== null && payload.age !== '') form.append('age', String(payload.age));
-	if (payload.gender) form.append('gender', payload.gender);
-	(payload.photos || []).forEach((f) => { if (f) form.append('photos', f); });
-	return exec(client.post('/lost-reports', form, withConfig({
-		...config,
-		headers: { ...(config?.headers || {}), 'Content-Type': 'multipart/form-data' }
-	})));
+export const createLostReport = async () => {
+	throw new ApiError('Lost report creation is not supported: no endpoint defined in current API specification.');
 };
 
 /**
- * List Lost Reports (GET /lost-reports)
- * @param {{ status?:string, q?:string }} params
+ * List Lost Reports (GET /get_all_lost)
+ * Original placeholder used /lost-reports which 404s; real documented endpoint is /get_all_lost.
  */
-export const listLostReports = async (params = {}, config) => {
-	return exec(client.get('/lost-reports', withConfig({ ...config, params })));
-};
+export const listLostReports = async (params = {}, config) => exec(client.get('/get_all_lost', withConfig({ ...config })));
 
 // ---------------------------------------------------------------------------
 // Utility / Aggregated Export

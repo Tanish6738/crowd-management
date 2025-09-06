@@ -2,22 +2,24 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Plus,
   LogOut,
-  Image as ImageIcon,
   AlertCircle,
   Home as HomeIcon,
   FileText,
   Bell,
   Search,
   User as UserIcon,
+  UploadCloud,
+  UserPlus,
 } from "lucide-react";
-import Drawer from "../General/Drawer";
-import Modal from "../General/Modal";
 import { StatusBadge as VolunteerStatusBadge } from "../Volunteer/LostAndFound/LostAndFound";
 import Home from "./Home/Home";
 import MyReports from "./MyReports/MyReports";
 import FoundMatches from "./FoundMatches/FoundMatches";
 import Alerts from "./Alerts/Alerts";
 import Profile from "./Profile/Profile";
+import ReportLost from "./ReportLost/ReportLost";
+import ReportFound from "./ReportFound/ReportFound";
+import { listLostReports, getAllMatches } from "../../Services/api";
 
 /** Fallback local StatusBadge if volunteer export path changes */
 const statusStyles = {
@@ -70,7 +72,6 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
   const [alerts, setAlerts] = useState(/** @type {UserAlert[]} */ ([]));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [detailReport, setDetailReport] = useState(null);
   const [detailMatch, setDetailMatch] = useState(null);
   const [profile, setProfile] = useState({
@@ -82,87 +83,77 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
   const [profileSaving, setProfileSaving] = useState(false);
   const [filterStatus, setFilterStatus] = useState("");
 
-  // Report form state
-  const [formType, setFormType] = useState("item");
-  const [formDesc, setFormDesc] = useState("");
-  const [formLocation, setFormLocation] = useState("Zone 1");
-  const [formPhotos, setFormPhotos] = useState([]);
-  const [formSubmitting, setFormSubmitting] = useState(false);
+  // Removed legacy inline report modal state (now dedicated tabs)
 
-  // Initial load simulation (would call real APIs)
+  // Load from API
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 400));
-      const now = Date.now();
-      const baseReports = [
-        {
-          id: "r1",
-          type: "item",
-          description: "Black wallet with RFID blocking.",
-          photoUrls: [],
-          location: "Zone 2",
-          status: "open",
-          createdAt: new Date(now - 3600_000).toISOString(),
-        },
-        {
-          id: "r2",
-          type: "person",
-          description: "Missing child wearing red cap.",
-          photoUrls: [],
-          location: "Zone 5",
-          status: "matched",
-          createdAt: new Date(now - 7200_000).toISOString(),
-          matchedWith: "f77",
-        },
-        {
-          id: "r3",
-          type: "item",
-          description: "Blue water bottle with stickers.",
-          photoUrls: [],
-          location: "Zone 1",
-          status: "resolved",
-          createdAt: new Date(now - 86400_000).toISOString(),
-          resolvedAt: new Date(now - 86000_000).toISOString(),
-        },
-      ];
-      const baseMatches = [
-        {
-          id: "m1",
-          lost: baseReports[1],
-          found: {
-            id: "f77",
-            description: "Child found near food court wearing red cap.",
-            photoUrls: [],
-            location: "Zone 4",
-            createdAt: new Date(now - 4000_000).toISOString(),
-          },
-          confidence: 0.82,
-          status: "pending",
-        },
-      ];
-      const baseAlerts = [
-        {
-          id: "al1",
-          message: "Your report r2 has a potential match.",
-          type: "match",
-          ts: new Date(now - 3500_000).toISOString(),
-          read: false,
-        },
-        {
-          id: "al2",
-          message: "System maintenance tonight 11PM.",
-          type: "system",
-          ts: new Date(now - 10 * 3600_000).toISOString(),
-          read: true,
-        },
-      ];
-      setReports(baseReports);
-      setMatches(baseMatches);
-      setAlerts(baseAlerts);
+      // Fetch lost reports
+      let reportData = [];
+      try {
+        const lr = await listLostReports();
+        // Attempt to detect array container (records | items | direct array)
+        const arr = Array.isArray(lr) ? lr : (lr.records || lr.items || lr.data || []);
+        reportData = arr.map((r, idx) => ({
+          id: r.id || r.face_id || r._id || 'lr' + idx,
+            // fallback type inference
+          type: r.type || (r.age !== undefined || r.gender ? 'person' : 'item'),
+          description: r.description || r.name || '(no description provided)',
+          photoUrls: r.photoUrls || r.photos || [],
+          location: r.location || r.last_known_location || r.where_lost || 'Unknown',
+          status: r.status || 'open',
+          createdAt: r.createdAt || r.upload_time || new Date().toISOString(),
+          matchedWith: r.matchedWith,
+          resolvedAt: r.resolvedAt,
+        }));
+      } catch (err) {
+        // Soft fail (keep UI usable)
+        setAlerts(a => [{ id:'al'+Date.now(), message:`Could not fetch reports: ${err.message}`, type:'system', ts:new Date().toISOString(), read:false }, ...a]);
+      }
+
+      // Fetch matches
+      let matchData = [];
+      try {
+        const gm = await getAllMatches();
+        const arr = Array.isArray(gm) ? gm : (gm.records || gm.data || []);
+        matchData = arr.map((m, idx) => {
+          const lostPerson = m.lost_person || {};
+          const foundPerson = m.found_person || {};
+          return {
+            id: m.match_id || m.id || 'm' + idx,
+            lost: {
+              id: m.lost_face_id || lostPerson.face_id || ('lost'+idx),
+              type: 'person',
+              description: lostPerson.name || lostPerson.description || 'Lost person',
+              photoUrls: lostPerson.photoUrls || [],
+              location: lostPerson.where_lost || lostPerson.location || 'Unknown',
+              status: (lostPerson.status === 'found' ? 'matched' : (lostPerson.status || 'open')), 
+              createdAt: lostPerson.createdAt || m.match_time || new Date().toISOString(),
+            },
+            found: {
+              id: m.found_face_id || foundPerson.face_id || ('found'+idx),
+              description: foundPerson.name || foundPerson.description || 'Found person',
+              photoUrls: foundPerson.photoUrls || [],
+              location: foundPerson.location_found || foundPerson.location || 'Unknown',
+              createdAt: foundPerson.createdAt || m.match_time || new Date().toISOString(),
+            },
+            confidence: m.confidence !== undefined ? m.confidence : 0.8, // backend currently not exposing
+            status: m.match_status === 'confirmed' ? 'confirmed' : (m.match_status === 'rejected' ? 'rejected' : 'pending'),
+          };
+        });
+      } catch (err) {
+        setAlerts(a => [{ id:'al'+Date.now(), message:`Could not fetch matches: ${err.message}`, type:'system', ts:new Date().toISOString(), read:false }, ...a]);
+      }
+
+      setReports(reportData);
+      setMatches(matchData);
+      if (!reportData.length && !matchData.length) {
+        setAlerts(a => [{ id:'al'+Date.now(), message:'No data retrieved from server yet.', type:'system', ts:new Date().toISOString(), read:false }, ...a]);
+      }
     } catch (e) {
-      setError("Failed to load user data.");
+      setError('Failed to load user data.');
     } finally {
       setLoading(false);
     }
@@ -250,42 +241,7 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
     );
   }, [reports, filterStatus]);
 
-  const startReport = () => {
-    setShowReportModal(true);
-    setFormType("item");
-    setFormDesc("");
-    setFormLocation("Zone 1");
-    setFormPhotos([]);
-  };
-  const submitReport = async () => {
-    setFormSubmitting(true);
-    try {
-      await new Promise((r) => setTimeout(r, 400));
-      const rep = {
-        id: "r" + Date.now(),
-        type: formType,
-        description: formDesc.trim() || "(no description)",
-        photoUrls: formPhotos,
-        location: formLocation,
-        status: "open",
-        createdAt: new Date().toISOString(),
-      };
-      setReports((r) => [rep, ...r]);
-      setAlerts((a) => [
-        {
-          id: "al" + Date.now(),
-          message: `Your report ${rep.id} submitted.`,
-          type: "report_update",
-          ts: new Date().toISOString(),
-          read: false,
-        },
-        ...a,
-      ]);
-      setShowReportModal(false);
-    } finally {
-      setFormSubmitting(false);
-    }
-  };
+  const startReport = () => setTab('report-lost');
 
   const cancelReport = (id) => {
     setReports((rs) =>
@@ -373,23 +329,18 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
   const tabs = [
     { key: "home", label: "Home", icon: HomeIcon },
     { key: "reports", label: "Reports", icon: FileText },
+    { key: "report-lost", label: "Report Lost", icon: UserPlus },
+    { key: "report-found", label: "Report Found", icon: UploadCloud },
     { key: "matches", label: "Matches", icon: Search },
     { key: "alerts", label: "Alerts", icon: Bell, badge: unreadAlerts },
     { key: "profile", label: "Profile", icon: UserIcon },
   ];
 
-  const content = {
+  const contentMap = {
     home: (
       <Home
-        stats={{
-          total: totalReports,
-          open: openReports,
-          resolved: resolvedReports,
-        }}
-        recent={recentActivity.map((r) => ({
-          label: r.label,
-          time: rel(r.ts),
-        }))}
+        stats={{ total: totalReports, open: openReports, resolved: resolvedReports }}
+        recent={recentActivity.map((r) => ({ label: r.label, time: rel(r.ts) }))}
       />
     ),
     reports: (
@@ -401,6 +352,8 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
         onCancel={cancelReport}
       />
     ),
+    'report-lost': <ReportLost />,
+    'report-found': <ReportFound userId={userId} />,
     matches: (
       <FoundMatches
         matches={matches}
@@ -426,7 +379,8 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
         onLogout={onLogout}
       />
     ),
-  }[tab];
+  };
+  const content = contentMap[tab];
 
   return (
     <div
@@ -440,20 +394,14 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
             {profile.name.slice(0, 1)}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold mk-text-primary truncate">
-              {profile.name}
-            </span>
+            <span className="text-sm font-semibold mk-text-primary truncate">{profile.name}</span>
             <span className="text-[11px] mk-text-fainter">User Portal</span>
           </div>
         </div>
-        <nav
-          className="flex-1 overflow-y-auto py-4 text-sm mk-text-secondary"
-          role="tablist"
-        >
+        <nav className="flex-1 overflow-y-auto py-4 text-sm mk-text-secondary" role="tablist">
           <ul className="space-y-0.5 px-3">
-            {tabs.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.key;
+            {tabs.map(t => {
+              const Icon = t.icon; const active = tab === t.key;
               return (
                 <li key={t.key}>
                   <button
@@ -463,53 +411,26 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${active ? 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] shadow-sm' : 'mk-text-muted hover:mk-surface-alt hover:mk-text-primary'}`}
                   >
                     <Icon size={18} strokeWidth={active ? 2.2 : 1.8} />
-                    <span className="flex-1 truncate text-[13px] font-medium">
-                      {t.label}
-                    </span>
-                    {t.badge ? (
-                      <span className="inline-flex items-center justify-center h-5 min-w-[1.1rem] px-1 rounded-full bg-red-600/80 text-white text-[10px] font-semibold shadow">
-                        {t.badge}
-                      </span>
-                    ) : null}
+                    <span className="flex-1 truncate text-[13px] font-medium">{t.label}</span>
+                    {t.badge ? <span className="inline-flex items-center justify-center h-5 min-w-[1.1rem] px-1 rounded-full bg-red-600/80 text-white text-[10px] font-semibold shadow">{t.badge}</span> : null}
                   </button>
                 </li>
               );
             })}
           </ul>
         </nav>
-        <div className="p-4 border-t mk-border flex flex-col gap-2">
+        <div className="p-4 border-t mk-border flex flex-col gap-3">
           <div className="grid grid-cols-3 gap-2 text-center text-[10px] mk-text-secondary">
-            <div className="p-2 rounded-md mk-surface-alt mk-border">
-              <div className="text-xs font-semibold mk-text-primary">
-                {totalReports}
-              </div>
-              <div className="text-[10px] mk-text-fainter">Total</div>
-            </div>
-            <div className="p-2 rounded-md mk-surface-alt mk-border">
-              <div className="text-xs font-semibold mk-accent">
-                {openReports}
-              </div>
-              <div className="text-[10px] mk-text-fainter">Open</div>
-            </div>
-            <div className="p-2 rounded-md mk-surface-alt mk-border">
-              <div className="text-xs font-semibold text-green-400">
-                {resolvedReports}
-              </div>
-              <div className="text-[10px] mk-text-fainter">Resolved</div>
-            </div>
+            <div className="p-2 rounded-md mk-surface-alt mk-border"><div className="text-xs font-semibold mk-text-primary">{totalReports}</div><div className="text-[10px] mk-text-fainter">Total</div></div>
+            <div className="p-2 rounded-md mk-surface-alt mk-border"><div className="text-xs font-semibold mk-accent">{openReports}</div><div className="text-[10px] mk-text-fainter">Open</div></div>
+            <div className="p-2 rounded-md mk-surface-alt mk-border"><div className="text-xs font-semibold text-green-400">{resolvedReports}</div><div className="text-[10px] mk-text-fainter">Resolved</div></div>
           </div>
-          <button
-            onClick={startReport}
-            className="h-10 w-full rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321] text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-          >
-            <Plus size={16} /> Report Lost
-          </button>
-          <button
-            onClick={() => onLogout?.()}
-            className="h-10 w-full rounded-md mk-surface-alt hover:mk-surface text-sm font-medium flex items-center justify-center gap-2 mk-text-muted hover:mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-          >
-            <LogOut size={16} /> Logout
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={()=>setTab('report-lost')} className="h-9 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321] text-[11px] font-semibold flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"><Plus size={14}/> Lost</button>
+            <button onClick={()=>setTab('report-found')} className="h-9 rounded-md mk-surface-alt hover:mk-surface text-[11px] font-semibold flex items-center justify-center gap-2 mk-text-muted hover:mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"><UploadCloud size={14}/> Found</button>
+          </div>
+          <button onClick={load} disabled={loading} className="h-9 w-full rounded-md mk-surface-alt hover:mk-surface text-[11px] font-medium mk-text-muted hover:mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 disabled:opacity-40">{loading? 'Refreshing...' : 'Refresh Data'}</button>
+          <button onClick={()=>onLogout?.()} className="h-9 w-full rounded-md mk-surface-alt hover:mk-surface text-[11px] font-medium flex items-center justify-center gap-2 mk-text-muted hover:mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"><LogOut size={14}/> Logout</button>
         </div>
       </aside>
 
@@ -532,13 +453,29 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
               <span className="text-[11px] mk-text-fainter">User Portal</span>
             </div>
           </div>
-          <button
-            onClick={startReport}
-            className="h-10 px-3 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321] text-xs font-semibold flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-          >
-            <Plus size={14} />
-            <span className="hidden sm:inline">Report</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="h-10 px-3 rounded-md mk-surface-alt hover:mk-surface text-[11px] font-medium mk-text-muted hover:mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 disabled:opacity-40"
+            >
+              {loading ? '...' : 'Refresh'}
+            </button>
+            <button
+              onClick={()=>setTab('report-lost')}
+              className="h-10 px-3 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321] text-xs font-semibold flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+            >
+              <Plus size={14} />
+              <span className="hidden sm:inline">Lost</span>
+            </button>
+            <button
+              onClick={()=>setTab('report-found')}
+              className="h-10 px-3 rounded-md mk-surface-alt hover:mk-surface text-xs font-semibold flex items-center gap-1 mk-text-muted hover:mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+            >
+              <UploadCloud size={14} />
+              <span className="hidden sm:inline">Found</span>
+            </button>
+          </div>
         </header>
 
         {/* Error */}
@@ -548,10 +485,8 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
           </div>
         )}
 
-        {/* Main Content */}
-  <main className="flex-1 overflow-y-auto pb-20 px-3 pt-3" id="user-main">
-          {content}
-        </main>
+  {/* Main Content */}
+  <main className="flex-1 overflow-y-auto pb-20 px-3 pt-3" id="user-main">{content}</main>
 
         {/* Bottom Navigation (mobile) */}
         <nav
@@ -559,9 +494,8 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
           role="tablist"
           aria-label="User navigation"
         >
-          {tabs.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.key;
+          {tabs.map(t => {
+            const Icon = t.icon; const active = tab === t.key;
             return (
               <button
                 key={t.key}
@@ -572,129 +506,16 @@ const UserDashboard = ({ userId = "user123", onLogout }) => {
               >
                 <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
                 <span>{t.label}</span>
-                <span
-                  aria-hidden="true"
-                  className={`h-0.5 w-8 rounded-full mt-0.5 transition-colors ${active ? 'bg-[var(--mk-accent)]' : 'bg-transparent'}`}
-                />
+                <span aria-hidden="true" className={`h-0.5 w-8 rounded-full mt-0.5 transition-colors ${active ? 'bg-[var(--mk-accent)]' : 'bg-transparent'}`} />
                 {t.badge ? (
-                  <span className="absolute top-1.5 right-5 h-4 min-w-[1rem] px-1 rounded-full bg-red-600/80 text-white text-[9px] leading-4 font-semibold">
-                    {t.badge}
-                  </span>
+                  <span className="absolute top-1.5 right-5 h-4 min-w-[1rem] px-1 rounded-full bg-red-600/80 text-white text-[9px] leading-4 font-semibold">{t.badge}</span>
                 ) : null}
               </button>
             );
           })}
         </nav>
-      </div>
-
-      {/* Report Lost Modal */}
-      <Modal
-        open={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        title="New Lost Report"
-      >
-  <div className="space-y-4 text-sm mk-text-secondary">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1 text-[11px] font-medium text-white/60">
-              Type
-              <select
-                value={formType}
-                onChange={(e) => setFormType(e.target.value)}
-    className="h-9 rounded-md mk-border mk-surface-alt px-2 text-sm mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-              >
-                <option value="item">Item</option>
-                <option value="person">Person</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-[11px] font-medium text-white/60">
-              Location
-              <select
-                value={formLocation}
-                onChange={(e) => setFormLocation(e.target.value)}
-    className="h-9 rounded-md mk-border mk-surface-alt px-2 text-sm mk-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-              >
-                {[
-                  "Zone 1",
-                  "Zone 2",
-                  "Zone 3",
-                  "Zone 4",
-                  "Zone 5",
-                  "Zone 6",
-                ].map((z) => (
-                  <option key={z}>{z}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label className="flex flex-col gap-1 text-[11px] font-medium mk-text-faint">
-            Description
-            <textarea
-              rows={4}
-              value={formDesc}
-              onChange={(e) => setFormDesc(e.target.value)}
-              className="w-full rounded-md mk-border mk-surface-alt p-2 text-sm resize-none mk-text-primary placeholder:mk-text-fainter focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-              placeholder="Describe the lost item/person, last seen details..."
-            />
-          </label>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] mk-text-faint font-medium">
-              Photos{" "}
-              <span className="font-normal mk-text-fainter">(URLs for now)</span>
-            </div>
-            <div className="space-y-2">
-              {formPhotos.map((p, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={p}
-                    onChange={(e) =>
-                      setFormPhotos((arr) =>
-                        arr.map((v, idx) => (idx === i ? e.target.value : v))
-                      )
-                    }
-                    className="flex-1 h-9 rounded-md mk-border mk-surface-alt px-2 text-xs mk-text-primary placeholder:mk-text-fainter focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-                  />
-                  <button
-                    onClick={() =>
-                      setFormPhotos((arr) => arr.filter((_, idx) => idx !== i))
-                    }
-                    className="h-8 px-2 rounded-md mk-surface-alt hover:mk-surface mk-text-muted hover:mk-text-primary"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => setFormPhotos((p) => [...p, ""])}
-                className="h-8 px-3 rounded-md bg-blue-600 text-white hover:brightness-110 text-[11px] font-medium flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
-              >
-                <ImageIcon size={14} /> Add Photo URL
-              </button>
-            </div>
-          </div>
-          <div className="flex gap-2 pt-2">
-            <button
-              disabled={formSubmitting}
-              onClick={submitReport}
-              className={`flex-1 h-9 rounded-md text-xs font-semibold flex items-center justify-center gap-2 ${formSubmitting ? 'mk-surface-alt mk-text-fainter' : 'bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] hover:brightness-110 text-[#081321]'}`}
-            >
-              {formSubmitting ? (
-                "Submitting..."
-              ) : (
-                <>
-                  <Plus size={14} /> Submit Report
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setShowReportModal(false)}
-              className="h-9 px-4 rounded-md mk-surface-alt hover:mk-surface mk-text-muted hover:mk-text-primary text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-            >
-              Cancel
-            </button>
-          </div>
         </div>
-      </Modal>
-    </div>
+      </div>
   );
 };
 

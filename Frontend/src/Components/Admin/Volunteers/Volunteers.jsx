@@ -48,8 +48,15 @@ const Volunteers = () => {
       const emails = Array.isArray(dataFile?.volunteers) ? dataFile.volunteers : [];
       const unique = [...new Set(emails)];
       const mapName = (email) => {
-        const base = email.split('@')[0].replace(/[_-.]+/g,' ');
-        return base.split(' ').map(p=> p.charAt(0).toUpperCase()+p.slice(1)).join(' ') || email;
+        const base = email
+          .split('@')[0]
+          // collapse underscores / dots / hyphens
+          .replace(/[._-]+/g, ' ');
+        return base
+          .split(' ')
+          .filter(Boolean)
+          .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+          .join(' ') || email;
       };
       const mapped = unique.map((email,i) => ({
         id: email,
