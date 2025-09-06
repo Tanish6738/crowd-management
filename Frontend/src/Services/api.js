@@ -1,20 +1,19 @@
 // Centralized API service for Lost & Found system endpoints.
-// Covers endpoints documented in COMPLETE_API_DOCUMENTATION.md
-// Endpoints:
-// 1. POST /upload_found vol
-// 2. GET  /search_face/{face_id} vol
-// 3. GET  /get_all_lost (read-only; no documented POST for creating lost records) vol
-// 4. GET  /get_all_found admin
-// 5. GET  /get_all_matches admin
-// 6. GET  /health super admin
-// 7. GET  /stats super admin
-// 8. GET  /check_matches/{face_id} vol
-// 9. POST /cleanup_found_duplicates?threshold=<float> admin
-// NOTE: There is currently NO official endpoint in the provided spec for
-// creating/uploading a new lost person report. Previous optimistic logic
-// attempted /upload_lost or /lost-reports; this has been removed to avoid
-// relying on undocumented routes. If/when the backend adds such an endpoint,
-// implement it here and update the UI component.
+// Harmonized with API_DOCUMENTATION.md & COMPLETE_API_DOCUMENTATION.md
+// Implemented Endpoints:
+//  1.  POST /upload_found Volunteers a found person's details and photo
+//  2.  POST /upload_lost Volunteers a lost person's details and photo
+//  3.  GET  /search_face/{face_id} Views matches for a given face ID
+//  4.  GET  /get_all_lost /List all lost persons
+//  5.  GET  /get_all_found /List all found persons
+//  6.  GET  /get_all_matches /List all match records
+//  7.  GET  /health Health check
+//  8.  GET  /stats Statistics summary
+//  9.  GET  /check_matches/{face_id} Check matches for a given face ID
+// 10.  POST /cleanup_found_duplicates?threshold=<float> Manual duplicate cleanup
+// 11.  GET  /alert/{user_id} User alerts
+// 12.  GET  /get_records_by_user/{user_id} Get records by user
+// Backwards compatibility alias: createLostReport -> uploadLostPerson
 
 import axios from 'axios';
 
@@ -131,7 +130,38 @@ export const uploadFoundPerson = async (payload, config) => {
 };
 
 /**
- * 2. Search Face by ID (GET /search_face/{face_id})
+ * 2. Upload Lost Person (POST /upload_lost)
+ * @param {Object} payload - Lost person data (multipart/form-data)
+ * @param {File|Blob} payload.file - Image file (required)
+ * Required form fields (per spec):
+ *  name, gender, age, where_lost, your_name, relation_with_lost,
+ *  user_id, mobile_no, email_id, file
+ * @returns {Promise<Object>} API response
+ */
+export const uploadLostPerson = async (payload, config) => {
+	if (!payload?.file) throw new ApiError('file is required for uploadLostPerson');
+	const required = ['name','gender','age','where_lost','your_name','relation_with_lost','user_id','mobile_no','email_id'];
+	const missing = required.filter(f => payload[f] === undefined || payload[f] === null || payload[f] === '');
+	if (missing.length) throw new ApiError(`Missing required fields for uploadLostPerson: ${missing.join(', ')}`);
+
+	const formData = new FormData();
+	required.forEach(k => formData.append(k, String(payload[k])));
+	// Allow additional optional keys transparently (e.g., future extensions)
+	Object.keys(payload).forEach(k => {
+		if (!required.includes(k) && k !== 'file' && payload[k] !== undefined && payload[k] !== null) {
+			formData.append(k, String(payload[k]));
+		}
+	});
+	formData.append('file', payload.file);
+
+	return exec(client.post('/upload_lost', formData, withConfig({
+		...config,
+		headers: { ...(config?.headers || {}), 'Content-Type': 'multipart/form-data' }
+	})));
+};
+
+/**
+ * 3. Search Face by ID (GET /search_face/{face_id})
  */
 export const searchFace = async (faceId, config) => {
 	if (!faceId) throw new ApiError('faceId is required for searchFace');
@@ -139,32 +169,32 @@ export const searchFace = async (faceId, config) => {
 };
 
 /**
- * 3. Get All Lost People (GET /get_all_lost)
+ * 4. Get All Lost People (GET /get_all_lost)
  */
 export const getAllLost = async (config) => exec(client.get('/get_all_lost', withConfig(config)));
 
 /**
- * 4. Get All Found People (GET /get_all_found)
+ * 5. Get All Found People (GET /get_all_found)
  */
 export const getAllFound = async (config) => exec(client.get('/get_all_found', withConfig(config)));
 
 /**
- * 5. Get All Matches (GET /get_all_matches)
+ * 6. Get All Matches (GET /get_all_matches)
  */
 export const getAllMatches = async (config) => exec(client.get('/get_all_matches', withConfig(config)));
 
 /**
- * 6. Health Check (GET /health)
+ * 7. Health Check (GET /health)
  */
 export const healthCheck = async (config) => exec(client.get('/health', withConfig(config)));
 
 /**
- * 7. Get Statistics (GET /stats)
+ * 8. Get Statistics (GET /stats)
  */
 export const getStats = async (config) => exec(client.get('/stats', withConfig(config)));
 
 /**
- * 8. Check Matches for Face ID (GET /check_matches/{face_id})
+ * 9. Check Matches for Face ID (GET /check_matches/{face_id})
  */
 export const checkMatches = async (faceId, config) => {
 	if (!faceId) throw new ApiError('faceId is required for checkMatches');
@@ -172,7 +202,7 @@ export const checkMatches = async (faceId, config) => {
 };
 
 /**
- * 9. Manual Duplicate Cleanup (POST /cleanup_found_duplicates?threshold=...)
+ * 10. Manual Duplicate Cleanup (POST /cleanup_found_duplicates?threshold=...)
  * @param {number} [threshold] similarity threshold (float)
  */
 export const cleanupFoundDuplicates = async (threshold, config) => {
@@ -182,15 +212,28 @@ export const cleanupFoundDuplicates = async (threshold, config) => {
 };
 
 /**
- * createLostReport (stub)
- * The current public API specification does NOT define an endpoint for creating
- * lost person reports (only retrieval via GET /get_all_lost). This stub exists
- * so existing imports do not break and will surface a clear developer-facing error.
- * @throws ApiError always until a supported endpoint is added.
+ * 11. User Alerts (GET /alert/{user_id})
+ * @param {string} userId
  */
-export const createLostReport = async () => {
-	throw new ApiError('Lost report creation is not supported: no endpoint defined in current API specification.');
+export const getUserAlerts = async (userId, config) => {
+	if (!userId) throw new ApiError('userId is required for getUserAlerts');
+	return exec(client.get(`/alert/${encodeURIComponent(userId)}`, withConfig(config)));
 };
+
+/**
+ * 12. Get Records By User (GET /get_records_by_user/{user_id})
+ * Aggregates lost_people, found_people, match_records per spec.
+ */
+export const getRecordsByUser = async (userId, config) => {
+	if (!userId) throw new ApiError('userId is required for getRecordsByUser');
+	return exec(client.get(`/get_records_by_user/${encodeURIComponent(userId)}`, withConfig(config)));
+};
+
+/**
+ * Backwards compatibility: createLostReport alias to new uploadLostPerson
+ * (some older components might still import createLostReport)
+ */
+export const createLostReport = async (payload, config) => uploadLostPerson(payload, config);
 
 /**
  * List Lost Reports (GET /get_all_lost)
@@ -203,6 +246,7 @@ export const listLostReports = async (params = {}, config) => exec(client.get('/
 // ---------------------------------------------------------------------------
 export const apiService = {
 	uploadFoundPerson,
+	uploadLostPerson,
 	searchFace,
 	getAllLost,
 	getAllFound,
@@ -213,6 +257,8 @@ export const apiService = {
 	cleanupFoundDuplicates,
 	createLostReport,
 	listLostReports,
+	getUserAlerts,
+	getRecordsByUser,
 	client // expose raw axios instance for advanced usage
 };
 

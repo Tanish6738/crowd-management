@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useUser } from '@clerk/clerk-react';
 import { ClipboardList, Bell, Search, User, MapPin, Wifi, WifiOff } from 'lucide-react';
 import Tasks from './Tasks/Tasks';
 import Alerts from './Alerts/Alerts';
@@ -7,8 +8,13 @@ import Profile from './Profile/Profile';
 
 // Mobile-first volunteer dashboard container with bottom navigation
 const VolunteerDashboard = () => {
-  // In real app derive from auth context
-  const volunteer = { id: 'vol123', name: 'Aditi Sharma', zone: 'Zone 7' };
+  const { user, isLoaded } = useUser();
+  // Derive volunteer from Clerk user (fallback values while loading)
+  const volunteer = isLoaded && user ? {
+    id: user.id,
+    name: user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Volunteer',
+    zone: user.publicMetadata?.zone || 'Unassigned'
+  } : { id: 'loading', name: 'Loading…', zone: '—' };
   const [online, setOnline] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [tab, setTab] = useState('tasks');
@@ -81,7 +87,7 @@ const VolunteerDashboard = () => {
       {/* Header */}
   <header className="px-4 py-3 mk-surface-alt backdrop-blur border-b mk-border flex items-center gap-3 lg:hidden">
         <div className="flex-1 min-w-0">
-          <h1 className="text-base font-semibold mk-text-primary truncate">Hi, {volunteer.name.split(' ')[0]}</h1>
+          <h1 className="text-base font-semibold mk-text-primary truncate">Hi, {isLoaded? volunteer.name.split(' ')[0] : '—'}</h1>
           <div className="flex items-center gap-2 mt-0.5 text-[11px] mk-text-muted">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/> {volunteer.zone}</span>
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${online? 'bg-green-500/15 text-green-300':'mk-surface-alt mk-text-muted'}`}>{online? 'Online':'Offline'}</span>

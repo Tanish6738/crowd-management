@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { useUser } from '@clerk/clerk-react';
 import {
   Clock,
   MapPin,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "../LostAndFound";
 import Drawer from "../../../General/Drawer";
+import { getRecordsByUser } from "../../../../Services/api";
 
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
 
@@ -23,17 +25,48 @@ const relative = (iso) => {
   return da + "d";
 };
 
-const MyReports = ({ data, loading, onUpdate, onCancel }) => {
+const MyReports = ({ data: propData = [], loading: propLoading = false, onUpdate, onCancel }) => {
+  const { user, isLoaded } = useUser();
   const [detail, setDetail] = useState(null);
   const [editing, setEditing] = useState(false);
   const [editDescription, setEditDescription] = useState("");
   const [editPhotos, setEditPhotos] = useState([]);
+  const [fetched, setFetched] = useState(null); // null until fetched
+  const [fetching, setFetching] = useState(false);
+  const [error, setError] = useState(null);
 
-  const sorted = useMemo(
-    () =>
-      [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
-    [data]
-  );
+  // Fetch user-specific records once Clerk user is available
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+    let cancelled = false;
+    const load = async () => {
+      setFetching(true); setError(null);
+      try {
+        const res = await getRecordsByUser(user.id).catch(e => { throw e; });
+        const lostArray = (res?.lost_people || res?.lost || res?.records || []).map(r => ({
+          id: r.face_id,
+          type: 'person',
+          description: r.name ? `${r.name} (${r.age ?? 'Unknown'} yrs) – Last seen ${r.where_lost || 'unspecified'}` : `Lost person ${(r.face_id || '').slice(0,8)}`,
+          photoUrls: [],
+          location: r.where_lost || 'Unknown',
+          status: r.status === 'pending' ? 'open' : (r.status === 'found' ? 'resolved' : (r.status || 'open')),
+          createdAt: r.upload_time,
+          reporterId: r.user_id || 'n/a'
+        }));
+        if (!cancelled) setFetched(lostArray);
+      } catch (e) {
+        if (!cancelled) setError(e.message || 'Failed to load your reports');
+      } finally { if (!cancelled) setFetching(false); }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isLoaded, user]);
+
+  // Decide which dataset to present (fetched overrides prop)
+  const dataset = fetched ?? propData;
+  const loading = fetching || propLoading || !isLoaded;
+
+  const sorted = useMemo(() => [...dataset].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), [dataset]);
 
   const startEdit = () => {
     if (!detail) return;
@@ -43,21 +76,30 @@ const MyReports = ({ data, loading, onUpdate, onCancel }) => {
   };
   const saveEdit = () => {
     if (!detail) return;
-    onUpdate &&
-      onUpdate(detail.id, (old) => ({
-        ...old,
-        description: editDescription.trim(),
-      }));
+    const newDesc = editDescription.trim();
+    // Optimistic local update
+    setFetched(list => list ? list.map(r => r.id === detail.id ? { ...r, description: newDesc } : r) : list);
+    onUpdate && onUpdate(detail.id, (old) => ({ ...old, description: newDesc }));
     setEditing(false);
   };
   const cancelReport = () => {
     if (!detail) return;
+    setFetched(list => list ? list.map(r => r.id === detail.id ? { ...r, status: 'cancelled' } : r) : list);
     onCancel && onCancel(detail.id);
     setDetail(null);
   };
 
   return (
   <div aria-label="My lost reports" className="space-y-4 mk-text-primary">
+  {error && (
+    <div className="p-3 rounded-md bg-red-500/10 border border-red-500/40 text-[11px] text-red-300 flex items-center justify-between">
+      <span>{error}</span>
+      <button
+        onClick={() => { if (user) { setFetched(null); /* trigger refetch */ setTimeout(()=>{ if (user) { setFetched(null); } },0); } }}
+        className="underline hover:text-red-200"
+      >Retry</button>
+    </div>
+  )}
   <div className="hidden md:grid grid-cols-12 text-[11px] font-semibold mk-text-fainter px-3">
         <div className="col-span-2">Case ID</div>
         <div className="col-span-2">Type</div>

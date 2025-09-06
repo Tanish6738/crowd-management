@@ -27,7 +27,7 @@ const Tasks = ({ volunteerId }) => {
   const [photo, setPhoto] = useState(null);
   const [notes, setNotes] = useState('');
 
-  // Fetch assigned tasks
+  // Fetch assigned tasks (No tasks endpoint in current API docs; simulated locally)
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {

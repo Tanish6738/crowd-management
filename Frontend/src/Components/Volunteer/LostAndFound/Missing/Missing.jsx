@@ -1,19 +1,57 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Drawer from '../../../General/Drawer';
-import { Clock, MapPin, Flag, CheckCircle2 } from 'lucide-react';
+import { Clock, MapPin, CheckCircle2, RefreshCw } from 'lucide-react';
 import { StatusBadge } from '../LostAndFound';
+import { getAllLost } from '../../../../Services/api';
 
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
 
 const relative = iso => { const d=Date.now()-new Date(iso).getTime(); const m=Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h=Math.floor(m/60); if(h<24) return h+'h'; const da=Math.floor(h/24); return da+'d'; };
 
-const Missings = ({ data, loading, onMarkFound }) => {
+const Missings = ({ data = [], loading: parentLoading, onMarkFound }) => {
+  const [internal, setInternal] = useState([]);
+  const [loading, setLoading] = useState(parentLoading);
+  const [error, setError] = useState(null);
   const [detail, setDetail] = useState(null);
-  const sorted = useMemo(()=>[...data].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)), [data]);
+
+  // Fetch lost list if parent passes empty (graceful fallback)
+  const fetchLost = useCallback(async () => {
+    if (data.length) return; // parent controlled
+    setLoading(true); setError(null);
+    try {
+      const res = await getAllLost();
+      // Map API status (pending|found) to local (missing|resolved)
+      const mapped = (res.records||[]).map(r => ({
+        id: r.face_id,
+        type: 'person',
+        description: r.name ? `${r.name} (${r.age ?? 'Unknown'} yrs) – Last seen ${r.where_lost || 'unspecified'}` : `Lost person ${r.face_id?.slice(0,8)}`,
+        photoUrls: [],
+        location: r.where_lost || 'Unknown',
+        status: r.status === 'found' ? 'resolved' : 'missing',
+        createdAt: r.upload_time || new Date().toISOString(),
+        reporterId: r.user_id || 'n/a'
+      })).filter(x => x.status === 'missing');
+      setInternal(mapped);
+    } catch (e) {
+      setError(e.message || 'Failed to load missing cases');
+    } finally { setLoading(false); }
+  }, [data]);
+
+  useEffect(() => { fetchLost(); }, [fetchLost]);
+
+  const source = data.length ? data.filter(x => x.status === 'missing') : internal;
+  const sorted = useMemo(()=>[...source].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)), [source]);
 
   return (
   <div className="flex flex-col md:grid md:grid-cols-5 md:gap-5 mk-text-primary" aria-label="Missing cases">
       <div className="md:col-span-2 space-y-3 mb-4 md:mb-0">
+        {!data.length && (
+          <div className="flex items-center justify-between">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide mk-text-muted">Missing Cases</h3>
+            <button onClick={fetchLost} disabled={loading} className="h-7 px-2 rounded-md mk-border mk-surface-alt text-[10px] flex items-center gap-1 disabled:opacity-50 hover:bg-orange-50 dark:hover:bg-white/10"><RefreshCw size={12}/> Refresh</button>
+          </div>
+        )}
+        {error && <div className="p-3 text-[11px] rounded-md bg-red-500/10 border border-red-500/40 text-red-300 flex justify-between"><span>{error}</span><button onClick={fetchLost} className="underline">Retry</button></div>}
         {loading && Array.from({length:4}).map((_,i)=>(<div key={i} className="h-24 rounded-lg bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"/>))}
         {!loading && sorted.length===0 && <div className="p-10 text-center text-sm mk-text-muted mk-surface-alt mk-border rounded-lg">No missing cases.</div>}
         {sorted.map(c => (

@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import LostReport from "./LostReport/LostReport";
+import FoundReport from "./FoundReport/FoundReport";
 import Founds from "./Found/Found";
 import Matched from "./Matched/Matched";
 import Missings from "./Missing/Missing";
 import MyReports from "./MyReports/MyReports";
-import Modal from "../../General/Modal";
 import History from "./History/History";
 import { getAllLost, getAllFound, getAllMatches } from "../../../Services/api";
+import FaceSearch from './FaceSearch/FaceSearch';
 
 /** Shared Data Contract */
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
@@ -31,7 +32,6 @@ export const StatusBadge = ({ value }) => (
 
 const LostAndFound = ({ volunteerId = "vol123" }) => {
   const [tab, setTab] = useState("founds"); // founds default
-  const [showLostReportModal, setShowLostReportModal] = useState(false);
 
   // Core datasets mapped from backend
   const [foundCases, setFoundCases] = useState(/** @type {LostCase[]} */ ([]));
@@ -176,10 +176,12 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
 
   const tabs = [
     { key: "founds", label: "Founds" },
+    { key: "foundReport", label: "Found Report" },
     { key: "lostReport", label: "Lost Report" },
     { key: "myReports", label: "My Reports" },
     { key: "matched", label: "Matched" },
     { key: "missings", label: "Missings" },
+    { key: "search", label: "Search Face ID" },
     { key: "history", label: "History" },
   ];
 
@@ -197,25 +199,27 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
               key={t.key}
               role="tab"
               aria-selected={tab === t.key}
-              onClick={() => {
-                setTab(t.key);
-                if (t.key === "lostReport") setShowLostReportModal(true);
-              }}
+              onClick={() => setTab(t.key)}
               className={`px-3 py-1.5 rounded-md font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 transition ${tab === t.key ? "bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] shadow" : "mk-text-muted hover:bg-orange-50 dark:hover:bg-white/10"}`}
             >
               {t.label}
             </button>
           ))}
         </div>
-        <button
-          onClick={() => {
-            setShowLostReportModal(true);
-            setTab("lostReport");
-          }}
-          className="ml-auto h-9 px-4 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] flex items-center gap-2 text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 shadow hover:brightness-110"
-        >
-          <Plus size={14} /> Report Lost
-        </button>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => setTab("foundReport")}
+            className="h-9 px-4 rounded-md bg-gradient-to-r from-green-500/80 to-green-600 text-[#081321] flex items-center gap-2 text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400/60 shadow hover:brightness-110"
+          >
+            <Plus size={14} /> Found Person
+          </button>
+          <button
+            onClick={() => setTab("lostReport")}
+            className="h-9 px-4 rounded-md bg-gradient-to-r from-[var(--mk-accent)] to-[var(--mk-accent-strong)] text-[#081321] flex items-center gap-2 text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 shadow hover:brightness-110"
+          >
+            <Plus size={14} /> Report Lost
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -235,24 +239,32 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
         />
       )}
 
-      {/* Lost Report form is modal driven; also allow inline for desktop if desired */}
-      <Modal
-        open={showLostReportModal}
-        onClose={() => {
-          setShowLostReportModal(false);
-          if (tab === "lostReport") setTab("founds");
-        }}
-        title="New Lost Report"
-      >
-        <LostReport
-          volunteerId={volunteerId}
-          onCreated={(r) => {
-            addLostReport(r);
-            setShowLostReportModal(false);
-            setTab("myReports");
-          }}
-        />
-      </Modal>
+      {/* Lost Report Tab Panel */}
+      {tab === "lostReport" && (
+        <div role="tabpanel" aria-label="Lost Report form" className="mk-border mk-surface-alt rounded-md p-4">
+          <LostReport
+            volunteerId={volunteerId}
+            onCreated={(r) => {
+              addLostReport(r);
+              setTab("myReports");
+            }}
+          />
+        </div>
+      )}
+
+      {/* Found Report Tab Panel */}
+      {tab === "foundReport" && (
+        <div role="tabpanel" aria-label="Found Report form" className="mk-border mk-surface-alt rounded-md p-4">
+          <FoundReport
+            volunteerId={volunteerId}
+            onCreated={(r) => {
+              setFoundCases(cs => [r, ...cs]);
+              addActivity(r.id, 'Found Logged', r.type, r.location, r.status);
+              setTab("founds");
+            }}
+          />
+        </div>
+      )}
 
       {tab === "myReports" && (
         <MyReports
@@ -261,6 +273,9 @@ const LostAndFound = ({ volunteerId = "vol123" }) => {
           onUpdate={updateReport}
           onCancel={cancelReport}
         />
+      )}
+      {tab === 'search' && (
+        <FaceSearch />
       )}
   {tab === "matched" && <Matched data={matchedCases} loading={loading} />}
       {tab === "missings" && <Missings data={missingCases} loading={loading} onMarkFound={markMissingFound} />}

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
-import { getAllMatches } from '../../../../Services/api';
+import { getAllMatches, getAllLost, getAllFound } from '../../../../Services/api';
 
 /** @typedef {{ id:string; lostCase:{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; createdAt:string }; foundCase:{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; reportedAt:string }; confidence?:number|null; status:'matched'|'confirmed'|'rejected' }} MatchedCase */
 
@@ -29,32 +29,48 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
   const [detail, setDetail] = useState(/** @type {MatchedCase|null} */(null));
   const [actionBusy, setActionBusy] = useState(false);
 
+  /**
+   * API Alignment Notes:
+   * - getAllMatches returns records: match_id, lost_face_id, found_face_id, match_status (may include lost_person / found_person objects depending on backend version)
+   * - lost / found lists endpoints provide additional context (name, age, where_lost/location_found, status)
+   * - We enrich matches by cross-referencing lost & found datasets when nested objects are absent.
+   */
   const fetchMatches = useCallback(async () => {
     if (externalData?.length) return; // parent-supplied data takes precedence
     setLoading(true); setError(null);
     try {
-      const res = await getAllMatches();
-      const transformed = (res.records || []).map(r => ({
-        id: r.match_id,
-        lostCase: {
-          id: r.lost_face_id,
-          type: 'person',
-          description: r.lost_person?.name ? `Lost: ${r.lost_person.name} (${r.lost_person.age ?? '—'} yrs)` : 'Lost person',
-          photoUrls: [],
-          location: r.lost_person?.where_lost || 'Unknown',
-          createdAt: r.match_time || new Date().toISOString()
-        },
-        foundCase: {
-          id: r.found_face_id,
-          type: 'person',
-          description: r.found_person?.name ? `Found: ${r.found_person.name}` : 'Found person',
-          photoUrls: [],
-          location: '—',
-          reportedAt: r.match_time || new Date().toISOString()
-        },
-        confidence: null,
-        status: r.match_status || 'matched'
-      }));
+      const [matchesRes, lostRes, foundRes] = await Promise.all([
+        getAllMatches(),
+        getAllLost().catch(()=>({ records: [] })),
+        getAllFound().catch(()=>({ records: [] }))
+      ]);
+      const lostMap = Object.fromEntries((lostRes.records||[]).map(r => [r.face_id, r]));
+      const foundMap = Object.fromEntries((foundRes.records||[]).map(r => [r.face_id, r]));
+      const transformed = (matchesRes.records || []).map(r => {
+        const lostRaw = r.lost_person || lostMap[r.lost_face_id] || {};
+        const foundRaw = r.found_person || foundMap[r.found_face_id] || {};
+        return {
+          id: r.match_id,
+          lostCase: {
+            id: r.lost_face_id,
+            type: 'person',
+            description: lostRaw.name ? `Lost: ${lostRaw.name} (${lostRaw.age ?? '—'} yrs)` : 'Lost person',
+            photoUrls: [], // API list does not currently expose image URLs
+            location: lostRaw.where_lost || 'Unknown',
+            createdAt: r.match_time || lostRaw.upload_time || new Date().toISOString()
+          },
+          foundCase: {
+            id: r.found_face_id,
+            type: 'person',
+            description: foundRaw.name ? `Found: ${foundRaw.name}` : 'Found person',
+            photoUrls: [],
+            location: foundRaw.location_found || 'Unknown',
+            reportedAt: r.match_time || foundRaw.upload_time || new Date().toISOString()
+          },
+          confidence: null, // backend not returning similarity score here yet
+          status: r.match_status || 'matched'
+        };
+      });
       setMatches(transformed);
     } catch (e) {
       setError(e.message || 'Failed to load matches');
@@ -70,6 +86,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
     setMatches(m => m.map(x => x.id===id ? { ...x, status } : x));
     if (detail?.id === id) setDetail(d => d ? { ...d, status } : d);
   };
+  // Local only (no backend mutation endpoints documented yet)
   const confirmMatch = async (mc) => { setActionBusy(true); try { await new Promise(r=>setTimeout(r,300)); updateStatus(mc.id,'confirmed'); } finally { setActionBusy(false); } };
   const rejectMatch = async (mc) => { setActionBusy(true); try { await new Promise(r=>setTimeout(r,300)); updateStatus(mc.id,'rejected'); } finally { setActionBusy(false); } };
 
@@ -89,7 +106,7 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
               <div className="text-[11px] font-mono mk-text-fainter truncate" title={m.id}>{m.id}</div>
               <span className={`px-2 py-0.5 rounded border text-[10px] uppercase tracking-wide ${m.status==='matched'?'bg-amber-500/15 text-amber-300 border-amber-400/30': m.status==='confirmed'?'bg-green-500/15 text-green-300 border-green-400/30':'bg-red-500/15 text-red-300 border-red-400/30'}`}>{m.status}</span>
             </div>
-            <div className="text-[11px] mk-text-primary line-clamp-2">{m.lostCase.description}</div>
+              <div className="text-[11px] mk-text-primary line-clamp-2">{m.lostCase.description}</div>
             <div className="flex items-center justify-between text-[10px] mk-text-muted">
               <span className="inline-flex items-center gap-1"><Clock size={11} className="mk-text-fainter"/>{relative(m.foundCase.reportedAt)}</span>
               <span className={`px-2 py-0.5 rounded border ${confidenceColor(m.confidence)}`}>{m.confidence==null ? '—' : (m.confidence*100).toFixed(0)+'%'}</span>

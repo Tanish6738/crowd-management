@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Drawer from '../../General/Drawer';
-import { AlertTriangle, ShieldAlert, Flame, Bell, Clock, MapPin, Filter, FileText, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, Flame, Bell, Clock, MapPin, Filter, CheckCircle2, RefreshCw } from 'lucide-react';
+import { getUserAlerts } from '../../../Services/api';
 
 /** @typedef {{ id:string; type:string; severity:'low'|'medium'|'high'|'critical'; zone:string; description:string; ts:string; status:'new'|'ack'|'resolved'; linkedTaskId?:string }} VolunteerAlert */
 
@@ -20,9 +21,9 @@ const statusColor = {
 
 const relative = iso => { const d=Date.now()-new Date(iso).getTime(); const m=Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m ago'; const h=Math.floor(m/60); if(h<24) return h+'h ago'; const da=Math.floor(h/24); return da+'d ago'; };
 
-const Alerts = ({ volunteerId='vol123' }) => {
+const Alerts = ({ volunteerId='demo_user_123' }) => {
   const [alerts, setAlerts] = useState(/** @type {VolunteerAlert[]} */([]));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [severityFilter, setSeverityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -30,23 +31,47 @@ const Alerts = ({ volunteerId='vol123' }) => {
   const [report, setReport] = useState('');
   const [resolving, setResolving] = useState(false);
 
+  /**
+   * Map backend alert entry (type + data) to internal VolunteerAlert.
+   * Backend (GET /alert/{user_id}) returns alerts: [{ type:'lost'|'found', data:{ ...record }}]
+   * We derive severity heuristically (lost -> high, found -> medium) until backend provides native severity.
+   */
+  const mapApiAlerts = (apiAlerts) => {
+    return (apiAlerts||[]).map(a => {
+      const rec = a.data || {}; // lost or found person record
+      const baseType = a.type; // 'lost' | 'found'
+      const statusRaw = rec.status; // 'pending' | 'found'
+      const severity = baseType === 'lost' ? 'high' : 'medium';
+      const zone = rec.where_lost || rec.location_found || '—';
+      const personName = rec.name || 'Unnamed';
+      const actionLabel = baseType === 'lost' ? 'Lost Person Status Update' : 'Found Person Status Update';
+      const desc = baseType === 'lost'
+        ? `${personName} (${rec.age ?? 'Unknown'} yrs) reported ${rec.where_lost ? 'at '+rec.where_lost : ''}. Status: ${statusRaw}.`
+        : `${personName} (${rec.age ?? 'Unknown'} yrs) found${rec.location_found? ' at '+rec.location_found:''}. Status: ${statusRaw}.`;
+      return {
+        id: rec.face_id || 'alert_'+Math.random().toString(16).slice(2),
+        type: actionLabel,
+        severity,
+        zone,
+        description: desc.trim(),
+        ts: rec.status_updated_time || rec.upload_time || new Date().toISOString(),
+        status: 'new'
+      };
+    });
+  };
+
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      await new Promise(r=>setTimeout(r, 500));
-      const seed = [
-        { id:'a1', type:'Crowd Density', severity:'medium', zone:'Zone 5', description:'High density detected near food stalls.', ts:new Date(Date.now()-18*60000).toISOString(), status:'new' },
-        { id:'a2', type:'Lost Person', severity:'high', zone:'Zone 7', description:'Report of separated child near info booth.', ts:new Date(Date.now()-42*60000).toISOString(), status:'ack', linkedTaskId:'t2' },
-      ];
-      setAlerts(seed);
-      setLoading(false);
-    } catch(e){ setError('Failed to load alerts'); setLoading(false);}  
-  }, []);
+      const res = await getUserAlerts(volunteerId);
+      const mapped = mapApiAlerts(res.alerts);
+      setAlerts(mapped);
+    } catch(e){
+      setError(e.message || 'Failed to load alerts');
+    } finally { setLoading(false); }
+  }, [volunteerId]);
 
   useEffect(()=>{ load(); }, [load]);
-
-  // WebSocket simulation for new alerts
-  useEffect(()=>{ if(loading) return; const iv=setInterval(()=>{ setAlerts(a => [{ id:'a'+Date.now(), type:'Medical Assist', severity: ['low','medium','high'][Math.floor(Math.random()*3)] , zone:'Zone '+(Math.floor(Math.random()*9)+1), description:'Volunteer presence requested.', ts:new Date().toISOString(), status:'new' }, ...a]); }, 60000); return ()=>clearInterval(iv); }, [loading]);
 
   const filtered = useMemo(()=> alerts.filter(a => {
     if(severityFilter!=='all' && a.severity!==severityFilter) return false;
@@ -93,14 +118,17 @@ const Alerts = ({ volunteerId='vol123' }) => {
           <option value="ack">Acknowledged</option>
           <option value="resolved">Resolved</option>
         </select>
-        <div className="ml-auto text-[11px] mk-text-faint flex items-center gap-1"><Bell size={12} className="text-[var(--mk-accent)]"/> Live</div>
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={load} disabled={loading} className="h-8 px-3 rounded-md mk-border mk-surface-alt flex items-center gap-1 text-[11px] disabled:opacity-50 hover:bg-orange-50 dark:hover:bg-white/10"><RefreshCw size={12}/> {loading? 'Loading':'Refresh'}</button>
+          <div className="text-[11px] mk-text-faint flex items-center gap-1"><Bell size={12} className="text-[var(--mk-accent)]"/> Live</div>
+        </div>
       </div>
 
       <div className="flex flex-col md:grid md:grid-cols-5 md:gap-4">
         {/* List */}
   <div className="md:col-span-2 space-y-3 mb-4 md:mb-0">
           {loading && <div className="grid gap-3">{skeleton}</div>}
-          {!loading && error && (
+          {loading && error && (
             <div className="p-4 rounded-lg mk-border mk-surface-alt text-sm flex justify-between items-center text-red-400">
               <span>{error}</span>
               <button onClick={load} className="underline hover:text-red-300">Retry</button>

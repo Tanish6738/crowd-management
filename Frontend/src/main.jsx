@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
   import { createRoot } from 'react-dom/client'
   import './index.css'
   import App from './App.jsx'
+  import { ToastProvider } from './Components/General/Toast.jsx'
   import { ThemeProvider } from './Context/ThemeContext'
   import { ClerkProvider } from '@clerk/clerk-react'
  import { BrowserRouter } from 'react-router-dom'
@@ -17,7 +18,9 @@ import { StrictMode } from 'react'
       <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
         <BrowserRouter>
           <ThemeProvider>
-            <App />
+            <ToastProvider>
+              <App />
+            </ToastProvider>
           </ThemeProvider>
         </BrowserRouter>
       </ClerkProvider>
