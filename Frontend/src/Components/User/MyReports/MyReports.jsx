@@ -57,9 +57,9 @@ const MyReports = ({
         {!loading && filtered.length === 0 && (
           <div className="col-span-full p-10 text-center text-xs mk-text-faint mk-surface-alt mk-border rounded-lg">No reports yet.</div>
         )}
-        {!loading && filtered.map((r) => (
+        {!loading && filtered.map((r, idx) => (
           <div
-            key={r.id}
+            key={r._id || r.id || r.face_id || idx}
             role="button"
             tabIndex={0}
             aria-label={`Open report ${r.id}`}
@@ -92,7 +92,7 @@ const MyReports = ({
             <div className="text-xs mk-text-faint whitespace-pre-wrap">{detail.description}</div>
             {detail.photoUrls.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
-                {detail.photoUrls.map((p, i) => (<img key={i} src={p} alt={`Report photo ${i + 1}`} className="h-20 w-full object-cover rounded" />))}
+                {detail.photoUrls.map((p) => (<img key={p} src={p} alt="Report photo" className="h-20 w-full object-cover rounded" />))}
               </div>
             )}
             {detail.status === 'open' && (

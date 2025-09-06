@@ -165,7 +165,20 @@ export const uploadLostPerson = async (payload, config) => {
  */
 export const searchFace = async (faceId, config) => {
 	if (!faceId) throw new ApiError('faceId is required for searchFace');
-	return exec(client.get(`/search_face/${encodeURIComponent(faceId)}`, withConfig(config)));
+	// Treat 404 (face not found) as a valid, non-exceptional outcome so the UI can
+	// display a friendly "not found" message instead of an error banner.
+	try {
+		return await exec(client.get(`/search_face/${encodeURIComponent(faceId)}`, withConfig(config)));
+	} catch (err) {
+		if (err.status === 404) {
+			return {
+				not_found: true,
+				face_id: faceId,
+				message: err.data?.detail || err.message || 'Face not found'
+			};
+		}
+		throw err; // Re-throw other statuses (network issues, 500s, etc.)
+	}
 };
 
 /**
@@ -185,13 +198,72 @@ export const getAllMatches = async (config) => exec(client.get('/get_all_matches
 
 /**
  * 7. Health Check (GET /health)
+ * Normalizes backend response fields to UI-friendly keys expected by Analytics.jsx
+ * Backend raw (per docs): {
+ *   status, timestamp, database, collections: { lost_people, found_people, matches }, face_model_loaded
+ * }
+ * Returned normalized shape adds:
+ *   mongodb_status, face_model_status, mongodb_collections, raw (original)
  */
-export const healthCheck = async (config) => exec(client.get('/health', withConfig(config)));
+export const healthCheck = async (config) => {
+	const raw = await exec(client.get('/health', withConfig(config)));
+	try {
+		return {
+			status: raw.status || 'unknown',
+			timestamp: raw.timestamp || new Date().toISOString(),
+			mongodb_status: raw.database || raw.mongodb_status || 'unknown',
+			mongodb_collections: raw.collections || {},
+			face_model_status: raw.face_model_loaded === true ? 'loaded' : (raw.face_model_loaded === false ? 'not_loaded' : 'unknown'),
+			raw
+		};
+	} catch (e) {
+		// Fallback to raw if normalization fails
+		return raw;
+	}
+};
 
 /**
  * 8. Get Statistics (GET /stats)
+ * Backend raw (per docs): {
+ *  lost_people, found_people, matches,
+ *  lost_pending, lost_found,
+ *  found_pending, found_matched,
+ *  last_updated
+ * }
+ * Normalized fields added for Analytics.jsx:
+ *  total_lost_people, total_found_people, total_matches,
+ *  pending_lost, pending_found, pending_cases,
+ *  match_rate (percent, 1 decimal),
+ *  last_updated (pass-through), raw (original)
  */
-export const getStats = async (config) => exec(client.get('/stats', withConfig(config)));
+export const getStats = async (config) => {
+	const raw = await exec(client.get('/stats', withConfig(config)));
+	try {
+		const total_lost_people = raw.lost_people ?? 0;
+		const total_found_people = raw.found_people ?? 0;
+		const total_matches = raw.matches ?? 0;
+		const pending_lost = raw.lost_pending ?? 0;
+		const pending_found = raw.found_pending ?? 0;
+		const pending_cases = pending_lost + pending_found;
+		// Heuristic match rate: confirmed matches over combined population (avoid div/0)
+		const denom = (total_lost_people + total_found_people) || 1;
+		const match_rate = Number(((total_matches / denom) * 100).toFixed(1));
+		return {
+			...raw,
+			total_lost_people,
+			total_found_people,
+			total_matches,
+			pending_lost,
+			pending_found,
+			pending_cases,
+			match_rate,
+			last_updated: raw.last_updated || new Date().toISOString(),
+			raw
+		};
+	} catch (e) {
+		return raw; // fallback
+	}
+};
 
 /**
  * 9. Check Matches for Face ID (GET /check_matches/{face_id})
