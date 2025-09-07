@@ -302,6 +302,33 @@ export const getRecordsByUser = async (userId, config) => {
 };
 
 /**
+ * Normalize a searchFace (or record) response into a generic person object
+ * used by certain UI tables (Case ID, Type, Status, Created, Location).
+ * Accepts either the raw object returned by searchFace or a record wrapper.
+ */
+export const normalizePersonRecord = (res) => {
+	if (!res) return null;
+	if (res.not_found) return { not_found: true, face_id: res.face_id };
+	const collection = res.collection || res._source || 'unknown';
+	const record = res.record || res.data || res;
+	const isLost = collection === 'lost_people';
+	const location = isLost ? (record.where_lost || 'Unknown') : (record.location_found || record.where_found || 'Unknown');
+	const rawStatus = record.status || 'pending';
+	const status = rawStatus === 'pending' ? 'open' : (rawStatus === 'found' ? 'resolved' : rawStatus);
+	return {
+		id: record.face_id || record.match_id || 'unknown',
+		type: 'person',
+		name: record.name || 'Unknown',
+		age: record.age,
+		status,
+		createdAt: record.upload_time || record.match_time || null,
+		location,
+		source: collection,
+		raw: res
+	};
+};
+
+/**
  * Backwards compatibility: createLostReport alias to new uploadLostPerson
  * (some older components might still import createLostReport)
  */
@@ -331,6 +358,7 @@ export const apiService = {
 	listLostReports,
 	getUserAlerts,
 	getRecordsByUser,
+	normalizePersonRecord,
 	client // expose raw axios instance for advanced usage
 };
 

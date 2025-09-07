@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CCTV Management Map</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" 
+          crossorigin=""/>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .container { display: flex; height: 100vh; }
+        .map-container { flex: 1; padding: 10px; }
+        .map-canvas { 
+            border: 3px solid #333; 
+            border-radius: 10px; 
+            height: 100%; 
+            background: #fff; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+            overflow: hidden; 
+        }
+        #map { width: 100%; height: 100%; }
+        .sidebar { 
+            width: 400px; 
+            background: #f4f4f4; 
+            padding: 1em; 
+            box-shadow: -2px 0 8px #ccc; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto;
+        }
+        .tab-buttons { display: flex; margin-bottom: 1em; }
+        .tab-button { 
+            flex: 1; 
+            padding: 10px; 
+            background: #ddd; 
+            border: none; 
+            cursor: pointer; 
+            margin-right: 5px;
+        }
+        .tab-button.active { background: #007cba; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        label { display: block; margin-top: 1em; }
+        input, select, textarea { width: 100%; padding: 5px; margin-top: 5px; }
+        button { margin-top: 1em; padding: 10px; background: #007cba; color: white; border: none; cursor: pointer; }
+        button:hover { background: #005a87; }
+        #result { 
+            margin-top: 1em; 
+            white-space: pre-wrap; 
+            background: #fff; 
+            padding: 1em; 
+            border-radius: 5px; 
+            max-height: 200px; 
+            overflow: auto; 
+            font-size: 12px;
+        }
+        .item-list { margin-top: 1em; }
+        .item { 
+            background: white; 
+            padding: 10px; 
+            margin: 5px 0; 
+            border-radius: 5px; 
+            border-left: 4px solid #007cba;
+        }
+        .marker-mode {
+            margin-bottom: 1em;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .marker-mode.active {
+            display: block;
+        }
+        .drawing-controls { margin-bottom: 1em; }
+        .drawing-controls button { margin-right: 10px; }
+        .nav-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .nav-link.active {
+            background-color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <div class="nav-title">🎥 CCTV Management System</div>
+        <div class="nav-links">
+            <a href="#" class="nav-link active">🗺️ Map View</a>
+            <a href="cctv_management.html" class="nav-link">📹 CCTV Management</a>
+        </div>
+    </div>
+    <div class="container">
+        <div class="map-container">
+            <div class="map-canvas">
+                <div id="map"></div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <h2>CCTV Management</h2>
+            
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('markers')">Markers</button>
+                <button class="tab-button" onclick="showTab('areas')">Areas</button>
+                <button class="tab-button" onclick="showTab('zones')">Zones</button>
+            </div>
+
+            <!-- Markers Tab -->
+            <div id="markers-tab" class="tab-content active">
+                <h3>Manage Markers</h3>
+                
+                <p><em>Click on the map, areas, or zones to place a marker</em></p>
+                
+                <form id="markerForm">
+                    <label>Type:
+                        <select id="markerType">
+                            <option value="hospital">Hospital</option>
+                            <option value="public_washroom">Public Washroom</option>
+                            <option value="school">School</option>
+                            <option value="restaurant">Restaurant</option>
+                            <option value="police_station">Police Station</option>
+                            <option value="fire_station">Fire Station</option>
+                            <option value="park">Park</option>
+                        </select>
+                    </label>
+                    <label>Name: <input type="text" id="markerName" required></label>
+                    <label>Description: <textarea id="markerDesc"></textarea></label>
+                    <label>Latitude: <input type="number" step="any" id="markerLat" required readonly></label>
+                    <label>Longitude: <input type="number" step="any" id="markerLng" required readonly></label>
+                    <button type="submit">Create Marker</button>
+                </form>
+                <button onclick="loadMarkers()">Load All Markers</button>
+            </div>
+
+            <!-- Areas Tab -->
+            <div id="areas-tab" class="tab-content">
+                <h3>Manage Areas</h3>
+                <div class="drawing-controls">
+                    <button onclick="startDrawingArea()">Draw New Area Polygon</button>
+                    <button onclick="clearDrawing()">Clear Drawing</button>
+                </div>
+                <form id="areaForm">
+                    <label>Name: <input type="text" id="areaName" required></label>
+                    <label>Description: <textarea id="areaDesc"></textarea></label>
+                    <input type="hidden" id="areaPolygon">
+                    <button type="submit">Create Area</button>
+                </form>
+                
+                <h4>Add Polygon to Existing Area</h4>
+                <div class="drawing-controls">
+                    <label>Select Area: 
+                        <select id="existingAreaSelect">
+                            <option value="">Select Area to Add Polygon</option>
+                        </select>
+                    </label>
+                    <button onclick="drawPolygonForExistingArea()">Draw Polygon for Selected Area</button>
+                </div>
+                
+                <button onclick="loadAreas()">Load All Areas</button>
+                <button onclick="loadAreas()" style="background: #28a745;">Refresh Areas</button>
+                <div id="areas-list" class="item-list"></div>
+            </div>
+
+            <!-- Zones Tab -->
+            <div id="zones-tab" class="tab-content">
+                <h3>Manage Zones</h3>
+                <div class="drawing-controls">
+                    <button onclick="startDrawingZone()">Draw New Zone Polygon</button>
+                    <button onclick="clearDrawing()">Clear Drawing</button>
+                </div>
+                <form id="zoneForm">
+                    <label>Name: <input type="text" id="zoneName" required></label>
+                    <label>Area: 
+                        <select id="zoneArea" required>
+                            <option value="">Select Area</option>
+                        </select>
+                    </label>
+                    <label>Description: <textarea id="zoneDesc"></textarea></label>
+                    <input type="hidden" id="zonePolygon">
+                    <button type="submit">Create Zone</button>
+                </form>
+                
+                <h4>Add Polygon to Existing Zone</h4>
+                <div class="drawing-controls">
+                    <label>Select Zone: 
+                        <select id="existingZoneSelect">
+                            <option value="">Select Zone to Add Polygon</option>
+                        </select>
+                    </label>
+                    <button onclick="drawPolygonForExistingZone()">Draw Polygon for Selected Zone</button>
+                </div>
+                
+                <button onclick="loadZones()">Load All Zones</button>
+                <div id="zones-list" class="item-list"></div>
+            </div>
+
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js" 
+            crossorigin=""></script>
+    <script>
+        // Global variables
+        let map, drawnItems, drawControl, tempMarker;
+        let currentDrawingType = null;
+        let selectedExistingItem = null; // For existing area/zone polygon drawing
+        let areas = [], zones = [];
+
+        // Marker icons
+        const markerIcons = {
+            hospital: '🏥',
+            public_washroom: '🚻',
+            school: '🏫',
+            restaurant: '🍽️',
+            police_station: '🚓',
+            fire_station: '🚒',
+            park: '🌳'
+        };
+
+        // API base URL
+        const API_BASE = 'https://krish09bha-dhruvai2.hf.space';
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([28.6139, 77.2090], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Initialize draw control
+            drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            drawControl = new L.Control.Draw({
+                edit: {
+                    featureGroup: drawnItems
+                },
+                draw: {
+                    polygon: true,
+                    polyline: false,
+                    rectangle: false,
+                    circle: false,
+                    marker: false,
+                    circlemarker: false
+                }
+            });
+
+            // Fix map rendering
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 500);
+
+            // Map click event for markers
+            map.on('click', function(e) {
+                if (!currentDrawingType) {
+                    if (tempMarker) map.removeLayer(tempMarker);
+                    tempMarker = L.marker(e.latlng).addTo(map);
+                    document.getElementById('markerLat').value = e.latlng.lat;
+                    document.getElementById('markerLng').value = e.latlng.lng;
+                }
+            });
+
+            // Draw events
+            map.on(L.Draw.Event.CREATED, function(e) {
+                const layer = e.layer;
+                drawnItems.addLayer(layer);
+                
+                if (e.layerType === 'polygon') {
+                    const coordinates = layer.getLatLngs()[0].map(latlng => [latlng.lat, latlng.lng]);
+                    
+                    if (currentDrawingType === 'area') {
+                        document.getElementById('areaPolygon').value = JSON.stringify(coordinates);
+                    } else if (currentDrawingType === 'zone') {
+                        document.getElementById('zonePolygon').value = JSON.stringify(coordinates);
+                    } else if (currentDrawingType === 'existing-area' && selectedExistingItem) {
+                        updateExistingAreaPolygon(selectedExistingItem.id, coordinates);
+                    } else if (currentDrawingType === 'existing-zone' && selectedExistingItem) {
+                        updateExistingZonePolygon(selectedExistingItem.id, coordinates);
+                    }
+                }
+            });
+        }
+
+        // Marker icon creation
+        function createMarkerIcon(type) {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="font-size: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);">${markerIcons[type]}</div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
+                popupAnchor: [0, -15]
+            });
+        }
+
+        // Tab management
+        async function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data for the selected tab
+            if (tabName === 'areas') {
+                await loadAreas();
+                loadAreasForDropdown();
+            } else if (tabName === 'zones') {
+                await loadZones();
+                loadAreasForDropdown();
+            } else if (tabName === 'markers') {
+                loadAreasForDropdown();
+            }
+        }
+
+        // Drawing functions
+        function startDrawingArea() {
+            currentDrawingType = 'area';
+            map.addControl(drawControl);
+        }
+
+        function startDrawingZone() {
+            currentDrawingType = 'zone';
+            map.addControl(drawControl);
+        }
+
+        function clearDrawing() {
+            currentDrawingType = null;
+            selectedExistingItem = null;
+            drawnItems.clearLayers();
+            if (map.hasLayer(drawControl)) {
+                map.removeControl(drawControl);
+            }
+            document.getElementById('areaPolygon').value = '';
+            document.getElementById('zonePolygon').value = '';
+        }
+
+        function drawPolygonForExistingArea() {
+            const areaSelect = document.getElementById('existingAreaSelect');
+            const selectedAreaId = areaSelect.value;
+            
+            if (!selectedAreaId) {
+                alert('Please select an area first');
+                return;
+            }
+            
+            selectedExistingItem = areas.find(area => area.id === selectedAreaId);
+            if (!selectedExistingItem) {
+                alert('Area not found');
+                return;
+            }
+            
+            currentDrawingType = 'existing-area';
+            clearDrawing();
+            map.addControl(drawControl);
+            document.getElementById('result').textContent = `Drawing polygon for area: ${selectedExistingItem.name}`;
+        }
+
+        function drawPolygonForExistingZone() {
+            const zoneSelect = document.getElementById('existingZoneSelect');
+            const selectedZoneId = zoneSelect.value;
+            
+            if (!selectedZoneId) {
+                alert('Please select a zone first');
+                return;
+            }
+            
+            selectedExistingItem = zones.find(zone => zone.id === selectedZoneId);
+            if (!selectedExistingItem) {
+                alert('Zone not found');
+                return;
+            }
+            
+            currentDrawingType = 'existing-zone';
+            clearDrawing();
+            map.addControl(drawControl);
+            document.getElementById('result').textContent = `Drawing polygon for zone: ${selectedExistingItem.name}`;
+        }
+
+        async function updateExistingAreaPolygon(areaId, coordinates) {
+            try {
+                const updateData = { polygon: coordinates };
+                const result = await apiCall(`/areas/${areaId}`, 'PUT', updateData);
+                document.getElementById('result').textContent = `Polygon added to area: ${result.name}`;
+                
+                // Reload areas to show the new polygon
+                loadAreas();
+                clearDrawing();
+            } catch (error) {
+                document.getElementById('result').textContent = 'Error updating area polygon: ' + error.message;
+            }
+        }
+
+        async function updateExistingZonePolygon(zoneId, coordinates) {
+            try {
+                const updateData = { polygon: coordinates };
+                const result = await apiCall(`/zones/${zoneId}`, 'PUT', updateData);
+                document.getElementById('result').textContent = `Polygon added to zone: ${result.name}`;
+                
+                // Reload zones to show the new polygon
+                loadZones();
+                clearDrawing();
+            } catch (error) {
+                document.getElementById('result').textContent = 'Error updating zone polygon: ' + error.message;
+            }
+        }
+
+        // API calls
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method,
+                    headers: { 'Content-Type': 'application/json' }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                document.getElementById('result').textContent = 'Error: ' + error.message;
+                throw error;
+            }
+        }
+
+        // Marker functions
+        async function createMarker(markerData) {
+            const result = await apiCall('/create_marker', 'POST', markerData);
+            document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+            
+            // Add marker to map with detailed popup
+            const markerInstance = L.marker([markerData.lat, markerData.lng], {
+                icon: createMarkerIcon(markerData.type)
+            }).addTo(map);
+            
+            // Create detailed popup content
+            let popupContent = `
+                <div style="min-width: 200px;">
+                    <h3 style="margin: 0 0 10px 0; color: #007cba;">${markerData.type.toUpperCase()}</h3>
+                    <p style="margin: 5px 0;"><strong>Name:</strong> ${markerData.name}</p>
+                    <p style="margin: 5px 0;"><strong>Description:</strong> ${markerData.description || 'No description'}</p>
+                    <p style="margin: 5px 0;"><strong>Location:</strong> ${markerData.lat.toFixed(6)}, ${markerData.lng.toFixed(6)}</p>
+                    <p style="margin: 5px 0;"><strong>Area:</strong> ${result.area_name || 'Not assigned'}</p>
+                    <p style="margin: 5px 0;"><strong>Zone:</strong> ${result.zone_name || 'Not assigned'}</p>
+                    <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date().toLocaleDateString()}</p>
+                </div>
+            `;
+            
+            markerInstance.bindPopup(popupContent);
+            
+            if (tempMarker) map.removeLayer(tempMarker);
+        }
+
+        async function loadMarkers() {
+            const markers = await apiCall('/view');
+            document.getElementById('result').textContent = JSON.stringify(markers, null, 2);
+            
+            // Clear existing markers
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker && layer !== tempMarker) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Add markers to map with detailed popups
+            markers.forEach(marker => {
+                const markerInstance = L.marker([marker.lat, marker.lng], {
+                    icon: createMarkerIcon(marker.type)
+                }).addTo(map);
+                
+                // Create detailed popup content
+                let popupContent = `
+                    <div style="min-width: 200px;">
+                        <h3 style="margin: 0 0 10px 0; color: #007cba;">${marker.type.toUpperCase()}</h3>
+                        <p style="margin: 5px 0;"><strong>Name:</strong> ${marker.name}</p>
+                        <p style="margin: 5px 0;"><strong>Description:</strong> ${marker.description || 'No description'}</p>
+                        <p style="margin: 5px 0;"><strong>Location:</strong> ${marker.lat.toFixed(6)}, ${marker.lng.toFixed(6)}</p>
+                        <p style="margin: 5px 0;"><strong>Area:</strong> ${marker.area_name || 'Not assigned'}</p>
+                        <p style="margin: 5px 0;"><strong>Zone:</strong> ${marker.zone_name || 'Not assigned'}</p>
+                        <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date(marker.created_at).toLocaleDateString()}</p>
+                    </div>
+                `;
+                
+                markerInstance.bindPopup(popupContent);
+            });
+        }
+
+        // Area functions
+        async function createArea(areaData) {
+            const result = await apiCall('/areas', 'POST', areaData);
+            document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+            
+            // Reload areas after creating new one
+            await loadAreas();
+            loadAreasForDropdown();
+        }
+
+        async function loadAreas() {
+            areas = await apiCall('/areas');
+            console.log('Loaded areas:', areas); // Debug log
+            
+            // Clear existing area polygons
+            map.eachLayer(layer => {
+                if (layer instanceof L.Polygon && layer.options.color === 'blue' && layer.options.dashArray) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Display areas on map
+            areas.forEach(area => {
+                console.log(`Processing area: ${area.name}, polygon:`, area.polygon); // Debug log
+                if (area.polygon && area.polygon.length > 0) {
+                    try {
+                        const polygon = L.polygon(area.polygon, {
+                            color: 'blue',
+                            weight: 3,
+                            dashArray: '10, 10',
+                            fillOpacity: 0,
+                            opacity: 1
+                        }).addTo(map);
+                        
+                        // Add click event for marker placement instead of popup
+                        polygon.on('click', function(e) {
+                            L.DomEvent.stopPropagation(e);
+                            if (!currentDrawingType) {
+                                // Remove any existing temp marker
+                                if (tempMarker) map.removeLayer(tempMarker);
+                                
+                                // Place marker at click location
+                                tempMarker = L.marker(e.latlng).addTo(map);
+                                document.getElementById('markerLat').value = e.latlng.lat;
+                                document.getElementById('markerLng').value = e.latlng.lng;
+                                
+                                // Show marker tab
+                                showTab('markers');
+                                
+                                // Show area info in a temporary tooltip
+                                const tooltip = L.tooltip({
+                                    permanent: false,
+                                    direction: 'top'
+                                })
+                                .setContent(`Click in Area: ${area.name}`)
+                                .setLatLng(e.latlng);
+                                
+                                polygon.bindTooltip(tooltip).openTooltip();
+                                setTimeout(() => polygon.closeTooltip(), 2000);
+                            }
+                        });
+                        
+                        console.log(`Added polygon for area: ${area.name}`); // Debug log
+                    } catch (error) {
+                        console.error(`Error adding polygon for area ${area.name}:`, error);
+                    }
+                }
+            });
+            
+            // Update areas list in sidebar
+            const areasList = document.getElementById('areas-list');
+            areasList.innerHTML = areas.map(area => 
+                `<div class="item">
+                    <strong>${area.name}</strong><br>
+                    ${area.description || 'No description'}<br>
+                    <small>Polygon: ${area.polygon ? 'Yes' : 'No'}</small><br>
+                    <small>Created: ${new Date(area.created_at).toLocaleDateString()}</small>
+                </div>`
+            ).join('');
+            
+            // Update existing areas dropdown
+            const existingAreaSelect = document.getElementById('existingAreaSelect');
+            if (existingAreaSelect) {
+                existingAreaSelect.innerHTML = '<option value="">Select Area to Add Polygon</option>' + 
+                    areas.filter(area => !area.polygon).map(area => 
+                        `<option value="${area.id}">${area.name} (No Polygon)</option>`
+                    ).join('');
+            }
+        }
+
+        async function loadAreasForDropdown() {
+            if (areas.length === 0) {
+                areas = await apiCall('/areas');
+            }
+            
+            const areaSelects = ['zoneArea'];
+            areaSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Select Area</option>' + 
+                    areas.map(area => `<option value="${area.id}">${area.name}</option>`).join('');
+            });
+        }
+
+        // Zone functions
+        async function createZone(zoneData) {
+            const result = await apiCall('/zones', 'POST', zoneData);
+            document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+            loadZones();
+        }
+
+        async function loadZones() {
+            zones = await apiCall('/zones');
+            
+            // Clear existing zone polygons
+            map.eachLayer(layer => {
+                if (layer instanceof L.Polygon && layer.options.color === 'red' && layer.options.dashArray) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Display zones on map
+            zones.forEach(zone => {
+                if (zone.polygon) {
+                    const polygon = L.polygon(zone.polygon, {
+                        color: 'red',
+                        weight: 2,
+                        dashArray: '5, 5',
+                        fillOpacity: 0,
+                        opacity: 1
+                    }).addTo(map);
+                    
+                    // Add click event for marker placement instead of popup
+                    polygon.on('click', function(e) {
+                        L.DomEvent.stopPropagation(e);
+                        if (!currentDrawingType) {
+                            // Remove any existing temp marker
+                            if (tempMarker) map.removeLayer(tempMarker);
+                            
+                            // Place marker at click location
+                            tempMarker = L.marker(e.latlng).addTo(map);
+                            document.getElementById('markerLat').value = e.latlng.lat;
+                            document.getElementById('markerLng').value = e.latlng.lng;
+                            
+                            // Show marker tab
+                            showTab('markers');
+                            
+                            // Show zone info in a temporary tooltip
+                            const tooltip = L.tooltip({
+                                permanent: false,
+                                direction: 'top'
+                            })
+                            .setContent(`Click in Zone: ${zone.name} (Area: ${zone.area_name})`)
+                            .setLatLng(e.latlng);
+                            
+                            polygon.bindTooltip(tooltip).openTooltip();
+                            setTimeout(() => polygon.closeTooltip(), 2000);
+                        }
+                    });
+                }
+            });
+            
+            // Update zones list in sidebar
+            const zonesList = document.getElementById('zones-list');
+            zonesList.innerHTML = zones.map(zone => 
+                `<div class="item">
+                    <strong>${zone.name}</strong><br>
+                    Area: ${zone.area_name}<br>
+                    ${zone.description || 'No description'}<br>
+                    <small>Polygon: ${zone.polygon ? 'Yes' : 'No'}</small><br>
+                    <small>Created: ${new Date(zone.created_at).toLocaleDateString()}</small>
+                </div>`
+            ).join('');
+            
+            // Update existing zones dropdown
+            const existingZoneSelect = document.getElementById('existingZoneSelect');
+            if (existingZoneSelect) {
+                existingZoneSelect.innerHTML = '<option value="">Select Zone to Add Polygon</option>' + 
+                    zones.filter(zone => !zone.polygon).map(zone => 
+                        `<option value="${zone.id}">${zone.name} (${zone.area_name}) - No Polygon</option>`
+                    ).join('');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('markerForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            const markerData = {
+                type: document.getElementById('markerType').value,
+                name: document.getElementById('markerName').value,
+                lat: parseFloat(document.getElementById('markerLat').value),
+                lng: parseFloat(document.getElementById('markerLng').value),
+                description: document.getElementById('markerDesc').value
+            };
+            
+            await createMarker(markerData);
+        };
+
+        document.getElementById('areaForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            const polygonData = document.getElementById('areaPolygon').value;
+            const areaData = {
+                name: document.getElementById('areaName').value,
+                description: document.getElementById('areaDesc').value,
+                polygon: polygonData ? JSON.parse(polygonData) : null
+            };
+            
+            await createArea(areaData);
+            clearDrawing();
+        };
+
+        document.getElementById('zoneForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            const polygonData = document.getElementById('zonePolygon').value;
+            const zoneData = {
+                name: document.getElementById('zoneName').value,
+                area_id: document.getElementById('zoneArea').value,
+                description: document.getElementById('zoneDesc').value,
+                polygon: polygonData ? JSON.parse(polygonData) : null
+            };
+            
+            await createZone(zoneData);
+            clearDrawing();
+        };
+
+        // Marker mode management
+        let markerMode = 'manual';
+
+        // Initialize
+        window.onload = async function() {
+            initMap();
+            loadAreasForDropdown();
+            await loadMarkers();
+            await loadAreas(); // Load areas on startup
+        };
+    </script>
+</body>
+</html>

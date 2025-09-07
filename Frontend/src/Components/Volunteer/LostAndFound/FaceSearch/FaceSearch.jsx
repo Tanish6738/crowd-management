@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { searchFace } from '../../../../Services/api';
+import { searchFace, normalizePersonRecord } from '../../../../Services/api';
 import { Search as SearchIcon, AlertCircle, Loader2, ImageIcon, X, FileJson, Info } from 'lucide-react';
 
 /*
@@ -91,6 +91,7 @@ const ResultPanel = ({ result, showRaw, onToggleRaw }) => {
     );
   }
 
+  const norm = normalizePersonRecord(result);
   const rec = result.record || {};
   const imgSrc = rec.face_blob ? `data:image/jpeg;base64,${rec.face_blob}` : null;
   const meta = [
@@ -108,10 +109,19 @@ const ResultPanel = ({ result, showRaw, onToggleRaw }) => {
 
   return (
     <div className="space-y-3" aria-label="Search result">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="text-[11px] font-semibold mk-text-secondary uppercase tracking-wide">Result</div>
         <span className="text-[10px] px-2 py-0.5 rounded mk-border mk-surface-alt/50">{result.collection}</span>
         <span className="text-[10px] px-2 py-0.5 rounded bg-accent/20 font-mono">{truncate(result.face_id)}</span>
+        {norm && !norm.not_found && (
+          <div className="flex gap-2 text-[10px] ml-2 flex-wrap">
+            <InfoPill label="Case ID" value={truncate(norm.id,18)} />
+            <InfoPill label="Type" value={norm.type} />
+            <InfoPill label="Status" value={norm.status} />
+            <InfoPill label="Created" value={norm.createdAt ? formatDate(norm.createdAt) : '-'} />
+            <InfoPill label="Location" value={norm.location} />
+          </div>
+        )}
         <div className="ml-auto flex gap-2">
           <button onClick={onToggleRaw} className="text-[10px] px-2 py-1 mk-border rounded flex items-center gap-1 hover:bg-white/5 transition" title="Toggle raw JSON">
             <FileJson size={12} /> {showRaw? 'Hide JSON':'Raw JSON'}
@@ -162,5 +172,12 @@ function truncate(id = '', n = 24) {
 function formatDate(str){
   try { return new Date(str).toLocaleString(); } catch { return str; }
 }
+
+const InfoPill = ({ label, value }) => (
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded mk-border mk-surface-alt/60">
+    <span className="uppercase text-[8px] tracking-wide mk-text-muted">{label}</span>
+    <span className="font-mono text-[10px]">{value}</span>
+  </span>
+);
 
 export default FaceSearch;

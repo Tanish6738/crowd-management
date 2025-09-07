@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
-import { getAllMatches, getAllLost, getAllFound } from '../../../../Services/api';
+import { getAllMatches, getAllLost, getAllFound, searchFace, normalizePersonRecord } from '../../../../Services/api';
 
 /** @typedef {{ id:string; lostCase:{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; createdAt:string }; foundCase:{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; reportedAt:string }; confidence?:number|null; status:'matched'|'confirmed'|'rejected' }} MatchedCase */
 
@@ -28,6 +28,8 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
   const [error, setError] = useState(null);
   const [detail, setDetail] = useState(/** @type {MatchedCase|null} */(null));
   const [actionBusy, setActionBusy] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichedMap, setEnrichedMap] = useState({}); // face_id -> normalized
 
   /**
    * API Alignment Notes:
@@ -101,12 +103,28 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
         {error && <div className="p-3 text-[11px] rounded-md bg-red-500/10 border border-red-500/40 text-red-300 flex justify-between"><span>{error}</span><button onClick={fetchMatches} className="underline">Retry</button></div>}
         {!loading && !error && sorted.length===0 && <div className="p-8 text-center text-xs mk-text-muted mk-surface-alt mk-border rounded-lg">No matches.</div>}
         {sorted.map(m => (
-          <div key={m.id} role="button" tabIndex={0} onClick={()=>setDetail(m)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(m); }} className={`mk-border rounded-lg p-3 flex flex-col gap-2 cursor-pointer backdrop-blur-sm transition ${detail?.id===m.id? 'border-orange-400/60 bg-orange-50 dark:bg-white/10':'mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border'}`}>
+          <div key={m.id} role="button" tabIndex={0} onClick={()=>{
+            setDetail(m);
+            const ids = [m.lostCase.id, m.foundCase.id];
+            const need = ids.filter(id => id && !enrichedMap[id]);
+            if(need.length){
+              setEnriching(true);
+              Promise.all(need.map(id => searchFace(id).then(res=>({id, norm: normalizePersonRecord(res)})).catch(()=>null)))
+                .then(results => {
+                  setEnrichedMap(map => {
+                    const next = {...map};
+                    results.filter(Boolean).forEach(r => { if(r.norm && !r.norm.not_found) next[r.id] = r.norm; });
+                    return next;
+                  });
+                })
+                .finally(()=> setEnriching(false));
+            }
+          }} onKeyDown={e=>{ if(e.key==='Enter') setDetail(m); }} className={`mk-border rounded-lg p-3 flex flex-col gap-2 cursor-pointer backdrop-blur-sm transition ${detail?.id===m.id? 'border-orange-400/60 bg-orange-50 dark:bg-white/10':'mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border'}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="text-[11px] font-mono mk-text-fainter truncate" title={m.id}>{m.id}</div>
               <span className={`px-2 py-0.5 rounded border text-[10px] uppercase tracking-wide ${m.status==='matched'?'bg-amber-500/15 text-amber-300 border-amber-400/30': m.status==='confirmed'?'bg-green-500/15 text-green-300 border-green-400/30':'bg-red-500/15 text-red-300 border-red-400/30'}`}>{m.status}</span>
             </div>
-              <div className="text-[11px] mk-text-primary line-clamp-2">{m.lostCase.description}</div>
+              <div className="text-[11px] mk-text-primary line-clamp-2">{enrichedMap[m.lostCase.id]?.name ? `Lost: ${enrichedMap[m.lostCase.id].name}` : m.lostCase.description}</div>
             <div className="flex items-center justify-between text-[10px] mk-text-muted">
               <span className="inline-flex items-center gap-1"><Clock size={11} className="mk-text-fainter"/>{relative(m.foundCase.reportedAt)}</span>
               <span className={`px-2 py-0.5 rounded border ${confidenceColor(m.confidence)}`}>{m.confidence==null ? '—' : (m.confidence*100).toFixed(0)+'%'}</span>
@@ -131,15 +149,26 @@ const Matched = ({ loading: externalLoading, data: externalData }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]">
               <div className="p-3 rounded-md mk-border bg-white/5 flex flex-col gap-2">
                 <h3 className="font-semibold mk-text-primary text-xs">Lost Case</h3>
-                <div className="text-white/70 leading-snug">{detail.lostCase.description}</div>
+                {enrichedMap[detail.lostCase.id]?.raw?.record?.face_blob && (
+                  <div className="w-full aspect-[4/5] rounded-md overflow-hidden mk-border">
+                    <img src={`data:image/jpeg;base64,${enrichedMap[detail.lostCase.id].raw.record.face_blob}`} alt="Lost face" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="text-white/70 leading-snug">{enrichedMap[detail.lostCase.id]?.name ? `Lost: ${enrichedMap[detail.lostCase.id].name}` : detail.lostCase.description}</div>
                 <div className="text-white/40">ID: {detail.lostCase.id}</div>
               </div>
               <div className="p-3 rounded-md mk-border bg-white/5 flex flex-col gap-2">
                 <h3 className="font-semibold mk-text-primary text-xs">Found Case</h3>
-                <div className="text-white/70 leading-snug">{detail.foundCase.description}</div>
+                {enrichedMap[detail.foundCase.id]?.raw?.record?.face_blob && (
+                  <div className="w-full aspect-[4/5] rounded-md overflow-hidden mk-border">
+                    <img src={`data:image/jpeg;base64,${enrichedMap[detail.foundCase.id].raw.record.face_blob}`} alt="Found face" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="text-white/70 leading-snug">{enrichedMap[detail.foundCase.id]?.name ? `Found: ${enrichedMap[detail.foundCase.id].name}` : detail.foundCase.description}</div>
                 <div className="text-white/40">ID: {detail.foundCase.id}</div>
               </div>
             </div>
+            {enriching && <div className="mt-3 text-[10px] text-white/60">Loading detailed face data…</div>}
             {detail.status==='matched' && (
               <div className="mt-5 flex gap-3">
                 <button disabled={actionBusy} onClick={()=>confirmMatch(detail)} className="flex-1 h-10 rounded-md bg-green-600/80 hover:bg-green-600 disabled:opacity-50 text-white text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400/60 flex items-center justify-center gap-2"><CheckCircle2 size={16}/> Confirm</button>

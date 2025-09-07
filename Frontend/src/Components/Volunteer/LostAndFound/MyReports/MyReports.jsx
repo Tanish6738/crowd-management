@@ -15,7 +15,10 @@ import { getRecordsByUser } from "../../../../Services/api";
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
 
 const relative = (iso) => {
-  const d = Date.now() - new Date(iso).getTime();
+  if (!iso) return "-";
+  const ts = new Date(iso).getTime();
+  if (isNaN(ts)) return "-";
+  const d = Date.now() - ts;
   const m = Math.floor(d / 60000);
   if (m < 1) return "just now";
   if (m < 60) return m + "m";
@@ -34,39 +37,75 @@ const MyReports = ({ data: propData = [], loading: propLoading = false, onUpdate
   const [fetched, setFetched] = useState(null); // null until fetched
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState(null);
+  const [refetchToken, setRefetchToken] = useState(0);
 
   // Fetch user-specific records once Clerk user is available
   useEffect(() => {
     if (!isLoaded || !user) return;
     let cancelled = false;
+
+    const mapRecord = (rec, idx) => {
+      // rec may already be a direct lost object OR wrapper { source, data }
+      let source = rec.source || (rec.where_lost ? 'lost_people' : (rec.location_found ? 'found_people' : 'unknown'));
+      const data = rec.data || rec; // unify shape
+      const isLost = source === 'lost_people';
+      const faceId = data.face_id || data.match_id || `unknown-${idx}`;
+      const rawStatus = data.status || 'pending';
+      const status = rawStatus === 'pending' ? 'open' : (rawStatus === 'found' ? 'resolved' : rawStatus);
+      const location = isLost ? (data.where_lost || 'Unknown') : (data.location_found || 'Unknown');
+      const ageBit = (data.age !== undefined && data.age !== null && data.age !== '') ? ` (${data.age} yrs)` : '';
+      const descLoc = isLost ? (data.where_lost || 'unspecified') : (data.location_found || 'unspecified');
+      const description = data.name ? `${data.name}${ageBit} – ${isLost ? 'Lost at' : 'Found at'} ${descLoc}` : `${isLost ? 'Lost' : 'Found'} person ${faceId.slice(0,8)}`;
+      const createdAt = data.upload_time || data.match_time || null;
+      const photoUrls = data.face_blob ? [`data:image/jpeg;base64,${data.face_blob}`] : [];
+      return {
+        id: faceId,
+        type: 'person',
+        description,
+        photoUrls,
+        location,
+        status,
+        createdAt,
+        reporterId: data.user_id || 'n/a',
+        _source: source
+      };
+    };
+
     const load = async () => {
       setFetching(true); setError(null);
       try {
-        const res = await getRecordsByUser(user.id).catch(e => { throw e; });
-        const lostArray = (res?.lost_people || res?.lost || res?.records || []).map(r => ({
-          id: r.face_id,
-          type: 'person',
-          description: r.name ? `${r.name} (${r.age ?? 'Unknown'} yrs) – Last seen ${r.where_lost || 'unspecified'}` : `Lost person ${(r.face_id || '').slice(0,8)}`,
-          photoUrls: [],
-          location: r.where_lost || 'Unknown',
-          status: r.status === 'pending' ? 'open' : (r.status === 'found' ? 'resolved' : (r.status || 'open')),
-          createdAt: r.upload_time,
-          reporterId: r.user_id || 'n/a'
-        }));
-        if (!cancelled) setFetched(lostArray);
+        const res = await getRecordsByUser(user.id);
+        // New API shape: { records: [ { source, data } ] }
+        let list = [];
+        if (Array.isArray(res?.records)) {
+          list = res.records
+            .filter(r => ['lost_people','found_people'].includes(r.source))
+            .map(mapRecord);
+        } else {
+          // Legacy fallback arrays
+            const candidates = [res?.lost_people, res?.found_people].filter(Boolean);
+            candidates.forEach(arr => {
+              if (Array.isArray(arr)) arr.forEach((r,i)=> list.push(mapRecord(r, i)));
+            });
+        }
+        if (!cancelled) setFetched(list);
       } catch (e) {
         if (!cancelled) setError(e.message || 'Failed to load your reports');
       } finally { if (!cancelled) setFetching(false); }
     };
     load();
     return () => { cancelled = true; };
-  }, [isLoaded, user]);
+  }, [isLoaded, user, refetchToken]);
 
   // Decide which dataset to present (fetched overrides prop)
   const dataset = fetched ?? propData;
   const loading = fetching || propLoading || !isLoaded;
 
-  const sorted = useMemo(() => [...dataset].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), [dataset]);
+  const sorted = useMemo(() => [...dataset].sort((a, b) => {
+    const tb = new Date(b.createdAt || 0).getTime() || 0;
+    const ta = new Date(a.createdAt || 0).getTime() || 0;
+    return tb - ta;
+  }), [dataset]);
 
   const startEdit = () => {
     if (!detail) return;
@@ -95,7 +134,7 @@ const MyReports = ({ data: propData = [], loading: propLoading = false, onUpdate
     <div className="p-3 rounded-md bg-red-500/10 border border-red-500/40 text-[11px] text-red-300 flex items-center justify-between">
       <span>{error}</span>
       <button
-        onClick={() => { if (user) { setFetched(null); /* trigger refetch */ setTimeout(()=>{ if (user) { setFetched(null); } },0); } }}
+  onClick={() => { setRefetchToken(t=>t+1); }}
         className="underline hover:text-red-200"
       >Retry</button>
     </div>

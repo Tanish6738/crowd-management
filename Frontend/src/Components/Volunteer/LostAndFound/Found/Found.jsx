@@ -2,17 +2,19 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Drawer from '../../../General/Drawer';
 import { Flag, CheckCircle2, XCircle, Clock, MapPin, RefreshCw } from 'lucide-react';
 import { StatusBadge } from '../LostAndFound';
-import { getAllFound } from '../../../../Services/api';
+import { getAllFound, searchFace, normalizePersonRecord } from '../../../../Services/api';
 
 /** @typedef {{ id:string; type:'person'|'item'; description:string; photoUrls:string[]; location:string; status:'open'|'matched'|'resolved'|'missing'|'cancelled'; createdAt:string; reporterId:string; matchedWith?:string; resolvedAt?:string }} LostCase */
 
-const relative = iso => { const d=Date.now()-new Date(iso).getTime(); const m=Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h=Math.floor(m/60); if(h<24) return h+'h'; const da=Math.floor(h/24); return da+'d'; };
+const relative = iso => { if(!iso) return '-'; const t=new Date(iso).getTime(); if(isNaN(t)) return '-'; const d=Date.now()-t; const m=Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h=Math.floor(m/60); if(h<24) return h+'h'; const da=Math.floor(h/24); return da+'d'; };
 
 const Found = ({ data = [], loading: parentLoading, onUpdate, onResolve }) => {
   const [internal, setInternal] = useState([]);
   const [loading, setLoading] = useState(parentLoading);
   const [error, setError] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichedMap, setEnrichedMap] = useState({}); // face_id -> normalized enriched record
 
   // Fetch found list if parent hasn't provided data
   const fetchFound = useCallback(async () => {
@@ -27,7 +29,7 @@ const Found = ({ data = [], loading: parentLoading, onUpdate, onResolve }) => {
         photoUrls: [], // list endpoint does not currently include image blobs/URLs
         location: r.location_found || 'Unknown',
         status: r.status === 'found' ? 'resolved' : 'open',
-        createdAt: r.upload_time || new Date().toISOString(),
+        createdAt: r.upload_time || null,
         reporterId: r.user_id || (r.reported_by?.name || 'n/a')
       }));
       setInternal(mapped);
@@ -46,8 +48,27 @@ const Found = ({ data = [], loading: parentLoading, onUpdate, onResolve }) => {
   const reject = (c) => onUpdate && onUpdate(c.id, old => ({ ...old, status:'open', matchedWith: undefined }));
   const resolve = (c) => { onResolve && onResolve(c.id); };
 
+  const enrichCase = (faceId) => {
+    if(!faceId || enrichedMap[faceId]) return;
+    setEnriching(true);
+    searchFace(faceId)
+      .then(res => {
+        const norm = normalizePersonRecord(res);
+        if(norm && !norm.not_found){
+          setEnrichedMap(m => ({...m, [faceId]: norm}));
+        }
+      })
+      .finally(()=> setEnriching(false));
+  };
+
+  const getDisplayName = (c) => {
+    const norm = enrichedMap[c.id];
+    if(!norm || norm.not_found) return c.description;
+    return `Found: ${norm.name}${norm.age? ' ('+norm.age+' yrs)':''}`;
+  };
+
   return (
-  <div className="flex flex-col md:grid md:grid-cols-5 md:gap-5 mk-text-primary" aria-label="Found cases list">
+    <div className="flex flex-col md:grid md:grid-cols-5 md:gap-5 mk-text-primary" aria-label="Found cases list">
       <div className="md:col-span-2 space-y-3 mb-4 md:mb-0">
         {!data.length && (
           <div className="flex items-center justify-between">
@@ -59,18 +80,27 @@ const Found = ({ data = [], loading: parentLoading, onUpdate, onResolve }) => {
         {loading && Array.from({length:4}).map((_,i)=>(<div key={i} className="h-24 rounded-lg bg-gradient-to-r from-black/5 via-black/10 to-black/5 dark:from-white/5 dark:via-white/10 dark:to-white/5 animate-pulse"/>))}
         {!loading && !error && sorted.length===0 && <div className="p-10 text-center text-sm mk-text-muted mk-surface-alt mk-border rounded-lg">No found cases.</div>}
         {sorted.map(c => (
-          <div key={c.id} role="button" tabIndex={0} onClick={()=>setDetail(c)} onKeyDown={e=>{ if(e.key==='Enter') setDetail(c); }} className={`mk-border rounded-lg p-3 flex gap-3 items-center cursor-pointer backdrop-blur-sm transition ${detail?.id===c.id? 'border-orange-400/60 bg-orange-50 dark:bg-white/10':'mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border'}`}>
+          <div
+            key={c.id}
+            role="button"
+            tabIndex={0}
+            onClick={()=>{ setDetail(c); enrichCase(c.id); }}
+            onKeyDown={e=>{ if(e.key==='Enter'){ setDetail(c); enrichCase(c.id); } }}
+            className={`mk-border rounded-lg p-3 flex gap-3 items-center cursor-pointer backdrop-blur-sm transition ${detail?.id===c.id? 'border-orange-400/60 bg-orange-50 dark:bg-white/10':'mk-surface-alt hover:bg-orange-50 dark:hover:bg-white/10 hover:mk-border'}`}
+          >
             <div className="h-14 w-14 rounded-md mk-surface-alt flex items-center justify-center overflow-hidden mk-text-fainter text-[10px] font-medium mk-border">
-              {c.photoUrls.length? <img src={c.photoUrls[0]} alt={c.type+' thumbnail'} className="h-full w-full object-cover"/> : c.type==='person'? 'PERSON':'ITEM'}
+              {enrichedMap[c.id]?.raw?.record?.face_blob ? (
+                <img src={`data:image/jpeg;base64,${enrichedMap[c.id].raw.record.face_blob}`} alt="Face" className="h-full w-full object-cover" />
+              ) : c.photoUrls.length? <img src={c.photoUrls[0]} alt={c.type+' thumbnail'} className="h-full w-full object-cover"/> : c.type==='person'? 'PERSON':'ITEM'}
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-1">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm font-semibold mk-text-primary leading-tight line-clamp-2">{c.description}</h3>
+                <h3 className="text-sm font-semibold mk-text-primary leading-tight line-clamp-2">{getDisplayName(c)}</h3>
                 <StatusBadge value={c.status} />
               </div>
               <div className="flex flex-wrap items-center gap-2 text-[11px] mk-text-muted">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{c.location}</span>
-                <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>{relative(c.createdAt)}</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{enrichedMap[c.id]?.location || c.location}</span>
+                <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>{relative(enrichedMap[c.id]?.createdAt || c.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -81,16 +111,22 @@ const Found = ({ data = [], loading: parentLoading, onUpdate, onResolve }) => {
           <div className="rounded-lg mk-border mk-surface-alt backdrop-blur-sm h-full p-5 flex flex-col" aria-label="Found case detail">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="space-y-1 flex-1 min-w-0">
-                <h2 className="text-sm font-semibold mk-text-primary leading-snug">{detail.type==='person'? 'Person':'Item'} Found</h2>
+                <h2 className="text-sm font-semibold mk-text-primary leading-snug">{getDisplayName(detail)}</h2>
                 <div className="flex flex-wrap gap-2 text-[11px] mk-text-muted">
                   <StatusBadge value={detail.status} />
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{detail.location}</span>
-                  <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>{relative(detail.createdAt)}</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{enrichedMap[detail.id]?.location || detail.location}</span>
+                  <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>{relative(enrichedMap[detail.id]?.createdAt || detail.createdAt)}</span>
+                  {enriching && <span className="text-[10px]">Loading…</span>}
                 </div>
               </div>
               <button onClick={()=>setDetail(null)} className="mk-text-fainter hover:mk-text-primary text-sm px-2 py-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60">✕</button>
             </div>
-            <div className="text-xs leading-relaxed mk-text-secondary mb-4 whitespace-pre-wrap flex-1">{detail.description}</div>
+            {enrichedMap[detail.id]?.raw?.record?.face_blob && (
+              <div className="mb-4 w-40 aspect-[4/5] rounded-md overflow-hidden mk-border">
+                <img src={`data:image/jpeg;base64,${enrichedMap[detail.id].raw.record.face_blob}`} alt="Face" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="text-xs leading-relaxed mk-text-secondary mb-4 whitespace-pre-wrap flex-1">{enrichedMap[detail.id]?.name ? `Found at ${enrichedMap[detail.id].location}` : detail.description}</div>
             {detail.photoUrls.length>0 && (
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {detail.photoUrls.map((p,i)=>(<img key={i} src={p} alt={`Found photo ${i+1}`} className="h-20 w-full object-cover rounded" />))}
@@ -113,15 +149,21 @@ const Found = ({ data = [], loading: parentLoading, onUpdate, onResolve }) => {
           <div className="h-full border border-dashed mk-border rounded-lg flex items-center justify-center text-xs mk-text-muted">Select a found case</div>
         )}
       </div>
-      <Drawer open={!!detail && window.innerWidth<768} onClose={()=>setDetail(null)} title={detail? (detail.type==='person'? 'Person':'Item')+' Found':''}>
+      <Drawer open={!!detail && window.innerWidth<768} onClose={()=>setDetail(null)} title={detail? (enrichedMap[detail.id]?.name || (detail.type==='person'? 'Person':'Item'))+' Found':''}>
         {detail && (
           <div className="space-y-4 text-sm mk-text-secondary">
             <div className="flex flex-wrap gap-2 text-[11px] mk-text-muted">
               <StatusBadge value={detail.status} />
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{detail.location}</span>
-              <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>{relative(detail.createdAt)}</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-medium"><MapPin size={12}/>{enrichedMap[detail.id]?.location || detail.location}</span>
+              <span className="flex items-center gap-1"><Clock size={12} className="mk-text-fainter"/>{relative(enrichedMap[detail.id]?.createdAt || detail.createdAt)}</span>
+              {enriching && <span className="text-[10px]">Loading…</span>}
             </div>
-            <div className="text-xs leading-relaxed mk-text-secondary whitespace-pre-wrap">{detail.description}</div>
+            {enrichedMap[detail.id]?.raw?.record?.face_blob && (
+              <div className="w-32 aspect-[4/5] rounded-md overflow-hidden mk-border">
+                <img src={`data:image/jpeg;base64,${enrichedMap[detail.id].raw.record.face_blob}`} alt="Face" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="text-xs leading-relaxed mk-text-secondary whitespace-pre-wrap">{enrichedMap[detail.id]?.name ? `Found at ${enrichedMap[detail.id].location}` : detail.description}</div>
             {detail.photoUrls.length>0 && (
               <div className="grid grid-cols-3 gap-2">
                 {detail.photoUrls.map((p,i)=>(<img key={i} src={p} alt={`Found photo ${i+1}`} className="h-20 w-full object-cover rounded" />))}

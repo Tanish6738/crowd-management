@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Advanced CCTV Management</title>
+    <meta charset="utf-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        
+        .nav-tab {
+            padding: 10px 20px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .total .stat-number { color: #007bff; }
+        .active .stat-number { color: #28a745; }
+        .inactive .stat-number { color: #dc3545; }
+        .maintenance .stat-number { color: #ffc107; }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+        
+        .cctv-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .list-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .list-title {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .search-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; margin: 0 2px; }
+        
+        .bulk-actions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            display: none;
+        }
+        
+        .bulk-actions.show {
+            display: block;
+        }
+        
+        .cctv-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            position: relative;
+        }
+        
+        .cctv-item:last-child {
+            border-bottom: none;
+        }
+        
+        .cctv-item.selected {
+            background: #e3f2fd;
+        }
+        
+        .cctv-checkbox {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+        }
+        
+        .cctv-content {
+            margin-left: 30px;
+        }
+        
+        .cctv-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .cctv-details {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .cctv-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .form-panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        
+        .form-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .form-title {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-content {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        .status-maintenance { background: #fff3cd; color: #856404; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .notification.success { background: #28a745; }
+        .notification.error { background: #dc3545; }
+        .notification.info { background: #17a2b8; }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .search-filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📹 Advanced CCTV Management System</h1>
+            <p>Complete CCTV management with search, bulk operations, and analytics</p>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('overview')">📊 Overview</button>
+                <button class="nav-tab" onclick="switchTab('manage')">🔧 Manage</button>
+                <button class="nav-tab" onclick="switchTab('search')">🔍 Search</button>
+                <button class="nav-tab" onclick="switchTab('bulk')">📦 Bulk Operations</button>
+                <button class="nav-tab" onclick="switchTab('analytics')">📈 Analytics</button>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="stats" id="stats">
+                <div class="stat-card total">
+                    <div class="stat-number" id="total-count">-</div>
+                    <div class="stat-label">Total Cameras</div>
+                </div>
+                <div class="stat-card active">
+                    <div class="stat-number" id="active-count">-</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-card inactive">
+                    <div class="stat-number" id="inactive-count">-</div>
+                    <div class="stat-label">Inactive</div>
+                </div>
+                <div class="stat-card maintenance">
+                    <div class="stat-number" id="maintenance-count">-</div>
+                    <div class="stat-label">Maintenance</div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="cctv-list">
+                    <div class="list-header">
+                        <div class="list-title">Recent CCTV Cameras</div>
+                        <button class="btn btn-primary" onclick="loadCCTVs()">🔄 Refresh</button>
+                    </div>
+                    <div id="overview-cctv-container">
+                        <div class="loading">Loading cameras...</div>
+                    </div>
+                </div>
+
+                <div class="form-panel">
+                    <div class="form-header">
+                        <div class="form-title">Quick Add CCTV</div>
+                    </div>
+                    <div class="form-content">
+                        <form id="quick-add-form">
+                            <div class="form-group">
+                                <label class="form-label">Camera Name</label>
+                                <input type="text" class="form-input" id="quick-name" placeholder="e.g., Main Gate Camera" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Area</label>
+                                <select class="form-input" id="quick-area" required>
+                                    <option value="">Select Area</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Zone</label>
+                                <select class="form-input" id="quick-zone" required>
+                                    <option value="">Select Zone</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Location Type</label>
+                                <select class="form-input" id="quick-location_type" required>
+                                    <option value="">Select Location Type</option>
+                                    <option value="gate">Gate</option>
+                                    <option value="pole">Pole</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Location Name</label>
+                                <input type="text" class="form-input" id="quick-location_name" placeholder="e.g., Main Entrance" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">RTSP URL</label>
+                                <input type="text" class="form-input" id="quick-video_source" placeholder="rtsp://..." required>
+                            </div>
+                            <button type="submit" class="btn btn-success">➕ Quick Add</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Tab -->
+        <div id="manage-tab" class="tab-content">
+            <div class="main-content">
+                <div class="cctv-list">
+                    <div class="list-header">
+                        <div class="list-title">All CCTV Cameras</div>
+                        <div>
+                            <button class="btn btn-primary" onclick="loadCCTVs()">🔄 Refresh</button>
+                            <button class="btn btn-success" onclick="toggleBulkMode()">📦 Bulk Mode</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bulk-actions" id="bulk-actions">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span>Selected: <span id="selected-count">0</span></span>
+                            <button class="btn btn-success btn-sm" onclick="bulkUpdateStatus('active')">✅ Set Active</button>
+                            <button class="btn btn-warning btn-sm" onclick="bulkUpdateStatus('maintenance')">🔧 Set Maintenance</button>
+                            <button class="btn btn-danger btn-sm" onclick="bulkUpdateStatus('inactive')">❌ Set Inactive</button>
+                            <button class="btn btn-danger btn-sm" onclick="bulkDelete()">🗑️ Delete Selected</button>
+                            <button class="btn btn-sm" onclick="toggleBulkMode()">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div id="manage-cctv-container">
+                        <div class="loading">Loading cameras...</div>
+                    </div>
+                </div>
+
+                <div class="form-panel">
+                    <div class="form-header">
+                        <div class="form-title" id="form-title">Add New CCTV</div>
+                    </div>
+                    <div class="form-content">
+                        <form id="cctv-form">
+                            <div class="form-group">
+                                <label class="form-label">Camera Name</label>
+                                <input type="text" class="form-input" id="name" placeholder="e.g., Main Gate Camera" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Area</label>
+                                <select class="form-input" id="area" required>
+                                    <option value="">Select Area</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Zone</label>
+                                <select class="form-input" id="zone" required>
+                                    <option value="">Select Zone</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Location Type</label>
+                                <select class="form-input" id="location_type" required>
+                                    <option value="">Select Location Type</option>
+                                    <option value="gate">Gate</option>
+                                    <option value="pole">Pole</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Location Name</label>
+                                <input type="text" class="form-input" id="location_name" placeholder="e.g., Main Entrance" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">RTSP URL</label>
+                                <input type="text" class="form-input" id="video_source" placeholder="rtsp://username:password@ip:port/stream" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Status</label>
+                                <select class="form-input" id="status" required>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="maintenance">Maintenance</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success" id="submit-btn">➕ Add Camera</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-btn" onclick="cancelEdit()" style="display: none; margin-left: 10px;">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Tab -->
+        <div id="search-tab" class="tab-content">
+            <div class="cctv-list">
+                <div class="list-header">
+                    <div class="list-title">Search CCTV Cameras</div>
+                    <button class="btn btn-primary" onclick="clearSearch()">🔄 Clear</button>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <div class="search-filters">
+                        <input type="text" class="search-input" id="search-name" placeholder="Search by name...">
+                        <input type="text" class="search-input" id="search-location" placeholder="Search by location...">
+                        <select class="search-input" id="search-status">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="performSearch()">🔍 Search</button>
+                    </div>
+                </div>
+                
+                <div id="search-results">
+                    <div class="loading">Enter search criteria above</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Operations Tab -->
+        <div id="bulk-tab" class="tab-content">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-title">Bulk Status Update</div>
+                    <div class="form-group">
+                        <label class="form-label">CCTV IDs (comma separated)</label>
+                        <textarea class="form-input" id="bulk-ids" rows="3" placeholder="id1,id2,id3..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Status</label>
+                        <select class="form-input" id="bulk-status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-warning" onclick="bulkStatusUpdate()">🔄 Update Status</button>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-title">Bulk Delete</div>
+                    <div class="form-group">
+                        <label class="form-label">CCTV IDs to Delete (comma separated)</label>
+                        <textarea class="form-input" id="bulk-delete-ids" rows="3" placeholder="id1,id2,id3..."></textarea>
+                    </div>
+                    <button class="btn btn-danger" onclick="bulkDeleteOperation()">🗑️ Delete CCTVs</button>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-title">Bulk Create</div>
+                    <div class="form-group">
+                        <label class="form-label">JSON Data</label>
+                        <textarea class="form-input" id="bulk-create-data" rows="5" placeholder='[{"name":"Camera 1","location":"Location 1","rtsp_url":"rtsp://..."}]'></textarea>
+                    </div>
+                    <button class="btn btn-success" onclick="bulkCreateOperation()">➕ Create CCTVs</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content">
+            <div id="analytics-content">
+                <div class="loading">Loading analytics...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000';
+        let editingId = null;
+        let bulkMode = false;
+        let selectedCCTVs = new Set();
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCCTVs();
+            loadStats();
+            loadAreas();
+            loadZones();
+            
+            document.getElementById('cctv-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (editingId) {
+                    updateCCTV();
+                } else {
+                    addCCTV();
+                }
+            });
+
+            document.getElementById('quick-add-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                quickAddCCTV();
+            });
+            
+            // Area change handlers
+            document.getElementById('area').addEventListener('change', function() {
+                filterZonesByArea(this.value, 'zone');
+            });
+            
+            document.getElementById('quick-area').addEventListener('change', function() {
+                filterZonesByArea(this.value, 'quick-zone');
+            });
+        });
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Find and activate the correct tab button
+            const tabButtons = document.querySelectorAll('.nav-tab');
+            tabButtons.forEach(tab => {
+                if (tab.textContent.includes(getTabDisplayName(tabName))) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            if (tabName === 'analytics') {
+                loadAnalytics();
+            }
+        }
+        
+        function getTabDisplayName(tabName) {
+            const tabNames = {
+                'overview': 'Overview',
+                'manage': 'Manage', 
+                'search': 'Search',
+                'bulk': 'Bulk Operations',
+                'analytics': 'Analytics'
+            };
+            return tabNames[tabName] || tabName;
+        }
+
+        // Load all CCTVs
+        async function loadCCTVs() {
+            try {
+                const response = await fetch(`${API_BASE}/cctvs`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const cctvs = await response.json();
+                if (Array.isArray(cctvs)) {
+                    displayCCTVs(cctvs, 'overview-cctv-container', false);
+                    displayCCTVs(cctvs, 'manage-cctv-container', true);
+                } else {
+                    console.error('Invalid response format:', cctvs);
+                    document.getElementById('overview-cctv-container').innerHTML = '<div class="loading">Invalid data format</div>';
+                }
+            } catch (error) {
+                console.error('Error loading CCTVs:', error);
+                document.getElementById('overview-cctv-container').innerHTML = '<div class="loading">Error loading cameras</div>';
+            }
+        }
+
+        // Display CCTVs
+        function displayCCTVs(cctvs, containerId, showCheckboxes = false) {
+            const container = document.getElementById(containerId);
+            
+            if (cctvs.length === 0) {
+                container.innerHTML = '<div class="loading">No cameras found</div>';
+                return;
+            }
+
+            container.innerHTML = cctvs.map(cctv => `
+                <div class="cctv-item" data-id="${cctv.id}">
+                    ${showCheckboxes ? `<input type="checkbox" class="cctv-checkbox" onchange="toggleSelection('${cctv.id}')" ${bulkMode ? '' : 'style="display:none"'}>` : ''}
+                    <div class="cctv-content">
+                        <div class="cctv-name">${cctv.name}</div>
+                        <div class="cctv-details">
+                            ${cctv.area ? `<div><strong>Area:</strong> ${cctv.area}</div>` : ''}
+                            ${cctv.zone ? `<div><strong>Zone:</strong> ${cctv.zone}</div>` : ''}
+                            <div><strong>Location Type:</strong> ${cctv.location_type || 'gate'}</div>
+                            <div><strong>Location Name:</strong> ${cctv.location_name || cctv.location || 'Unknown'}</div>
+                            <div><strong>Video Source:</strong> ${cctv.video_source || cctv.rtsp_url || 'Unknown'}</div>
+                            <div><strong>Source Type:</strong> ${cctv.source_type || 'rtsp'}</div>
+                            <div><strong>Status:</strong> <span class="status-badge status-${cctv.status}">${cctv.status}</span></div>
+                            <div><strong>Created:</strong> ${new Date(cctv.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <div class="cctv-actions">
+                            <button class="btn btn-primary btn-sm" onclick="editCCTV('${cctv.id}')">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCCTV('${cctv.id}')">🗑️ Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+                
+                document.getElementById('total-count').textContent = stats.total_cctvs;
+                document.getElementById('active-count').textContent = stats.active_cctvs;
+                document.getElementById('inactive-count').textContent = stats.inactive_cctvs;
+                document.getElementById('maintenance-count').textContent = stats.maintenance_cctvs;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        // Load areas
+        async function loadAreas() {
+            try {
+                const response = await fetch(`${API_BASE}/areas`);
+                const areas = await response.json();
+                window.allAreas = Array.isArray(areas) ? areas : [];
+                
+                const areaSelects = ['area', 'quick-area'];
+                areaSelects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    if (select) {
+                        select.innerHTML = '<option value="">Select Area</option>';
+                        if (Array.isArray(areas)) {
+                            areas.forEach(area => {
+                                select.innerHTML += `<option value="${area.name}">${area.name}</option>`;
+                            });
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading areas:', error);
+            }
+        }
+        
+        // Load zones
+        async function loadZones() {
+            try {
+                const response = await fetch(`${API_BASE}/zones`);
+                const zones = await response.json();
+                window.allZones = Array.isArray(zones) ? zones : [];
+            } catch (error) {
+                console.error('Error loading zones:', error);
+                window.allZones = [];
+            }
+        }
+        
+        // Filter zones by area
+        function filterZonesByArea(areaName, zoneSelectId) {
+            const zoneSelect = document.getElementById(zoneSelectId);
+            if (!zoneSelect || !window.allZones) return;
+            
+            zoneSelect.innerHTML = '<option value="">Select Zone</option>';
+            
+            if (areaName && window.allAreas) {
+                // Find area by name to get area ID
+                const selectedArea = window.allAreas.find(area => area.name === areaName);
+                if (selectedArea) {
+                    // Filter zones that belong to this area
+                    const filteredZones = window.allZones.filter(zone => 
+                        zone.area_name === areaName || zone.area_id === selectedArea.id
+                    );
+                    
+                    filteredZones.forEach(zone => {
+                        zoneSelect.innerHTML += `<option value="${zone.name}">${zone.name}</option>`;
+                    });
+                }
+            }
+        }
+
+        // Quick add CCTV
+        async function quickAddCCTV() {
+            const data = {
+                name: document.getElementById('quick-name').value,
+                area: document.getElementById('quick-area').value || 'Default Area',
+                zone: document.getElementById('quick-zone').value || 'Default Zone',
+                location_type: document.getElementById('quick-location_type').value,
+                location_name: document.getElementById('quick-location_name').value,
+                video_source: document.getElementById('quick-video_source').value,
+                source_type: 'rtsp',
+                status: 'active'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showNotification('Camera added successfully!', 'success');
+                    document.getElementById('quick-add-form').reset();
+                    loadCCTVs();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error adding camera', 'error');
+            }
+        }
+
+        // Add CCTV
+        async function addCCTV() {
+            const data = {
+                name: document.getElementById('name').value,
+                area: document.getElementById('area').value,
+                zone: document.getElementById('zone').value,
+                location_type: document.getElementById('location_type').value,
+                location_name: document.getElementById('location_name').value,
+                video_source: document.getElementById('video_source').value,
+                source_type: 'rtsp',
+                status: document.getElementById('status').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showNotification('Camera added successfully!', 'success');
+                    document.getElementById('cctv-form').reset();
+                    loadCCTVs();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error adding camera', 'error');
+            }
+        }
+
+        // Edit CCTV
+        async function editCCTV(id) {
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/${id}`);
+                const cctv = await response.json();
+                
+                document.getElementById('name').value = cctv.name;
+                document.getElementById('area').value = cctv.area || '';
+                document.getElementById('zone').value = cctv.zone || '';
+                document.getElementById('location_type').value = cctv.location_type || 'gate';
+                document.getElementById('location_name').value = cctv.location_name || cctv.location || '';
+                document.getElementById('video_source').value = cctv.video_source || cctv.rtsp_url || '';
+                document.getElementById('status').value = cctv.status;
+                
+                editingId = id;
+                document.getElementById('form-title').textContent = 'Edit CCTV';
+                document.getElementById('submit-btn').textContent = '💾 Update Camera';
+                document.getElementById('cancel-btn').style.display = 'inline-block';
+                
+                // Switch to manage tab
+                document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.querySelector('.nav-tab:nth-child(2)').classList.add('active');
+                document.getElementById('manage-tab').classList.add('active');
+            } catch (error) {
+                showNotification('Error loading camera details', 'error');
+            }
+        }
+
+        // Update CCTV
+        async function updateCCTV() {
+            const data = {
+                name: document.getElementById('name').value,
+                area: document.getElementById('area').value,
+                zone: document.getElementById('zone').value,
+                location_type: document.getElementById('location_type').value,
+                location_name: document.getElementById('location_name').value,
+                video_source: document.getElementById('video_source').value,
+                source_type: 'rtsp',
+                status: document.getElementById('status').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/${editingId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showNotification('Camera updated successfully!', 'success');
+                    cancelEdit();
+                    loadCCTVs();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error updating camera', 'error');
+            }
+        }
+
+        // Cancel edit
+        function cancelEdit() {
+            editingId = null;
+            document.getElementById('form-title').textContent = 'Add New CCTV';
+            document.getElementById('submit-btn').textContent = '➕ Add Camera';
+            document.getElementById('cancel-btn').style.display = 'none';
+            document.getElementById('cctv-form').reset();
+        }
+
+        // Delete CCTV
+        async function deleteCCTV(id) {
+            if (!confirm('Are you sure you want to delete this camera?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showNotification('Camera deleted successfully!', 'success');
+                    loadCCTVs();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error deleting camera', 'error');
+            }
+        }
+
+        // Search functionality
+        async function performSearch() {
+            const name = document.getElementById('search-name').value;
+            const location_name = document.getElementById('search-location').value;
+            const status = document.getElementById('search-status').value;
+            
+            const params = new URLSearchParams();
+            if (name) params.append('name', name);
+            if (location_name) params.append('location_name', location_name);
+            if (status) params.append('status', status);
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/search?${params}`);
+                const result = await response.json();
+                
+                const container = document.getElementById('search-results');
+                if (result.results && result.results.length > 0) {
+                    container.innerHTML = `
+                        <div style="padding: 15px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+                            Found ${result.count} cameras
+                        </div>
+                        ${result.results.map(cctv => `
+                            <div class="cctv-item">
+                                <div class="cctv-name">${cctv.name}</div>
+                                <div class="cctv-details">
+                                    <div><strong>Location Type:</strong> ${cctv.location_type || 'gate'}</div>
+                                    <div><strong>Location Name:</strong> ${cctv.location_name || cctv.location || 'Unknown'}</div>
+                                    <div><strong>Video Source:</strong> ${cctv.video_source || cctv.rtsp_url || 'Unknown'}</div>
+                                    <div><strong>RTSP:</strong> ${cctv.rtsp_url}</div>
+                                    <div><strong>Status:</strong> <span class="status-badge status-${cctv.status}">${cctv.status}</span></div>
+                                </div>
+                                <div class="cctv-actions">
+                                    <button class="btn btn-primary btn-sm" onclick="editCCTV('${cctv.id}')">✏️ Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteCCTV('${cctv.id}')">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    container.innerHTML = '<div class="loading">No cameras found matching your criteria</div>';
+                }
+            } catch (error) {
+                console.error('Error searching:', error);
+                document.getElementById('search-results').innerHTML = '<div class="loading">Error performing search</div>';
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('search-name').value = '';
+            document.getElementById('search-location').value = '';
+            document.getElementById('search-status').value = '';
+            document.getElementById('search-results').innerHTML = '<div class="loading">Enter search criteria above</div>';
+        }
+
+        // Bulk operations
+        function toggleBulkMode() {
+            bulkMode = !bulkMode;
+            const checkboxes = document.querySelectorAll('.cctv-checkbox');
+            const bulkActions = document.getElementById('bulk-actions');
+            
+            checkboxes.forEach(cb => {
+                cb.style.display = bulkMode ? 'block' : 'none';
+                cb.checked = false;
+            });
+            
+            if (bulkMode) {
+                bulkActions.classList.add('show');
+            } else {
+                bulkActions.classList.remove('show');
+                selectedCCTVs.clear();
+                updateSelectedCount();
+            }
+        }
+
+        function toggleSelection(cctvId) {
+            if (selectedCCTVs.has(cctvId)) {
+                selectedCCTVs.delete(cctvId);
+            } else {
+                selectedCCTVs.add(cctvId);
+            }
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selected-count').textContent = selectedCCTVs.size;
+        }
+
+        async function bulkUpdateStatus(status) {
+            if (selectedCCTVs.size === 0) {
+                showNotification('No cameras selected', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/bulk/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cctv_ids: Array.from(selectedCCTVs),
+                        status: status
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message, 'success');
+                    loadCCTVs();
+                    loadStats();
+                    selectedCCTVs.clear();
+                    updateSelectedCount();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error updating cameras', 'error');
+            }
+        }
+
+        async function bulkDelete() {
+            if (selectedCCTVs.size === 0) {
+                showNotification('No cameras selected', 'warning');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ${selectedCCTVs.size} cameras?`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/bulk`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cctv_ids: Array.from(selectedCCTVs)
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message, 'success');
+                    loadCCTVs();
+                    loadStats();
+                    selectedCCTVs.clear();
+                    updateSelectedCount();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error deleting cameras', 'error');
+            }
+        }
+
+        // Bulk operations from form
+        async function bulkStatusUpdate() {
+            const ids = document.getElementById('bulk-ids').value.split(',').map(id => id.trim()).filter(id => id);
+            const status = document.getElementById('bulk-status').value;
+
+            if (ids.length === 0) {
+                showNotification('Please enter CCTV IDs', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/bulk/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cctv_ids: ids, status: status })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message, 'success');
+                    document.getElementById('bulk-ids').value = '';
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error updating cameras', 'error');
+            }
+        }
+
+        async function bulkDeleteOperation() {
+            const ids = document.getElementById('bulk-delete-ids').value.split(',').map(id => id.trim()).filter(id => id);
+
+            if (ids.length === 0) {
+                showNotification('Please enter CCTV IDs', 'warning');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ${ids.length} cameras?`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/bulk`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cctv_ids: ids })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message, 'success');
+                    document.getElementById('bulk-delete-ids').value = '';
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Error deleting cameras', 'error');
+            }
+        }
+
+        async function bulkCreateOperation() {
+            const data = document.getElementById('bulk-create-data').value;
+
+            try {
+                const cctvs = JSON.parse(data);
+                const response = await fetch(`${API_BASE}/cctvs/bulk`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cctvs)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(`Created ${result.length} cameras successfully!`, 'success');
+                    document.getElementById('bulk-create-data').value = '';
+                    loadCCTVs();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Invalid JSON data or network error', 'error');
+            }
+        }
+
+        // Analytics
+        async function loadAnalytics() {
+            try {
+                const response = await fetch(`${API_BASE}/cctvs/summary`);
+                const summary = await response.json();
+                
+                const container = document.getElementById('analytics-content');
+                container.innerHTML = `
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-title">Status Distribution</div>
+                            ${Object.entries(summary.by_status).map(([status, count]) => `
+                                <div class="summary-item">
+                                    <span>${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                                    <span>${count}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="summary-card">
+                            <div class="summary-title">Location Types</div>
+                            ${Object.entries(summary.by_location_type).map(([type, count]) => `
+                                <div class="summary-item">
+                                    <span>${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                    <span>${count}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="summary-card">
+                            <div class="summary-title">Top Areas</div>
+                            ${summary.by_area.slice(0, 5).map(item => `
+                                <div class="summary-item">
+                                    <span>${item._id || 'Unknown'}</span>
+                                    <span>${item.count}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="summary-card">
+                            <div class="summary-title">Top Zones</div>
+                            ${summary.by_zone.slice(0, 5).map(item => `
+                                <div class="summary-item">
+                                    <span>${item._id || 'Unknown'}</span>
+                                    <span>${item.count}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                document.getElementById('analytics-content').innerHTML = '<div class="loading">Error loading analytics</div>';
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                ${message}
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; float: right; cursor: pointer; margin-left: 10px;">&times;</button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

@@ -20,13 +20,43 @@ const MyReports = ({
     const da = Math.floor(h / 24);
     return da + "d";
   };
+  // Normalize raw backend records (lost_people, found_people, match_records) to UI schema
+  const normalized = useMemo(() => {
+    if (!Array.isArray(reports)) return [];
+    return reports.map((r) => {
+      const rawStatus = r.status || r.match_status || 'pending';
+      // Map backend -> UI statuses
+      const status = rawStatus === 'pending'
+        ? 'open'
+        : rawStatus === 'found'
+          ? 'matched'
+          : rawStatus; // allow future statuses
+      const createdAt = r.createdAt || r.upload_time || r.match_time || r.timestamp;
+      const id = r.id || r.face_id || r.match_id || r._id || r.faceId || r.record_id;
+      const location = r.location || r.where_lost || r.location_found || r.match_location || 'Unknown';
+      const type = r.type || (r.where_lost ? 'lost' : (r.location_found ? 'found' : (r.lost_face_id && r.found_face_id ? 'match' : 'record')));
+      const description = r.description || (r.name ? `${r.name}${r.age ? ', Age ' + r.age : ''}` : '');
+      const photoUrls = r.photoUrls || (r.face_blob ? [`data:image/jpeg;base64,${r.face_blob}`] : []);
+      return {
+        ...r,
+        id,
+        status,
+        createdAt,
+        location,
+        type,
+        description,
+        photoUrls,
+      };
+    });
+  }, [reports]);
+
   const filtered = useMemo(() => {
-    let list = reports;
+    let list = normalized;
     if (filterStatus) list = list.filter((r) => r.status === filterStatus);
     return [...list].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
     );
-  }, [reports, filterStatus]);
+  }, [normalized, filterStatus]);
   return (
     <div className="space-y-4 mk-text-secondary" aria-label="My reports">
       <div className="flex flex-wrap gap-2 items-center text-[11px]">
@@ -57,7 +87,7 @@ const MyReports = ({
         {!loading && filtered.length === 0 && (
           <div className="col-span-full p-10 text-center text-xs mk-text-faint mk-surface-alt mk-border rounded-lg">No reports yet.</div>
         )}
-        {!loading && filtered.map((r, idx) => (
+  {!loading && filtered.map((r, idx) => (
           <div
             key={r._id || r.id || r.face_id || idx}
             role="button"
@@ -80,19 +110,26 @@ const MyReports = ({
       <Drawer
         open={!!detail}
         onClose={() => setDetail(null)}
-        title={detail ? "Report " + detail.id : ""}
+    title={detail ? "Report " + detail.id : ""}
       >
         {detail && (
           <div className="space-y-4 text-sm mk-text-secondary">
             <div className="flex flex-wrap gap-2 text-[10px] mk-text-muted">
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${detail.status === 'open' ? 'bg-blue-500/15 text-blue-300 border-blue-400/30' : detail.status === 'matched' ? 'bg-amber-500/15 text-amber-300 border-amber-400/30' : detail.status === 'resolved' ? 'bg-green-500/15 text-green-300 border-green-400/30' : 'mk-surface-alt mk-text-fainter mk-border'}`}>{detail.status}</span>
               <span className="inline-flex items-center gap-1"><Clock size={12} className="mk-text-fainter" />{rel(detail.createdAt)}</span>
-              <span className="inline-flex items-center gap-1"><MapPin size={12} className="mk-text-fainter" />{detail.location}</span>
+      <span className="inline-flex items-center gap-1"><MapPin size={12} className="mk-text-fainter" />{detail.location}</span>
             </div>
             <div className="text-xs mk-text-faint whitespace-pre-wrap">{detail.description}</div>
-            {detail.photoUrls.length > 0 && (
+            {!!detail.photoUrls?.length && (
               <div className="grid grid-cols-3 gap-2">
-                {detail.photoUrls.map((p) => (<img key={p} src={p} alt="Report photo" className="h-20 w-full object-cover rounded" />))}
+                {detail.photoUrls.map((p, i) => (
+                  <img
+                    key={`${detail.id || detail.face_id || detail._id || 'photo'}-${i}`}
+                    src={p}
+                    alt="Report photo"
+                    className="h-20 w-full object-cover rounded"
+                  />
+                ))}
               </div>
             )}
             {detail.status === 'open' && (
