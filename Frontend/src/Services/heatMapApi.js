@@ -44,6 +44,45 @@ const client = axios.create({
   headers: { 'Accept': 'application/json' }
 });
 
+// ---------------------------------------------------------------------------
+// Lightweight cache + single-flight + 429 retry (similar to Camera.js)
+// ---------------------------------------------------------------------------
+const _cache = new Map(); // key -> { ts, data }
+const _inFlight = new Map(); // key -> promise
+const DEFAULT_TTL = 30_000; // 30s
+const sleep = (ms) => new Promise(r=>setTimeout(r, ms));
+
+async function execCached(factory, { key, ttl = 0, force = false, maxRetries = 3 } = {}) {
+  const now = Date.now();
+  let staleEntry = null;
+  if (key && _cache.has(key)) {
+    staleEntry = _cache.get(key);
+    if (!force && ttl>0 && now - staleEntry.ts < ttl) return staleEntry.data;
+  }
+  if (!force && key && _inFlight.has(key)) return _inFlight.get(key);
+  let attempt = 0;
+  const run = async () => {
+    try {
+      const resp = await factory();
+      if (ttl>0 && key) _cache.set(key, { ts: Date.now(), data: resp.data });
+      return resp.data;
+    } catch (err) {
+      const status = err?.status || err?.response?.status;
+      if (status === 429 && staleEntry) return staleEntry.data; // serve stale
+      if (status === 429 && attempt < maxRetries) {
+        attempt += 1;
+        const delay = Math.min(2000, 150 * 2 ** attempt) + Math.random()*120;
+        await sleep(delay);
+        return run();
+      }
+      throw err;
+    }
+  };
+  const p = run().finally(()=> { if (key) _inFlight.delete(key); });
+  if (key) _inFlight.set(key, p);
+  return p;
+}
+
 client.interceptors.response.use(r => r, e => Promise.reject(normalizeError(e)));
 
 if (import.meta?.env?.MODE !== 'production') {
@@ -105,12 +144,12 @@ export const heatMapApi = {
   async deleteMarker(id, config) { return exec(client.delete(`/markers/${encodeURIComponent(id)}`, config)); },
   // Areas
   async createArea(payload, config) { return exec(client.post('/areas', payload, config)); },
-  async listAreas(config) { return exec(client.get('/areas', config)); },
+  async listAreas(config, { force=false, ttl=DEFAULT_TTL } = {}) { return execCached(() => client.get('/areas', config), { key: 'areas', ttl, force }); },
   async updateArea(id, payload, config) { return exec(client.put(`/areas/${encodeURIComponent(id)}`, payload, config)); },
   async deleteArea(id, config) { return exec(client.delete(`/areas/${encodeURIComponent(id)}`, config)); },
   // Zones
   async createZone(payload, config) { return exec(client.post('/zones', payload, config)); },
-  async listZones(config) { return exec(client.get('/zones', config)); },
+  async listZones(config, { force=false, ttl=DEFAULT_TTL } = {}) { return execCached(() => client.get('/zones', config), { key: 'zones', ttl, force }); },
   async listZonesByArea(areaId, config) { return exec(client.get(`/zones/by-area/${encodeURIComponent(areaId)}`, config)); },
   async updateZone(id, payload, config) { return exec(client.put(`/zones/${encodeURIComponent(id)}`, payload, config)); },
   async deleteZone(id, config) { return exec(client.delete(`/zones/${encodeURIComponent(id)}`, config)); }
