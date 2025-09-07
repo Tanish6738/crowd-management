@@ -97,7 +97,23 @@ export const heatMapApi = {
   getHeatmapData,
   getUserLocationHistory,
   clearLocationData,
-  sendBatchLocations
+  sendBatchLocations,
+  // --- Map Editor (Markers / Areas / Zones) ---
+  // Markers
+  async createMarker(payload, config) { return exec(client.post('/create_marker', payload, config)); },
+  async listMarkers(config) { return exec(client.get('/view', config)); },
+  async deleteMarker(id, config) { return exec(client.delete(`/markers/${encodeURIComponent(id)}`, config)); },
+  // Areas
+  async createArea(payload, config) { return exec(client.post('/areas', payload, config)); },
+  async listAreas(config) { return exec(client.get('/areas', config)); },
+  async updateArea(id, payload, config) { return exec(client.put(`/areas/${encodeURIComponent(id)}`, payload, config)); },
+  async deleteArea(id, config) { return exec(client.delete(`/areas/${encodeURIComponent(id)}`, config)); },
+  // Zones
+  async createZone(payload, config) { return exec(client.post('/zones', payload, config)); },
+  async listZones(config) { return exec(client.get('/zones', config)); },
+  async listZonesByArea(areaId, config) { return exec(client.get(`/zones/by-area/${encodeURIComponent(areaId)}`, config)); },
+  async updateZone(id, payload, config) { return exec(client.put(`/zones/${encodeURIComponent(id)}`, payload, config)); },
+  async deleteZone(id, config) { return exec(client.delete(`/zones/${encodeURIComponent(id)}`, config)); }
 };
 
 export default heatMapApi;

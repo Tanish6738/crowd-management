@@ -1,448 +1,506 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import heatMapApi from '../../../Services/heatMapApi';
+import '../../../App.css'; // assume global base styles; adjust if needed
 
-// Contracts (reference)
-// type Zone = { id:string; name:string; polygon:GeoJSON.Polygon; capacity:number };
-// type Gate = { id:string; name:string; zoneId:string; location:GeoJSON.Point; directionLine:[number,number][] };
-// type Service = { id:string; name:string; type:'washroom'|'camp'|'waiting_room'|'health_camp'|'restricted'|'helpdesk'; zoneId:string; location:GeoJSON.Point };
-// type Camera = { id:string; name:string; zoneId:string; location:GeoJSON.Point; rtspUrl:string; status:'online'|'offline'|'unknown' };
+// NOTE: We intentionally load Leaflet & Leaflet-Draw CSS via CDN to avoid extra package setup.
+// If you later install leaflet-draw from npm, you can replace the dynamic asset injection with imports.
 
-// Helper to inject maplibre css once
-const ensureMapLibreCSS = () => {
-	if (document.getElementById('maplibre-gl-css')) return;
-	const link = document.createElement('link');
-	link.id = 'maplibre-gl-css';
-	link.rel = 'stylesheet';
-	link.href = 'https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css';
-	document.head.appendChild(link);
+const MARKER_TYPES = [
+  'toilets','drinking_water','food_distribution','tent_areas','dharamshalas',
+  'hospitals','first_aid','police_booths','fire_station','lost_found',
+  'railway_station','bus_stands','parking_areas','pickup_dropoff','mandir'
+];
+
+const TYPE_ICONS = {
+  toilets: '🚻',
+  drinking_water: '💧',
+  food_distribution: '🍛',
+  tent_areas: '⛺',
+  dharamshalas: '🏨',
+  hospitals: '🏥',
+  first_aid: '⛑️',
+  police_booths: '👮',
+  fire_station: '🚒',
+  lost_found: '🧳',
+  railway_station: '🚉',
+  bus_stands: '🚌',
+  parking_areas: '🅿️',
+  pickup_dropoff: '🚖',
+  mandir: '🛕'
 };
 
-const TOOL_MODES = {
-	SELECT: 'select',
-	DRAW_ZONE: 'drawZone',
-	ADD_GATE: 'addGate',
-	ADD_SERVICE: 'addService',
-	ADD_CAMERA: 'addCamera'
-};
-
-const SERVICE_TYPES = ['washroom','camp','waiting_room','health_camp','restricted','helpdesk'];
-
-const defaultCenter = [77.5946, 12.9716]; // Bangalore placeholder
+const TABS = [
+  { id: 'markers', label: 'Markers' },
+  { id: 'areas', label: 'Areas' },
+  { id: 'zones', label: 'Zones' }
+];
 
 const MapEditor = () => {
-	// Published (source of truth) -------------------------------------------
-	const [zonesPub, setZonesPub] = useState([]);
-	const [gatesPub, setGatesPub] = useState([]);
-	const [servicesPub, setServicesPub] = useState([]);
-	const [camerasPub, setCamerasPub] = useState([]);
+  const mapRef = useRef(null);
+  const mapNodeRef = useRef(null);
+  const drawnItemsRef = useRef(null);
+  const drawControlRef = useRef(null);
+  const leafletLoadedRef = useRef(false);
 
-	// Draft (mutable) -------------------------------------------------------
-	const [zones, setZones] = useState([]);
-	const [gates, setGates] = useState([]);
-	const [services, setServices] = useState([]);
-	const [cameras, setCameras] = useState([]);
-	const [dirty, setDirty] = useState(false);
+  const [activeTab, setActiveTab] = useState('markers');
+  const [loading, setLoading] = useState(true);
+  const [scriptError, setScriptError] = useState(null);
+  const [markers, setMarkers] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [zones, setZones] = useState([]);
+  const [selectedAreaForZone, setSelectedAreaForZone] = useState('');
+  const [areaFilterForMarkers, setAreaFilterForMarkers] = useState('');
+  const [zoneFilterForMarkers, setZoneFilterForMarkers] = useState('');
+  const [creatingPolygonType, setCreatingPolygonType] = useState(null); // 'area' | 'zone' | null
+  const [pendingAreaData, setPendingAreaData] = useState({ name: '', description: '' });
+  const [pendingZoneData, setPendingZoneData] = useState({ name: '', description: '', area_id: '' });
+  const [newMarker, setNewMarker] = useState({
+    type: MARKER_TYPES[0],
+    name: '',
+    lat: '',
+    lng: '',
+    description: '',
+    area_id: '',
+    zone_id: ''
+  });
+  const [message, setMessage] = useState('');
+  const [isPlacingMarker, setIsPlacingMarker] = useState(false);
 
-	// Map & drawing state ---------------------------------------------------
-	const mapRef = useRef(null); // maplibre instance
-	const containerRef = useRef(null);
-	const [mapReady, setMapReady] = useState(false);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
-	const [mode, setMode] = useState(TOOL_MODES.SELECT);
-	const [layerVisibility, setLayerVisibility] = useState({ zones:true, gates:true, services:true, cameras:true });
-	const [draftZonePoints, setDraftZonePoints] = useState([]); // array of [lng,lat]
-	const [hoverCoord, setHoverCoord] = useState(null);
-	const [selectedEntity, setSelectedEntity] = useState(null); // {type, data}
-	const [serviceType, setServiceType] = useState('washroom');
+  // Utility: set transient message
+  const flash = useCallback((msg, ms = 3500) => {
+    setMessage(msg);
+    if (ms) setTimeout(() => setMessage(''), ms);
+  }, []);
 
-	// Undo / Redo -----------------------------------------------------------
-	const [history, setHistory] = useState([]); // stack of serialized state
-	const [historyIndex, setHistoryIndex] = useState(-1);
-	const pushHistory = useCallback((nextState) => {
-		setHistory(h => [...h.slice(0, historyIndex+1), JSON.stringify(nextState)].slice(-50));
-		setHistoryIndex(i => Math.min(49, i+1));
-	}, [historyIndex]);
-	const snapshot = useCallback(() => ({ zones, gates, services, cameras }), [zones, gates, services, cameras]);
-	const undo = () => {
-		if (historyIndex <= 0) return;
-		const idx = historyIndex - 1;
-		const parsed = JSON.parse(history[idx]);
-		setZones(parsed.zones); setGates(parsed.gates); setServices(parsed.services); setCameras(parsed.cameras);
-		setHistoryIndex(idx);
-		setDirty(true);
-	};
-	const redo = () => {
-		if (historyIndex >= history.length-1) return;
-		const idx = historyIndex + 1;
-		const parsed = JSON.parse(history[idx]);
-		setZones(parsed.zones); setGates(parsed.gates); setServices(parsed.services); setCameras(parsed.cameras);
-		setHistoryIndex(idx);
-		setDirty(true);
-	};
+  // Load CDN assets for Leaflet + Draw
+  useEffect(() => {
+    const leafletCss = document.querySelector('link[data-leaflet]');
+    if (!leafletCss) {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      l.setAttribute('data-leaflet','');
+      document.head.appendChild(l);
+    }
+    const drawCss = document.querySelector('link[data-leaflet-draw]');
+    if (!drawCss) {
+      const l2 = document.createElement('link');
+      l2.rel = 'stylesheet';
+      l2.href = 'https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css';
+      l2.setAttribute('data-leaflet-draw','');
+      document.head.appendChild(l2);
+    }
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.async = true;
+    script.onload = () => {
+      const script2 = document.createElement('script');
+      script2.src = 'https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js';
+      script2.async = true;
+      script2.onload = () => {
+        leafletLoadedRef.current = true;
+        initMap();
+      };
+      script2.onerror = () => setScriptError('Failed loading leaflet-draw');
+      document.body.appendChild(script2);
+    };
+    script.onerror = () => setScriptError('Failed loading Leaflet');
+    document.body.appendChild(script);
+    return () => {
+      if (mapRef.current) {
+        try { mapRef.current.remove(); } catch (_) { /* ignore */ }
+        mapRef.current = null;
+      }
+      if (mapNodeRef.current && mapNodeRef.current._leaflet_id) {
+        try { delete mapNodeRef.current._leaflet_id; } catch (_) { mapNodeRef.current._leaflet_id = null; }
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-	// Initial load (simulate API) ------------------------------------------
-	useEffect(() => {
-		setLoading(true); setError(null);
-		const t = setTimeout(() => {
-			// Start with empty published map (could fetch real)
-			setZonesPub([]); setGatesPub([]); setServicesPub([]); setCamerasPub([]);
-			setZones([]); setGates([]); setServices([]); setCameras([]);
-			setLoading(false);
-			pushHistory({ zones:[], gates:[], services:[], cameras:[] });
-		}, 700);
-		return () => clearTimeout(t);
-	}, [pushHistory]);
+  // Initialize map
+  const initMap = () => {
+    if (!mapNodeRef.current || !window.L) return;
+    const L = window.L;
+    if (mapNodeRef.current._leaflet_id) {
+      try { mapRef.current && mapRef.current.remove(); } catch (_) { /* ignore */ }
+      try { delete mapNodeRef.current._leaflet_id; } catch (_) { mapNodeRef.current._leaflet_id = null; }
+    }
+    mapRef.current = L.map(mapNodeRef.current).setView([28.6139, 77.2090], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapRef.current);
+    drawnItemsRef.current = new L.FeatureGroup();
+    mapRef.current.addLayer(drawnItemsRef.current);
 
-	// Load maplibre lazily --------------------------------------------------
-	useEffect(() => {
-		if (!containerRef.current || mapRef.current) return;
-		let cancelled = false;
-		ensureMapLibreCSS();
-		import('maplibre-gl').then(lib => {
-			if (cancelled) return;
-			const maplibregl = lib.default || lib;
-			const map = new maplibregl.Map({
-				container: containerRef.current,
-				style: 'https://demotiles.maplibre.org/style.json',
-				center: defaultCenter,
-				zoom: 14,
-				attributionControl: false
-			});
-			mapRef.current = map;
-			map.on('load', () => setMapReady(true));
-			map.on('mousemove', (e) => {
-				if (mode === TOOL_MODES.DRAW_ZONE && draftZonePoints.length > 0) setHoverCoord([e.lngLat.lng, e.lngLat.lat]);
-			});
-			map.on('click', (e) => {
-				if (mode === TOOL_MODES.DRAW_ZONE) {
-					const pt = [e.lngLat.lng, e.lngLat.lat];
-					setDraftZonePoints(prev => [...prev, pt]);
-				} else if (mode === TOOL_MODES.ADD_GATE) {
-					addGateAt([e.lngLat.lng, e.lngLat.lat]);
-				} else if (mode === TOOL_MODES.ADD_SERVICE) {
-					addServiceAt([e.lngLat.lng, e.lngLat.lat]);
-				} else if (mode === TOOL_MODES.ADD_CAMERA) {
-					addCameraAt([e.lngLat.lng, e.lngLat.lat]);
-				} else if (mode === TOOL_MODES.SELECT) {
-					// Basic hit detection via distance to entity points / zone centroids
-					const features = hitTest([e.lngLat.lng, e.lngLat.lat]);
-					if (features) setSelectedEntity(features);
-				}
-			});
-		}).catch(err => { if (!cancelled) { setError('Failed to load map library'); console.error(err); } });
-		return () => { cancelled = true; };
-	}, [mode, draftZonePoints.length]);
+    drawControlRef.current = new L.Control.Draw({
+      edit: { featureGroup: drawnItemsRef.current },
+      draw: { polygon: { allowIntersection: false, showArea: true }, polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false }
+    });
+    mapRef.current.addControl(drawControlRef.current);
 
-	// Basic hit test --------------------------------------------------------
-	const hitTest = (lnglat) => {
-		const [lng, lat] = lnglat;
-		// Test cameras & services & gates by distance threshold
-		const dist = (a,b) => Math.sqrt(Math.pow(a[0]-b[0],2) + Math.pow(a[1]-b[1],2));
-		const gate = gates.find(g => dist(g.location.coordinates, lnglat) < 0.0015);
-		if (gate) return { type:'gate', data:gate };
-		const service = services.find(s => dist(s.location.coordinates, lnglat) < 0.0015);
-		if (service) return { type:'service', data:service };
-		const camera = cameras.find(c => dist(c.location.coordinates, lnglat) < 0.0015);
-		if (camera) return { type:'camera', data:camera };
-		// Zones: simple centroid distance
-		const centroid = (poly) => {
-			const coords = poly.coordinates[0];
-			let sx=0, sy=0; coords.forEach(c => { sx+=c[0]; sy+=c[1]; });
-			return [sx/coords.length, sy/coords.length];
-		};
-		const zone = zones.find(z => dist(centroid(z.polygon), lnglat) < 0.0025);
-		if (zone) return { type:'zone', data:zone };
-		return null;
-	};
+    mapRef.current.on('click', (e) => {
+      if (isPlacingMarker) {
+        setNewMarker(m => ({ ...m, lat: e.latlng.lat.toFixed(6), lng: e.latlng.lng.toFixed(6) }));
+        flash('Marker coordinates captured');
+      }
+    });
 
-	// Add entity helpers ----------------------------------------------------
-	const addGateAt = (pt) => {
-		const id = 'g'+Date.now();
-		const dir = [pt, [pt[0]+0.001, pt[1]]];
-		const gate = { id, name:'Gate '+(gates.length+1), zoneId: zones[0]?.id||'', location:{ type:'Point', coordinates:pt }, directionLine:dir };
-		setGates(g => [...g, gate]); markDirty();
-	};
-	const addServiceAt = (pt) => {
-		const id = 's'+Date.now();
-		const service = { id, name: serviceType.charAt(0).toUpperCase()+serviceType.slice(1)+' '+(services.length+1), type: serviceType, zoneId: zones[0]?.id||'', location:{ type:'Point', coordinates:pt } };
-		setServices(s => [...s, service]); markDirty();
-	};
-	const addCameraAt = (pt) => {
-		const id = 'c'+Date.now();
-		const camera = { id, name:'Camera '+(cameras.length+1), zoneId: zones[0]?.id||'', location:{ type:'Point', coordinates:pt }, rtspUrl:'rtsp://example/'+id, status:'online' };
-		setCameras(c => [...c, camera]); markDirty();
-	};
+    mapRef.current.on(window.L.Draw.Event.CREATED, (e) => {
+      const { layer } = e;
+      drawnItemsRef.current.addLayer(layer);
+      const latlngs = layer.getLatLngs();
+      const coords = normalizeLatLngs(latlngs);
+      if (creatingPolygonType === 'area') {
+        createAreaWithPolygon(coords);
+      } else if (creatingPolygonType === 'zone') {
+        createZoneWithPolygon(coords);
+      } else {
+        flash('Polygon drawn (no type selected)');
+      }
+      setCreatingPolygonType(null);
+    });
 
-	// Mark dirty & push history --------------------------------------------
-	const markDirty = () => { setDirty(true); pushHistory(snapshot()); };
+    setLoading(false);
+    refreshAll();
+    setTimeout(() => mapRef.current.invalidateSize(), 150);
+  };
 
-	// Finalize zone polygon (on Enter / double click) -----------------------
-	const finalizeZone = () => {
-		if (draftZonePoints.length < 3) { setDraftZonePoints([]); return; }
-		const polygon = [...draftZonePoints, draftZonePoints[0]]; // close ring
-		const zone = { id:'z'+Date.now(), name:'Zone '+(zones.length+1), capacity: 100, polygon:{ type:'Polygon', coordinates:[polygon] } };
-		setZones(z => [...z, zone]);
-		setDraftZonePoints([]); setHoverCoord(null); markDirty();
-	};
+  const normalizeLatLngs = (latlngs) => {
+    if (!Array.isArray(latlngs)) return [];
+    const flat = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+    return flat.map(pt => [pt.lat, pt.lng]);
+  };
 
-	// Keyboard shortcuts ----------------------------------------------------
-	useEffect(() => {
-		const onKey = (e) => {
-			if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-			if (e.key === 'z' || e.key === 'Z') { setMode(TOOL_MODES.DRAW_ZONE); }
-			else if (e.key === 'g' || e.key === 'G') { setMode(TOOL_MODES.ADD_GATE); }
-			else if (e.key === 's' || e.key === 'S') { setMode(TOOL_MODES.ADD_SERVICE); }
-			else if (e.key === 'c' || e.key === 'C') { setMode(TOOL_MODES.ADD_CAMERA); }
-			else if (e.key === 'Escape') {
-				if (draftZonePoints.length) setDraftZonePoints([]); else setMode(TOOL_MODES.SELECT);
-			} else if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-			else if ((e.metaKey || e.ctrlKey) && (e.key === 'Z' || (e.shiftKey && e.key==='z'))) { e.preventDefault(); redo(); }
-			else if (e.key === 'Enter' && mode===TOOL_MODES.DRAW_ZONE) { finalizeZone(); }
-		};
-		window.addEventListener('keydown', onKey);
-		return () => window.removeEventListener('keydown', onKey);
-	}, [mode, draftZonePoints.length, undo, redo]);
+  // API integration wrappers
+  const loadMarkers = useCallback(async () => {
+    try { const data = await heatMapApi.listMarkers(); setMarkers(Array.isArray(data) ? data : (data?.markers || [])); } catch (e) { flash('Error loading markers: ' + e.message); }
+  }, [flash]);
 
-	// Publish / discard -----------------------------------------------------
-	const publish = async () => {
-		setPublishing(true);
-		// Simulate API POSTs
-		await new Promise(r => setTimeout(r, 800));
-		setZonesPub(zones); setGatesPub(gates); setServicesPub(services); setCamerasPub(cameras);
-		setDirty(false); setPublishing(false);
-	};
-	const discard = () => {
-		setZones(zonesPub); setGates(gatesPub); setServices(servicesPub); setCameras(camerasPub);
-		setDirty(false); setDraftZonePoints([]); setHoverCoord(null); setMode(TOOL_MODES.SELECT);
-		pushHistory({ zones:zonesPub, gates:gatesPub, services:servicesPub, cameras:camerasPub });
-	};
-	const [publishing, setPublishing] = useState(false);
+  const loadAreas = useCallback(async () => {
+    try { const data = await heatMapApi.listAreas(); setAreas(Array.isArray(data) ? data : []); } catch (e) { flash('Error loading areas: ' + e.message); }
+  }, [flash]);
 
-	// Edit entity -----------------------------------------------------------
-	const updateEntity = (type, partial) => {
-		if (!selectedEntity) return;
-		if (type==='zone') setZones(z => z.map(item => item.id===selectedEntity.data.id ? { ...item, ...partial } : item));
-		if (type==='gate') setGates(g => g.map(item => item.id===selectedEntity.data.id ? { ...item, ...partial } : item));
-		if (type==='service') setServices(s => s.map(item => item.id===selectedEntity.data.id ? { ...item, ...partial } : item));
-		if (type==='camera') setCameras(c => c.map(item => item.id===selectedEntity.data.id ? { ...item, ...partial } : item));
-		markDirty();
-	};
-	const deleteEntity = () => {
-		if (!selectedEntity) return;
-		if (!window.confirm('Delete this '+selectedEntity.type+'?')) return;
-		if (selectedEntity.type==='zone') setZones(z => z.filter(i=>i.id!==selectedEntity.data.id));
-		if (selectedEntity.type==='gate') setGates(g => g.filter(i=>i.id!==selectedEntity.data.id));
-		if (selectedEntity.type==='service') setServices(s => s.filter(i=>i.id!==selectedEntity.data.id));
-		if (selectedEntity.type==='camera') setCameras(c => c.filter(i=>i.id!==selectedEntity.data.id));
-		setSelectedEntity(null); markDirty();
-	};
+  const loadZones = useCallback(async () => {
+    try { const data = await heatMapApi.listZones(); setZones(Array.isArray(data) ? data : []); } catch (e) { flash('Error loading zones: ' + e.message); }
+  }, [flash]);
 
-	// Derived overlay collections (virtualize if large) ---------------------
-	const camDisplay = useMemo(() => cameras.slice(0, 500), [cameras]);
-	const serviceDisplay = useMemo(() => services.slice(0, 500), [services]);
+  const refreshAll = useCallback(async () => { await Promise.all([loadMarkers(), loadAreas(), loadZones()]); }, [loadMarkers, loadAreas, loadZones]);
 
-	// Overlay rendering (simple absolutely positioned markers via map.project)
-	const [projectVersion, setProjectVersion] = useState(0);
-	useEffect(() => {
-		if (!mapRef.current) return;
-		const map = mapRef.current;
-		const onRender = () => setProjectVersion(v => v+1);
-		map.on('move', onRender); map.on('zoom', onRender); map.on('resize', onRender);
-		return () => { map.off('move', onRender); map.off('zoom', onRender); map.off('resize', onRender); };
-	}, [mapReady]);
+  // Marker creation
+  const handleCreateMarker = async (e) => {
+    e.preventDefault();
+    const { type, name, lat, lng, description, area_id, zone_id } = newMarker;
+    if (!lat || !lng) { flash('Lat/Lng required (click on map or enter manually)'); return; }
+    try {
+      const payload = { type, name, lat: parseFloat(lat), lng: parseFloat(lng), description, area_id: area_id || undefined, zone_id: zone_id || undefined };
+      await heatMapApi.createMarker(payload);
+      flash('Marker created');
+      setNewMarker(m => ({ ...m, name: '', lat: '', lng: '', description: '' }));
+      loadMarkers();
+    } catch (e2) { flash('Create failed: ' + e2.message); }
+  };
 
-	const project = (lnglat) => {
-		if (!mapRef.current) return { x:-9999,y:-9999 };
-		const p = mapRef.current.project({ lng:lnglat[0], lat:lnglat[1] });
-		return { x:p.x, y:p.y };
-	};
+  // Area creation
+  const createAreaWithPolygon = async (coords) => {
+    try { const payload = { name: pendingAreaData.name || ('Area ' + (areas.length + 1)), description: pendingAreaData.description, polygon: coords }; await heatMapApi.createArea(payload); flash('Area created'); setPendingAreaData({ name: '', description: '' }); loadAreas(); } catch (e) { flash('Area create failed: ' + e.message); }
+  };
 
-	const zoneFillColor = (z) => '#f9731622';
-	const zoneStrokeColor = (z) => '#f97316';
+  const handleAreaFormSubmit = async (e) => {
+    e.preventDefault();
+    if (creatingPolygonType === 'area') { flash('Finish drawing the polygon on map'); return; }
+    createAreaWithPolygon(undefined);
+  };
 
-	// UI helpers ------------------------------------------------------------
-	const toolActive = (t) => mode===t ? 'bg-orange-500 text-white border-orange-500' : 'mk-surface-alt mk-text-primary hover:bg-orange-50 dark:hover:bg-orange-500/10';
+  // Zone creation
+  const createZoneWithPolygon = async (coords) => {
+    try { if (!pendingZoneData.area_id) { flash('Select Area first for zone'); return; } const payload = { name: pendingZoneData.name || ('Zone ' + (zones.length + 1)), description: pendingZoneData.description, area_id: pendingZoneData.area_id, polygon: coords }; await heatMapApi.createZone(payload); flash('Zone created'); setPendingZoneData(z => ({ ...z, name: '', description: '' })); loadZones(); } catch (e) { flash('Zone create failed: ' + e.message); }
+  };
 
-	const loadingState = loading && (
-		<div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm z-30">
-			<div className="animate-spin h-8 w-8 border-2 border-orange-500 border-t-transparent rounded-full" />
-		</div>
-	);
-	const errorBanner = error && (
-		<div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-400/30 text-red-700 dark:text-red-300 text-xs px-4 py-2 rounded shadow z-30 flex items-center gap-3">{error}<button onClick={()=>window.location.reload()} className="px-2 py-1 rounded bg-red-600 text-white">Retry</button></div>
-	);
-	const emptyState = (!loading && zones.length===0 && gates.length===0 && services.length===0 && cameras.length===0) && (
-		<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mk-surface-alt border border-dashed mk-border rounded-lg p-6 text-xs mk-text-muted text-center z-30 w-60">No map data configured yet.<br/>Start by drawing a zone (shortcut Z).</div>
-	);
+  const handleZoneFormSubmit = (e) => {
+    e.preventDefault();
+    if (!pendingZoneData.area_id) { flash('Select Area'); return; }
+    if (creatingPolygonType === 'zone') { flash('Finish drawing the polygon'); return; }
+    createZoneWithPolygon(undefined);
+  };
 
-	// Side drawer content ---------------------------------------------------
-	const drawerOpen = !!selectedEntity;
-	const se = selectedEntity;
-	const updateSelectedField = (field, value) => {
-		if (!se) return;
-		updateEntity(se.type, { [field]: value });
-		setSelectedEntity(prev => prev ? { ...prev, data: { ...prev.data, [field]: value } } : prev);
-	};
+  // Delete marker
+  const deleteMarker = async (id) => { if (!window.confirm('Delete marker?')) return; try { await heatMapApi.deleteMarker(id); flash('Deleted'); loadMarkers(); } catch (e) { flash('Delete failed: ' + e.message); } };
 
-	return (
-		<div className="relative h-[calc(100vh-120px)] -mx-px" aria-label="Map Editor">
-			{/* Map container */}
-			<div ref={containerRef} className="w-full h-full relative bg-gray-200 rounded-lg overflow-hidden" />
+  // Filtered markers
+  const filteredMarkers = markers.filter(m => { if (areaFilterForMarkers && m.area_id !== areaFilterForMarkers) return false; if (zoneFilterForMarkers && m.zone_id !== zoneFilterForMarkers) return false; return true; });
 
-			{/* Overlays (manual) */}
-			{mapReady && (
-				<div className="pointer-events-none absolute inset-0" key={projectVersion}>
-					{/* Zones polygons via svg */}
-					{layerVisibility.zones && zones.map(z => {
-						const path = z.polygon.coordinates[0].map(c => {
-							const p = project(c); return `${p.x},${p.y}`; }).join(' ');
-						return <svg key={z.id} className="absolute inset-0 overflow-visible" aria-label={z.name}>
-							<polygon points={path} fill={zoneFillColor(z)} stroke={zoneStrokeColor(z)} strokeWidth={2} className="pointer-events-auto" onClick={(e)=>{e.stopPropagation(); setSelectedEntity({ type:'zone', data:z });}} />
-						</svg>;
-					})}
-					{/* Draft zone polyline */}
-					{mode===TOOL_MODES.DRAW_ZONE && draftZonePoints.length>0 && (
-						<svg className="absolute inset-0 overflow-visible">
-							<polyline points={[...draftZonePoints, hoverCoord].filter(Boolean).map(c => { const p=project(c); return `${p.x},${p.y}`; }).join(' ')} fill="none" stroke="#f97316" strokeDasharray="4 3" strokeWidth={2} />
-							{draftZonePoints.map((c,i)=> { const p=project(c); return <circle key={i} cx={p.x} cy={p.y} r={4} fill="#f97316" />; })}
-						</svg>
-					)}
-					{/* Gates */}
-					{layerVisibility.gates && gates.map(g => {
-						const p = project(g.location.coordinates);
-						const d2 = project(g.directionLine[1]);
-						return <div key={g.id} className="absolute" style={{ left:p.x-6, top:p.y-6 }}>
-							<div onClick={(e)=>{e.stopPropagation(); setSelectedEntity({ type:'gate', data:g });}} className="pointer-events-auto w-3 h-3 rounded-full bg-white border-2 border-orange-500 shadow" title={g.name} />
-							<svg className="absolute inset-0 overflow-visible"><line x1={6} y1={6} x2={d2.x-p.x+6} y2={d2.y-p.y+6} stroke="#f97316" strokeWidth={2} markerEnd="url(#arrowhead)" /></svg>
-							<svg width="0" height="0"><defs><marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="#f97316" /></marker></defs></svg>
-						</div>;
-					})}
-					{/* Services */}
-					{layerVisibility.services && serviceDisplay.map(s => { const p=project(s.location.coordinates); return <button key={s.id} onClick={(e)=>{e.stopPropagation(); setSelectedEntity({ type:'service', data:s });}} className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] shadow" style={{ left:p.x, top:p.y }}>{s.type[0].toUpperCase()}</button>; })}
-					{/* Cameras */}
-					{layerVisibility.cameras && camDisplay.map(c => { const p=project(c.location.coordinates); return <button key={c.id} onClick={(e)=>{e.stopPropagation(); setSelectedEntity({ type:'camera', data:c });}} className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto w-4 h-4 rounded bg-green-600 ring-1 ring-white shadow" style={{ left:p.x, top:p.y }} title={c.name} />; })}
-				</div>
-			)}
+  // Tab content renderers (markup adjusted for styling only)
+  const renderMarkersTab = () => (
+    <div className="tab-pane">
+      <h3>Create Marker</h3>
+      <form onSubmit={handleCreateMarker} className="form-grid">
+        <label>Type
+          <select value={newMarker.type} onChange={e => setNewMarker(m => ({ ...m, type: e.target.value }))}>
+            {MARKER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+        <label>Name
+          <input value={newMarker.name} onChange={e => setNewMarker(m => ({ ...m, name: e.target.value }))} placeholder="Marker name" />
+        </label>
+        <div className="coord-row">
+          <label>Lat
+            <input value={newMarker.lat} onChange={e => setNewMarker(m => ({ ...m, lat: e.target.value }))} placeholder="Latitude" />
+          </label>
+          <label>Lng
+            <input value={newMarker.lng} onChange={e => setNewMarker(m => ({ ...m, lng: e.target.value }))} placeholder="Longitude" />
+          </label>
+        </div>
+        <button type="button" onClick={() => setIsPlacingMarker(v => !v)} className={isPlacingMarker ? 'secondary active' : 'secondary'}>
+          {isPlacingMarker ? 'Click map to set coords (ON)' : 'Enable map click for coords'}
+        </button>
+        <label>Description
+          <textarea rows={2} value={newMarker.description} onChange={e => setNewMarker(m => ({ ...m, description: e.target.value }))} />
+        </label>
+        <label>Area (optional)
+          <select value={newMarker.area_id} onChange={e => setNewMarker(m => ({ ...m, area_id: e.target.value, zone_id: '' }))}>
+            <option value="">-- none --</option>
+            {areas.map(a => <option key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
+          </select>
+        </label>
+        <label>Zone (optional)
+          <select value={newMarker.zone_id} onChange={e => setNewMarker(m => ({ ...m, zone_id: e.target.value }))} disabled={!newMarker.area_id}>
+            <option value="">-- none --</option>
+            {zones.filter(z => z.area_id === newMarker.area_id).map(z => <option key={z.id || z._id} value={z.id || z._id}>{z.name}</option>)}
+          </select>
+        </label>
+        <button type="submit">Create Marker</button>
+      </form>
 
-			{/* Toolbar */}
-			<div className="absolute top-4 left-4 z-40 flex flex-col gap-2">
-				<div className="flex flex-col mk-surface-alt backdrop-blur rounded-lg mk-border shadow-sm overflow-hidden">
-					<button onClick={()=>setMode(TOOL_MODES.SELECT)} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.SELECT)}`}>Select</button>
-					<button onClick={()=>{setMode(TOOL_MODES.DRAW_ZONE);}} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.DRAW_ZONE)}`}>Draw Zone (Z)</button>
-					<button onClick={()=>setMode(TOOL_MODES.ADD_GATE)} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.ADD_GATE)}`}>Add Gate (G)</button>
-					<button onClick={()=>setMode(TOOL_MODES.ADD_SERVICE)} className={`px-3 py-2 text-[11px] border-b ${toolActive(TOOL_MODES.ADD_SERVICE)}`}>Add Service (S)</button>
-					<button onClick={()=>setMode(TOOL_MODES.ADD_CAMERA)} className={`px-3 py-2 text-[11px] ${toolActive(TOOL_MODES.ADD_CAMERA)}`}>Link Camera (C)</button>
-				</div>
-				<div className="mk-surface-alt backdrop-blur rounded-lg mk-border shadow-sm p-2 flex flex-col gap-2 text-[10px]">
-					<div className="font-semibold text-gray-700">Layers</div>
-					{Object.entries(layerVisibility).map(([k,v]) => (
-						<label key={k} className="flex items-center gap-1">
-							<input type="checkbox" checked={v} onChange={()=>setLayerVisibility(o=>({...o,[k]:!o[k]}))} /> <span className="capitalize">{k}</span>
-						</label>
-					))}
-					{mode===TOOL_MODES.ADD_SERVICE && (
-						<select value={serviceType} onChange={e=>setServiceType(e.target.value)} className="mt-1 rounded border border-gray-300 bg-white px-1 py-0.5 text-[10px]">{SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}</select>
-					)}
-					{mode===TOOL_MODES.DRAW_ZONE && draftZonePoints.length>0 && (
-						<button onClick={finalizeZone} className="mt-1 px-2 py-1 rounded bg-orange-500 text-white">Finish Zone (Enter)</button>
-					)}
-					<div className="h-px bg-gray-200" />
-					<div className="flex gap-2">
-						<button disabled={!dirty} onClick={publish} className={`flex-1 px-2 py-1 rounded text-[10px] font-medium ${dirty ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>{publishing ? 'Publishing...' : 'Publish'}</button>
-						<button disabled={!dirty} onClick={discard} className={`flex-1 px-2 py-1 rounded text-[10px] font-medium ${dirty ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Discard</button>
-					</div>
-					<div className="flex gap-2">
-						<button onClick={undo} disabled={historyIndex<=0} className="flex-1 px-2 py-1 rounded bg-white border border-gray-300 disabled:opacity-40">Undo</button>
-						<button onClick={redo} disabled={historyIndex>=history.length-1} className="flex-1 px-2 py-1 rounded bg-white border border-gray-300 disabled:opacity-40">Redo</button>
-					</div>
-				</div>
-				<div className="mk-surface-alt backdrop-blur rounded-lg mk-border shadow-sm p-2 text-[10px] space-y-1 w-40">
-					<div className="font-semibold text-gray-700 mb-1">Legend</div>
-					<div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-orange-500" /> Zone</div>
-					<div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-white border border-orange-500" /> Gate</div>
-					<div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-blue-600" /> Service</div>
-					<div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-green-600" /> Camera</div>
-				</div>
-			</div>
+      <h3 style={{ marginTop: '1.5rem' }}>Markers</h3>
+      <div className="filter-row">
+        <select value={areaFilterForMarkers} onChange={e => { setAreaFilterForMarkers(e.target.value); setZoneFilterForMarkers(''); }}>
+          <option value="">All Areas</option>
+          {areas.map(a => <option key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
+        </select>
+        <select value={zoneFilterForMarkers} onChange={e => setZoneFilterForMarkers(e.target.value)} disabled={!areaFilterForMarkers}>
+          <option value="">All Zones</option>
+          {zones.filter(z => !areaFilterForMarkers || z.area_id === areaFilterForMarkers).map(z => <option key={z.id || z._id} value={z.id || z._id}>{z.name}</option>)}
+        </select>
+        <button type="button" className="secondary" onClick={() => refreshAll()}>↻</button>
+      </div>
+      <ul className="item-list markers-scroll">
+        {filteredMarkers.map(m => (
+          <li key={m.id || m._id} className="item marker-item">
+            <div className="item-header">
+              <div className="title-row">
+                <span className="type-badge" data-type={m.type}>{TYPE_ICONS[m.type] || '📍'}</span>
+                <strong className="truncate">{m.name || '(unnamed)'}</strong>
+              </div>
+              <button className="danger small" onClick={() => deleteMarker(m.id || m._id)}>✕</button>
+            </div>
+            <div className="item-body">
+              <small className="dims">{m.type} • {parseFloat(m.lat).toFixed(4)}, {parseFloat(m.lng).toFixed(4)}</small>
+              {m.description && <p>{m.description}</p>}
+            </div>
+          </li>
+        ))}
+        {!filteredMarkers.length && <li className="empty">No markers</li>}
+      </ul>
+    </div>
+  );
 
-			{/* Side Drawer */}
-			<div className={`fixed inset-0 z-40 ${drawerOpen ? '' : 'pointer-events-none'}`}> 
-				<div className={`absolute inset-0 bg-black/30 dark:bg-black/60 transition-opacity ${drawerOpen ? 'opacity-100' : 'opacity-0'}`} onClick={()=>setSelectedEntity(null)} />
-				<div className={`absolute right-0 top-0 h-full w-full sm:w-[420px] mk-surface-alt border-l mk-border shadow-xl transform transition-transform duration-300 flex flex-col ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-					<div className="px-4 py-3 border-b mk-border flex items-center justify-between">
-						<h2 className="text-sm font-semibold mk-text-primary capitalize">{se?.type} Detail</h2>
-						<button onClick={()=>setSelectedEntity(null)} className="mk-text-muted hover:mk-text-primary focus:outline-none focus:ring-2 focus:ring-orange-500 rounded">✕</button>
-					</div>
-					<div className="flex-1 overflow-y-auto p-4 space-y-5 text-[11px]">
-						{!se && <div className="mk-text-muted">No selection.</div>}
-						{se?.type==='zone' && (
-							<div className="space-y-3">
-								<div>
-									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
-								</div>
-								<div>
-									<label className="block font-medium mb-1">Capacity</label>
-									<input type="number" value={se.data.capacity} onChange={e=>updateSelectedField('capacity', Number(e.target.value))} className="w-full h-8 rounded border mk-border px-2" />
-								</div>
-								<div>
-									<h4 className="font-medium mb-1">Coordinates</h4>
-									<pre className="bg-black/80 dark:bg-gray-900 text-white p-2 rounded max-h-40 overflow-auto text-[10px]">{JSON.stringify(se.data.polygon.coordinates[0], null, 2)}</pre>
-								</div>
-							</div>
-						)}
-						{se?.type==='gate' && (
-							<div className="space-y-3">
-								<div>
-									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
-								</div>
-								<div className="mk-text-muted">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
-							</div>
-						)}
-						{se?.type==='service' && (
-							<div className="space-y-3">
-								<div>
-									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
-								</div>
-								<div>
-									<label className="block font-medium mb-1">Type</label>
-									<select value={se.data.type} onChange={e=>updateSelectedField('type', e.target.value)} className="w-full h-8 rounded border mk-border px-2">{SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}</select>
-								</div>
-								<div className="mk-text-muted">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
-							</div>
-						)}
-						{se?.type==='camera' && (
-							<div className="space-y-3">
-								<div>
-									<label className="block font-medium mb-1">Name</label>
-									<input value={se.data.name} onChange={e=>updateSelectedField('name', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
-								</div>
-								<div>
-									<label className="block font-medium mb-1">RTSP URL</label>
-									<input value={se.data.rtspUrl} onChange={e=>updateSelectedField('rtspUrl', e.target.value)} className="w-full h-8 rounded border mk-border px-2" />
-								</div>
-								<div className="mk-text-muted">Zone: {zones.find(z=>z.id===se.data.zoneId)?.name || '—'}</div>
-								<div className="mk-text-muted">Status: {se.data.status}</div>
-							</div>
-						)}
-					</div>
-					{se && (
-						<div className="border-t mk-border p-3 flex items-center gap-2">
-							<button onClick={deleteEntity} className="px-3 py-1.5 rounded bg-red-600 text-white text-xs">Delete</button>
-							<button onClick={()=>setSelectedEntity(null)} className="ml-auto px-3 py-1.5 rounded border mk-border mk-surface-alt text-xs">Close</button>
-						</div>
-					)}
-				</div>
-			</div>
+  const renderAreasTab = () => (
+    <div className="tab-pane">
+      <h3>Create Area</h3>
+      <form onSubmit={handleAreaFormSubmit} className="form-grid">
+        <label>Name
+          <input value={pendingAreaData.name} onChange={e => setPendingAreaData(a => ({ ...a, name: e.target.value }))} placeholder="Area name" />
+        </label>
+        <label>Description
+          <textarea rows={2} value={pendingAreaData.description} onChange={e => setPendingAreaData(a => ({ ...a, description: e.target.value }))} />
+        </label>
+        <div className="button-row">
+          <button type="button" className={creatingPolygonType === 'area' ? 'secondary active' : 'secondary'} onClick={() => setCreatingPolygonType(p => p === 'area' ? null : 'area')}>{creatingPolygonType === 'area' ? 'Drawing ON - finish on map' : 'Draw Polygon'}</button>
+          <button type="submit">Create (no polygon)</button>
+        </div>
+      </form>
+      <h3 style={{ marginTop: '1.5rem' }}>Areas</h3>
+      <ul className="item-list compact">
+        {areas.map(a => (
+          <li key={a.id || a._id} className="item area-item">
+            <div className="item-header">
+              <strong>{a.name}</strong>
+              <span className={"pill " + (a.polygon ? 'pill-green' : 'pill-gray')}>{a.polygon ? 'Polygon' : 'No polygon'}</span>
+            </div>
+            {a.description && <p className="desc-text">{a.description}</p>}
+          </li>
+        ))}
+        {!areas.length && <li className="empty">No areas</li>}
+      </ul>
+    </div>
+  );
 
-			{loadingState}
-			{errorBanner}
-			{emptyState}
-		</div>
-	);
+  const renderZonesTab = () => (
+    <div className="tab-pane">
+      <h3>Create Zone</h3>
+      <form onSubmit={handleZoneFormSubmit} className="form-grid">
+        <label>Area
+          <select value={pendingZoneData.area_id} onChange={e => setPendingZoneData(z => ({ ...z, area_id: e.target.value }))}>
+            <option value="">-- select area --</option>
+            {areas.map(a => <option key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
+          </select>
+        </label>
+        <label>Name
+          <input value={pendingZoneData.name} onChange={e => setPendingZoneData(z => ({ ...z, name: e.target.value }))} placeholder="Zone name" />
+        </label>
+        <label>Description
+          <textarea rows={2} value={pendingZoneData.description} onChange={e => setPendingZoneData(z => ({ ...z, description: e.target.value }))} />
+        </label>
+        <div className="button-row">
+          <button type="button" disabled={!pendingZoneData.area_id} className={creatingPolygonType === 'zone' ? 'secondary active' : 'secondary'} onClick={() => setCreatingPolygonType(p => p === 'zone' ? null : 'zone')}>{creatingPolygonType === 'zone' ? 'Drawing ON - finish on map' : 'Draw Polygon'}</button>
+          <button type="submit">Create (no polygon)</button>
+        </div>
+      </form>
+      <h3 style={{ marginTop: '1.5rem' }}>Zones</h3>
+      <ul className="item-list compact">
+        {zones.map(z => (
+          <li key={z.id || z._id} className="item zone-item">
+            <div className="item-header">
+              <strong>{z.name}</strong>
+              <span className={"pill " + (z.polygon ? 'pill-green' : 'pill-gray')}>{z.polygon ? 'Polygon' : 'No polygon'}</span>
+            </div>
+            <small className="meta-line">Area: {areas.find(a => (a.id||a._id) === z.area_id)?.name || '—'}</small>
+            {z.description && <p className="desc-text">{z.description}</p>}
+          </li>
+        ))}
+        {!zones.length && <li className="empty">No zones</li>}
+      </ul>
+    </div>
+  );
+
+  // Add markers to map each time markers list changes
+  useEffect(() => {
+    if (!mapRef.current || !window.L) return;
+    const L = window.L;
+    if (mapRef.current._markerLayerGroup) {
+      mapRef.current.removeLayer(mapRef.current._markerLayerGroup);
+    }
+    const grp = L.layerGroup();
+    markers.forEach(m => {
+      if (!m.lat || !m.lng) return;
+      const icon = L.divIcon({ className: 'custom-marker', html: `<span>${TYPE_ICONS[m.type] || '📍'}</span>`, iconSize: [24,24], iconAnchor: [12,24] });
+      const mk = L.marker([m.lat, m.lng], { icon });
+      mk.bindPopup(`<strong>${m.name}</strong><br/>${m.type}<br/>${m.description || ''}`);
+      grp.addLayer(mk);
+    });
+    grp.addTo(mapRef.current);
+    mapRef.current._markerLayerGroup = grp;
+  }, [markers]);
+
+  return (
+    <div className="map-editor-root">
+      <div className="nav-header">
+        <div className="nav-title">🗺️ Map Editor</div>
+        <div className="nav-links">
+          <button onClick={() => refreshAll()} className="secondary">Refresh All</button>
+        </div>
+      </div>
+      <div className="editor-container">
+        <div className="map-wrapper">
+          {loading && <div className="overlay">Initializing map…</div>}
+          {scriptError && <div className="overlay error">{scriptError}</div>}
+          <div ref={mapNodeRef} id="map" style={{ width: '100%', height: '100%', minHeight: 500, border: '3px solid #333', borderRadius: 10 }} />
+          {creatingPolygonType && <div className="drawing-hint">Drawing {creatingPolygonType} polygon – finish by clicking first point.</div>}
+        </div>
+        <aside className="sidebar">
+          <div className="tabs">
+            {TABS.map(t => <button key={t.id} className={t.id === activeTab ? 'tab-button active' : 'tab-button'} onClick={() => setActiveTab(t.id)}>{t.label}</button>)}
+          </div>
+          <div className="tab-content">
+            {activeTab === 'markers' && renderMarkersTab()}
+            {activeTab === 'areas' && renderAreasTab()}
+            {activeTab === 'zones' && renderZonesTab()}
+          </div>
+          {message && <div className="result-box">{message}</div>}
+          <div className="legend">
+            <h4>Legend</h4>
+            <ul>
+              {MARKER_TYPES.map(t => <li key={t}><span>{TYPE_ICONS[t] || '📍'}</span> {t}</li>)}
+            </ul>
+          </div>
+        </aside>
+      </div>
+      <style>{`
+        /* THEME + LAYOUT ENHANCEMENTS */
+        .map-editor-root { --c-bg:#f5f7fb; --c-panel:#ffffff; --c-border:#d9e2ec; --c-border-strong:#b3c1ce; --c-accent:#007cba; --c-accent-hover:#00649a; --c-danger:#d9534f; --c-text:#1f2d3d; --c-muted:#5c6b7a; --radius-s:4px; --radius-m:8px; --shadow-sm:0 1px 2px rgba(0,0,0,0.08); --shadow-md:0 3px 10px -2px rgba(0,0,0,0.12); font-family:system-ui, Arial, sans-serif; height:100%; display:flex; flex-direction:column; background:linear-gradient(135deg,#eef2f7,#f8fafc); color:var(--c-text);}        
+        .nav-header { background:linear-gradient(90deg,#0f3e62,#17669b); color:#fff; padding:14px 22px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 6px rgba(0,0,0,0.25);}        
+        .nav-title { font-weight:600; font-size:1.3rem; letter-spacing:.5px; display:flex; align-items:center; gap:6px;}        
+        .editor-container { flex:1; display:flex; min-height:600px; overflow:hidden; backdrop-filter:blur(2px);}        
+        .map-wrapper { position:relative; flex:1; background:#e2e8f0;}        
+        .sidebar { width:430px; background:rgba(255,255,255,0.9); padding:18px 16px 22px; display:flex; flex-direction:column; overflow:auto; border-left:1px solid var(--c-border); box-shadow:-4px 0 12px -6px rgba(0,0,0,0.15); backdrop-filter:blur(6px);}        
+        .sidebar::-webkit-scrollbar { width:10px;}        
+        .sidebar::-webkit-scrollbar-track { background:transparent;}        
+        .sidebar::-webkit-scrollbar-thumb { background:#c4d1dd; border-radius:20px; border:2px solid transparent; background-clip:content-box;}        
+        .tabs { display:flex; gap:6px; margin-bottom:14px; position:sticky; top:0; background:inherit; padding-bottom:6px; z-index:10;}        
+        .tab-button { flex:1; background:var(--c-panel); border:1px solid var(--c-border); padding:10px 12px; cursor:pointer; font-weight:600; border-radius:var(--radius-s); font-size:0.8rem; color:var(--c-muted); transition:.25s; position:relative;}        
+        .tab-button:hover { color:var(--c-text); box-shadow:var(--shadow-sm);}        
+        .tab-button.active { color:#fff; background:var(--c-accent); border-color:var(--c-accent); box-shadow:0 2px 6px -2px rgba(0,124,186,.6);}        
+        .tab-pane h3 { margin:0 0 10px; font-size:0.95rem; letter-spacing:.5px; font-weight:600; color:var(--c-text);}        
+        .tab-pane form { background:var(--c-panel); border:1px solid var(--c-border); padding:14px 14px 12px; border-radius:var(--radius-m); box-shadow:var(--shadow-sm); position:relative; overflow:hidden;}        
+        .tab-pane form:before { content:""; position:absolute; inset:0; background:linear-gradient(135deg,rgba(0,124,186,0.05),rgba(0,124,186,0)); pointer-events:none;}        
+        .form-grid label { display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:10px; font-weight:600; color:var(--c-muted);}        
+        .form-grid input, .form-grid select, .form-grid textarea { width:100%; box-sizing:border-box; padding:8px 10px; margin-top:5px; font-size:0.8rem; border:1px solid var(--c-border); border-radius:var(--radius-s); background:#fff; color:var(--c-text); font-family:inherit; transition:border-color .2s, box-shadow .2s;}        
+        .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { outline:none; border-color:var(--c-accent); box-shadow:0 0 0 2px rgba(0,124,186,0.25);}        
+        .button-row { display:flex; gap:10px; margin-top:4px; flex-wrap:wrap;}        
+        button { background:var(--c-accent); color:#fff; border:1px solid var(--c-accent); border-radius:var(--radius-s); padding:9px 14px; cursor:pointer; font-size:0.8rem; font-weight:600; letter-spacing:.4px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px -2px rgba(0,0,0,0.3); transition:background .2s, transform .15s, box-shadow .2s;}        
+        button:hover:not(:disabled) { background:var(--c-accent-hover);}        
+        button:active:not(:disabled) { transform:translateY(1px); box-shadow:0 1px 3px -1px rgba(0,0,0,0.4);}        
+        button.secondary { background:#64748b; border-color:#64748b;}        
+        button.secondary:hover { background:#526073;}        
+        button.secondary.active { background:#334155; border-color:#334155;}        
+        button.danger { background:var(--c-danger); border-color:var(--c-danger);}        
+        button.danger:hover { background:#c94440;}        
+        button.small { padding:4px 8px; font-size:0.65rem; font-weight:600; box-shadow:none;}        
+        button:disabled { opacity:.55; cursor:not-allowed;}        
+        .item-list { list-style:none; padding:0; margin:12px 0 4px;}        
+        .item { background:var(--c-panel); border:1px solid var(--c-border); margin-bottom:10px; padding:10px 12px 8px; border-radius:var(--radius-m); position:relative; display:flex; flex-direction:column; gap:4px; box-shadow:var(--shadow-sm); transition:box-shadow .25s, transform .25s, border-color .25s;}        
+        .item:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--c-border-strong);}        
+        .item.marker-item { border-left:5px solid var(--c-accent);}        
+        .item.area-item { border-left:5px solid #6366f1;}        
+        .item.zone-item { border-left:5px solid #0ea5e9;}        
+        .item-header { display:flex; justify-content:space-between; align-items:center; gap:8px;}        
+        .title-row { display:flex; align-items:center; gap:6px; min-width:0;}        
+        .truncate { max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}        
+        .item-body p, .desc-text { margin:3px 0 2px; font-size:0.7rem; line-height:1.15rem; color:var(--c-text);}        
+        .meta-line { display:block; font-size:0.65rem; color:var(--c-muted); margin-bottom:2px;}        
+        .dims { color:var(--c-muted);}        
+        .empty { font-size:0.7rem; color:var(--c-muted); font-style:italic;}        
+        .result-box { background:linear-gradient(135deg,#ffffff,#f1f7fb); border:1px solid var(--c-border); padding:10px 12px; border-radius:var(--radius-m); font-size:0.7rem; margin-top:10px; white-space:pre-wrap; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow-sm); animation:fadeIn .4s ease;}        
+        .legend { margin-top:18px; background:var(--c-panel); border:1px solid var(--c-border); padding:10px 12px; border-radius:var(--radius-m); box-shadow:var(--shadow-sm);}        
+        .legend h4 { margin:0 0 8px; font-size:0.75rem; text-transform:uppercase; letter-spacing:.6px; color:var(--c-muted);}        
+        .legend ul { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:6px 10px;}        
+        .legend li { font-size:0.65rem; display:flex; gap:6px; align-items:center; background:#f1f5f9; padding:4px 6px; border-radius:var(--radius-s); border:1px solid #e2e8f0;}        
+        .coord-row { display:flex; gap:10px;}        
+        .filter-row { display:flex; gap:8px; margin:8px 0 12px;}        
+        .filter-row select { flex:1;}        
+        .overlay { position:absolute; inset:0; background:linear-gradient(120deg,rgba(255,255,255,0.9),rgba(255,255,255,0.75)); display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; font-weight:600; font-size:0.9rem; z-index:500; letter-spacing:.5px;}        
+        .overlay.error { background:rgba(255,220,220,0.95); color:#7f1d1d;}        
+        .drawing-hint { position:absolute; bottom:14px; left:14px; background:var(--c-accent); color:#fff; padding:8px 12px; border-radius:24px; font-size:0.65rem; z-index:400; box-shadow:0 4px 14px -4px rgba(0,0,0,0.4); letter-spacing:.5px; display:flex; align-items:center; gap:6px; animation:floatPulse 3s ease-in-out infinite;}        
+        .custom-marker span { font-size:20px; line-height:20px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));}        
+        .type-badge { width:26px; height:26px; background:#f1f5f9; border:1px solid #d9e2ec; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:var(--shadow-sm);}        
+        .pill { font-size:0.55rem; text-transform:uppercase; letter-spacing:.7px; padding:4px 8px 3px; border-radius:20px; background:#e2e8f0; color:#334155; font-weight:600; border:1px solid #cbd5e1;}        
+        .pill-green { background:#dcfce7; color:#166534; border-color:#bbf7d0;}        
+        .pill-gray { background:#f1f5f9; color:#475569; border-color:#e2e8f0;}        
+        .markers-scroll { max-height:300px; overflow:auto; padding-right:4px;}        
+        .markers-scroll::-webkit-scrollbar { width:8px;}        
+        .markers-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:20px;}        
+        @keyframes fadeIn { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }        
+        @keyframes floatPulse { 0%,100% { transform:translateY(0);} 50% { transform:translateY(-3px);} }        
+        @media (max-width:1280px) { .sidebar { width:380px; } }
+        @media (max-width:1100px) { .sidebar { width:340px; } }
+        @media (max-width:950px) { .sidebar { width:320px; } }
+        @media (max-width:900px) { .editor-container { flex-direction:column; } .sidebar { width:auto; order:-1; box-shadow:0 4px 14px -6px rgba(0,0,0,0.2); border-left:none; border-bottom:1px solid var(--c-border); } .map-wrapper { min-height:420px; } }
+        @media (max-width:560px) { .tab-button { padding:8px 6px; font-size:0.7rem; } .nav-title { font-size:1.05rem; } .sidebar { padding:14px 12px 18px; } }
+        @media (max-width:440px) { .coord-row { flex-direction:column; } .truncate { max-width:120px; } }
+        button:focus-visible, .form-grid input:focus-visible, .form-grid select:focus-visible, .form-grid textarea:focus-visible { outline:2px solid var(--c-accent); outline-offset:2px; }
+        @media (prefers-contrast: more) { .item { border-color:var(--c-border-strong); } }
+      `}</style>
+    </div>
+  );
 };
 
 export default MapEditor;
-
