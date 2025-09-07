@@ -145,6 +145,8 @@ const HeatMap = () => {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
     mapRef.current = map;
+  // If a previous StrictMode simulated unmount ran, clear the destroyed flag
+  mapDestroyedRef.current = false;
     // Expose simple global route helper for popup button
     window.__hm_route_to = (lat, lng, name) => {
       if (!userMarkerRef.current) { pushStatus('Locate yourself first'); return; }
@@ -166,7 +168,24 @@ const HeatMap = () => {
   setTimeout(() => { try { map.invalidateSize(); } catch {} }, 100);
   const onResize = () => { try { map.invalidateSize(); } catch {} };
   window.addEventListener('resize', onResize);
-  return () => { mapDestroyedRef.current = true; try { map.remove(); } catch {} };
+  return () => {
+    /*
+      React 18/19 StrictMode mounts components, runs effects, then immediately
+      runs the cleanup + re-runs the effect to surface side-effect issues.
+      Our first implementation removed the Leaflet map during the simulated
+      unmount but left mapRef.current pointing at the disposed instance.
+      The subsequent effect run then short‑circuited (`if (mapRef.current) return;`),
+      so the map was never re-created – leaving an empty div (no tiles/markers).
+      Fix: on cleanup, always null out mapRef so the next effect run can
+      safely recreate a fresh Leaflet instance. This makes dev StrictMode
+      behave identically to production. We also keep a destroyed flag for
+      other race‑condition guards already present.
+    */
+    try { if (mapRef.current) { mapRef.current.remove(); } } catch { /* ignore */ }
+    mapRef.current = null;
+    mapDestroyedRef.current = true;
+    window.removeEventListener('resize', onResize);
+  };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -568,7 +587,12 @@ const HeatMap = () => {
           style={{
             boxShadow: '0 4px 18px -6px rgba(0,0,0,.5)',
             height: 'calc(100vh - 260px)', // mimic static HTML height calc
-            minHeight: 420
+            minHeight: 420,
+            // Ensure a positive height even if surrounding flex parents change.
+            // Some layouts were collapsing the container to 0 height on first render
+            // causing Leaflet to initialize with a 0x0 size (invisible map) until a resize.
+            // Explicit inline fallback height prevents that.
+            position: 'relative'
           }}
         />
         <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-[12px] px-4 py-2 rounded-full" style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}>

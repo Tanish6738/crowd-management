@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, CameraOff as CamOffIcon, Search as SearchIcon, Grid as GridIcon, List as ListIcon, AlertTriangle, RefreshCcw, BarChart3, Layers, FolderPlus, Trash2, Edit2, Check, X, Box, Filter, Database, Activity, Download, Upload } from 'lucide-react';
+import { Camera, CameraOff as CamOffIcon, Search as SearchIcon, Grid as GridIcon, List as ListIcon, AlertTriangle, RefreshCcw, BarChart3, Layers, FolderPlus, Trash2, Edit2, Check, X, Box, Filter, Database, Activity, Download, Upload, PlayCircle } from 'lucide-react';
 import cameraApi, { normalizeCCTV } from '@/Services/Camera';
 import heatMapApi from '@/Services/heatMapApi';
 
@@ -115,7 +115,7 @@ const PlusIcon = React.memo(() => <svg width="12" height="12" viewBox="0 0 24 24
 
 const Cameras = () => {
   // Tabs & view
-  const [tab, setTab] = useState('overview'); // overview | manage | search | bulk | analytics
+  const [tab, setTab] = useState('overview'); // overview | manage | search | bulk | analytics | live
   const [view, setView] = useState('grid');
 
   // Data
@@ -408,6 +408,62 @@ const Cameras = () => {
     );
   };
 
+  // Live mock streaming tab ----------------------------------------------
+  const Live = () => {
+    // Track video errors to show fallback overlay
+    const [errors, setErrors] = useState({});
+    const visible = filtered; // reuse current filters
+    const fallbackUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+    const handleError = (id) => setErrors(e=>({...e,[id]:true}));
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-[11px] text-white/50">Mock preview using sample looping mp4. Replace with real stream URLs later.</p>
+          <button onClick={()=>loadCameras(true)} className="ml-auto h-8 px-3 rounded-md text-[11px] bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 flex items-center gap-1"><RefreshCcw size={12}/>Refresh List</button>
+        </div>
+        {loading ? <SkeletonGrid/> : (
+          visible.length ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {visible.map(cam => {
+                const src = (cam.video_source && cam.video_source.startsWith('http')) ? cam.video_source : fallbackUrl;
+                const hasError = errors[cam.id];
+                return (
+                  <div key={cam.id} className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/60">
+                    {!hasError ? (
+                      <video
+                        src={src}
+                        className="w-full h-full object-cover aspect-video"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        onError={()=>handleError(cam.id)}
+                      />
+                    ) : (
+                      <div className="aspect-video flex items-center justify-center text-white/40 text-[11px] bg-black/40">Stream Unavailable</div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-[11px] flex flex-col gap-1">
+                      <div className="flex items-center gap-1 font-medium text-white/90 truncate"><Camera size={12} className="text-orange-400"/>{cam.name}</div>
+                      <div className="flex items-center gap-1 text-white/50 flex-wrap">
+                        <span className="px-1 py-0.5 rounded bg-white/5 border border-white/10">{cam.area||'—'}</span>
+                        <span className="px-1 py-0.5 rounded bg-white/5 border border-white/10">{cam.zone||'—'}</span>
+                        <span className={cx('ml-auto px-1.5 py-0.5 rounded border capitalize', badge(cam.status))}>{cam.status}</span>
+                      </div>
+                    </div>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                      <button onClick={()=>startEdit(cam)} className="h-6 px-2 rounded bg-orange-600/80 hover:bg-orange-500 text-white text-[10px] flex items-center gap-1"><Edit2 size={12}/>Edit</button>
+                      <button onClick={()=>removeCamera(cam.id)} className="h-6 px-2 rounded bg-red-600/80 hover:bg-red-500 text-white text-[10px] flex items-center gap-1"><Trash2 size={12}/>Del</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : <EmptyState />
+        )}
+      </div>
+    );
+  };
+
   // Shared subcomponents --------------------------------------------------
   // Main render ----------------------------------------------------------
   const TabBtn = ({ id, icon:Icon, label }) => <button onClick={()=>setTab(id)} className={cx('h-9 px-3 rounded-md text-xs flex items-center gap-1 border border-white/10 bg-white/5 hover:bg-white/10', tab===id && 'bg-orange-600 hover:bg-orange-600 text-white border-orange-500/70')}>{Icon && <Icon size={14}/>} {label}</button>;
@@ -421,7 +477,8 @@ const Cameras = () => {
             <TabBtn id="manage" icon={FolderPlus} label="Manage" />
             <TabBtn id="search" icon={SearchIcon} label="Search" />
             <TabBtn id="bulk" icon={Box} label="Bulk" />
-            <TabBtn id="analytics" icon={BarChart3} label="Analytics" />
+    <TabBtn id="live" icon={PlayCircle} label="Live" />
+    <TabBtn id="analytics" icon={BarChart3} label="Analytics" />
         </div>
       </div>
       {error && <div className="p-3 bg-red-600/15 border border-red-500/30 rounded text-xs text-red-400">{error}</div>}
@@ -430,6 +487,7 @@ const Cameras = () => {
       {tab==='search' && <SearchTab/>}
       {tab==='bulk' && <Bulk/>}
       {tab==='analytics' && <Analytics/>}
+  {tab==='live' && <Live/>}
   <ToastRegion toasts={toasts} />
     </div>
   );

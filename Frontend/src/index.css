@@ -299,6 +299,20 @@ body {
   background: var(--mk-surface-2);
 }
 
+/* Leaflet map sizing helpers */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  font: inherit;
+  z-index: 0; /* keep beneath floating status */
+}
+
+/* Emoji facility marker tweaks */
+.facility-marker {
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
 /* Selection */
 ::selection {
   background: var(--mk-accent);
