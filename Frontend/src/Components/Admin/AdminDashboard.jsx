@@ -15,6 +15,7 @@ import MapEditor from './MapEditor/MapEditor';
 import Alerts from './Alerts/Alerts';
 import CameraStrip from '../General/CameraStrip';
 import Modal from '../General/Modal';
+import HeatMap from './HeatMap/HeatMap';
 
 // Seed Data ----------------------------------------------------------------
 const zonesSeed = [
@@ -48,6 +49,7 @@ const AdminDashboard = () => {
   const navTabs = useMemo(() => [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'map-editor', label: 'Map Editor' },
+    { key : 'Heat-Map', label: "Heat-Map"},
     { key: 'cameras', label: 'Cameras' },
     { key: 'lost-found', label: 'Lost & Found' },
     { key: 'crowd-analytics', label: 'Crowd Analytics' },
@@ -120,6 +122,7 @@ const AdminDashboard = () => {
         <div className="flex-1 min-w-0 space-y-6">
           {activeNav === 'dashboard' && mobileSection === 'map' && mapEl}
           {activeNav === 'cameras' && <Cameras />}
+          {activeNav === 'Heat-Map' && <HeatMap/>}
           {activeNav === 'lost-found' && <LostAndFound />}
           {activeNav === 'crowd-analytics' && <CrowdAnalytics />}
           {activeNav === 'alerts' && <Alerts fullPage />}

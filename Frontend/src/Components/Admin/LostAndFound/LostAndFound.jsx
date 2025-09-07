@@ -18,7 +18,7 @@ import {
   Plus,
   AlertCircle
 } from 'lucide-react';
-import { getAllLost, getAllMatches, getAllFound, searchFace } from '../../../Services/api';
+import { getAllLost, getAllMatches, getAllFound, searchFace, normalizePersonRecord } from '../../../Services/api';
 
 // Contracts reference
 // LostReport, Match (pending review)
@@ -45,11 +45,12 @@ const LostAndFound = () => {
   const [matchModal, setMatchModal] = useState(null);
   const [showFilters, setShowFilters] = useState(false); // mobile
   const [view, setView] = useState('grid'); // future toggle (grid/list) currently only grid
-  // Face search
+  // Face search (enhanced)
   const [faceId, setFaceId] = useState('');
-  const [faceResult, setFaceResult] = useState(null);
+  const [faceResult, setFaceResult] = useState(null); // raw API response
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceError, setFaceError] = useState(null);
+  const [showRaw, setShowRaw] = useState(false);
 
   // Data Fetching ----------------------------------------------------------
   const transformLost = (lostRecords, matchMap) => {
@@ -389,21 +390,22 @@ const LostAndFound = () => {
         </div>
       )}
       {tab==='search' && (
-        <div className="mk-surface-alt backdrop-blur border mk-border rounded-lg p-4 space-y-4 text-xs text-white/70">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input value={faceId} onChange={e=>setFaceId(e.target.value)} placeholder="Enter face ID" className="flex-1 h-9 rounded-md border border-white/10 bg-white/5 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-white/80 placeholder:text-white/40" />
-            <button disabled={!faceId || faceLoading} onClick={async ()=>{
-              setFaceLoading(true); setFaceError(null); setFaceResult(null);
-              try { const res = await searchFace(faceId.trim()); setFaceResult(res); }
-              catch(e){ setFaceError(e.message||'Search failed'); }
-              finally { setFaceLoading(false); }
-            }} className={`h-9 px-4 rounded-md text-xs font-semibold flex items-center gap-2 border transition ${faceId? 'bg-orange-500 text-white border-orange-500 hover:brightness-110':'bg-white/5 text-white/40 border-white/10'}`}>{faceLoading? 'Searching…':'Search'}</button>
-          </div>
+        <div className="mk-surface-alt backdrop-blur border mk-border rounded-lg p-4 space-y-5 text-xs text-white/70" aria-label="Search by Face ID">
+          <form onSubmit={async (e)=>{e.preventDefault(); if(!faceId || faceLoading) return; setFaceLoading(true); setFaceError(null); setFaceResult(null); try { const res = await searchFace(faceId.trim()); setFaceResult(res); } catch(e){ setFaceError(e.message||'Search failed'); } finally { setFaceLoading(false);} }} className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40" />
+              <input value={faceId} onChange={e=>setFaceId(e.target.value)} placeholder="Enter face ID (UUID)" className="flex-1 h-9 rounded-md border border-white/10 bg-white/5 pl-7 pr-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-white/80 placeholder:text-white/40" />
+            </div>
+            <button type="submit" disabled={!faceId || faceLoading} className={`h-9 px-4 rounded-md text-xs font-semibold flex items-center gap-2 border transition ${faceId? 'bg-orange-500 text-white border-orange-500 hover:brightness-110':'bg-white/5 text-white/40 border-white/10'}`}>{faceLoading? 'Searching…':'Search'}</button>
+            {faceResult && (
+              <button type="button" onClick={()=>{ setFaceResult(null); setShowRaw(false); setFaceError(null); }} className="h-9 px-3 rounded-md border border-white/10 bg-white/5 text-white/60 text-[10px] hover:bg-white/10">Clear</button>
+            )}
+          </form>
           {faceError && <div className="p-2 rounded border border-red-500/40 bg-red-500/10 text-red-300 text-[11px] flex items-center gap-2"><AlertCircle size={14}/> {faceError}</div>}
-          {faceResult && (
-            <pre className="max-h-80 overflow-auto text-[10px] bg-black/30 border border-white/10 rounded p-3 text-white/70 whitespace-pre-wrap">{JSON.stringify(faceResult, null, 2)}</pre>
+          {!faceError && faceResult && (
+            <FaceResultPanel result={faceResult} showRaw={showRaw} onToggleRaw={()=>setShowRaw(r=>!r)} />
           )}
-          {!faceResult && !faceError && !faceLoading && <div className="text-white/40 text-[11px]">Enter a face ID to view potential matches.</div>}
+          {!faceResult && !faceError && !faceLoading && <div className="text-white/40 text-[11px]">Enter a face ID to view existing lost/found record details.</div>}
         </div>
       )}
       {tab!=='search' && (
@@ -471,3 +473,91 @@ const LostAndFound = () => {
 };
 
 export default LostAndFound;
+
+// ---------------------------------------------------------------------------
+// Face Search Result Panel (Admin) - reuses normalization + richer metadata
+// ---------------------------------------------------------------------------
+const FaceResultPanel = ({ result, showRaw, onToggleRaw }) => {
+  if (!result) return null;
+  if (result.not_found) {
+    return (
+      <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-[11px] text-amber-200 flex flex-col gap-2">
+        <div className="font-semibold uppercase tracking-wide text-amber-300">Face ID Not Found</div>
+        <div>No record exists for face_id <span className="font-mono">{result.face_id}</span> yet.</div>
+        <button onClick={onToggleRaw} className="self-start mt-1 px-2 py-1 rounded border border-amber-500/40 text-[10px] hover:bg-amber-500/10">{showRaw? 'Hide Raw JSON':'Show Raw JSON'}</button>
+        {showRaw && <pre className="w-full mt-2 max-h-56 overflow-auto text-[10px] p-3 rounded border border-amber-500/30 bg-black/30 whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>}
+      </div>
+    );
+  }
+  const norm = normalizePersonRecord(result);
+  const rec = result.record || result.data || result;
+  const img = rec.face_blob ? `data:image/jpeg;base64,${rec.face_blob}` : null;
+  const meta = [
+    ['Name', rec.name],
+    ['Gender', rec.gender],
+    ['Age', rec.age],
+    ['Relation', rec.relation_with_lost],
+    ['Where Lost', rec.where_lost],
+    ['Where Found', rec.where_found || rec.location_found],
+    ['Reporter', rec.reporter_name],
+    ['Status', rec.status],
+    ['Uploaded', rec.upload_time ? formatDate(rec.upload_time) : null],
+    ['Mobile', rec.contact_details?.mobile_no],
+    ['Email', rec.contact_details?.email_id]
+  ].filter(([,v]) => v !== undefined && v !== null && v !== '');
+  return (
+    <div className="space-y-4" aria-label="Face search result details">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/60">Record</span>
+        <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 border border-white/10 font-mono">{truncate(norm?.id || rec.face_id || 'unknown', 20)}</span>
+        {norm && !norm.not_found && (
+          <div className="flex flex-wrap gap-2 ml-2 text-[10px]">{
+            [
+              ['Case ID', truncate(norm.id,18)],
+              ['Type', norm.type],
+              ['Status', norm.status],
+              ['Created', norm.createdAt ? formatDate(norm.createdAt) : '-'],
+              ['Location', norm.location]
+            ].map(([l,v]) => <InfoPill key={l} label={l} value={v} />)
+          }</div>
+        )}
+        <div className="ml-auto flex gap-2">
+          <button onClick={onToggleRaw} className="text-[10px] px-2 py-1 border border-white/10 rounded hover:bg-white/10 transition">{showRaw? 'Hide Raw':'Raw JSON'}</button>
+        </div>
+      </div>
+      <div className="grid md:grid-cols-3 gap-4">
+        <div className="md:col-span-1">
+          <div className="relative w-full aspect-[4/5] rounded-md overflow-hidden border border-white/10 bg-black/30 flex items-center justify-center">
+            {img ? <img src={img} alt="Face" className="object-cover w-full h-full" /> : <div className="text-[10px] text-white/40">No Image</div>}
+          </div>
+        </div>
+        <div className="md:col-span-2 space-y-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {meta.map(([k,v]) => (
+              <div key={k} className="space-y-0.5">
+                <div className="text-[9px] uppercase tracking-wide text-white/40">{k}</div>
+                <div className="text-[12px] font-medium break-words text-white/80">{String(v)}</div>
+              </div>
+            ))}
+          </div>
+          {rec.additional_info && (
+            <div className="text-[11px] text-white/70"><span className="font-semibold">Notes: </span>{rec.additional_info}</div>
+          )}
+        </div>
+      </div>
+      {showRaw && (
+        <pre className="max-h-72 overflow-auto text-[10px] p-3 rounded-md border border-white/10 bg-black/30 whitespace-pre-wrap leading-relaxed">{JSON.stringify(result, null, 2)}</pre>
+      )}
+    </div>
+  );
+};
+
+// Small utility pills & helpers (duplicated locally to avoid cross-import churn)
+const InfoPill = ({ label, value }) => (
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-white/10 bg-white/5">
+    <span className="uppercase text-[8px] tracking-wide text-white/40">{label}</span>
+    <span className="font-mono text-[10px] text-white/80">{value}</span>
+  </span>
+);
+function truncate(str='', n=24){ return str.length>n ? str.slice(0, n-4)+'…'+str.slice(-4) : str; }
+function formatDate(str){ try { return new Date(str).toLocaleString(); } catch { return str; } }
