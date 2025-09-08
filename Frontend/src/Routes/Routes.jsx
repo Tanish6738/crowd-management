@@ -19,7 +19,6 @@ const AppRoutes = () => {
       <Route path="/superAdminDashboard" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
       <Route path="/adminDashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="/volunteerDashboard" element={<ProtectedRoute><VolunteerDashboard /></ProtectedRoute>} />
-      {/* <Route path="/userDashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} /> */}
     </Routes>
   )
 }

@@ -4,6 +4,14 @@ import { useTheme } from '../../Context/ThemeContext';
 import data from '../../Data/data.json';
 import { useUser, UserButton, SignedIn, SignedOut } from '@clerk/clerk-react';
 
+/*
+  Professional Navbar
+  - Theme aware (dark/light) using token utilities.
+  - Distinct primary actions (Sign In / Dashboard).
+  - Accessible: focus styles, aria labels and reduced motion respect.
+  - Collapsible mobile navigation with slide panel.
+*/
+
 const getCurrentUser = () => {
   if (data.superAdmin && data.superAdmin.length) return { role: 'superAdmin' };
   if (data.admins && data.admins.length) return { role: 'admin' };
@@ -17,22 +25,18 @@ const roleToLinks = {
     { to: '/superAdminDashboard', label: 'Super Admin' },
     { to: '/adminDashboard', label: 'Admin' },
     { to: '/volunteerDashboard', label: 'Volunteer' },
-    { to: '/userDashboard', label: 'User' },
   ],
   admin: [
     { to: '/', label: 'Home' },
     { to: '/adminDashboard', label: 'Admin' },
     { to: '/volunteerDashboard', label: 'Volunteer' },
-    { to: '/userDashboard', label: 'User' },
   ],
   volunteer: [
     { to: '/', label: 'Home' },
     { to: '/volunteerDashboard', label: 'Volunteer' },
-    { to: '/userDashboard', label: 'User' },
   ],
   user: [
     { to: '/', label: 'Home' },
-    { to: '/userDashboard', label: 'User' },
   ],
   guest: [{ to: '/', label: 'Home' }],
 };
@@ -73,125 +77,98 @@ const Navbar = () => {
   }, [mobileOpen]);
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Mobile Toggle */}
-        <button
-          onClick={() => setMobileOpen(o => !o)}
-          className="md:hidden p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Toggle navigation menu"
-        >
-          {mobileOpen ? '✕' : '☰'}
-        </button>
-
-        {/* Logo */}
-        <div className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-wide">
-          CrowdMgmt
-        </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-4">
-          {links.map(link => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Right Side */}
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-50 backdrop-blur-md bg-[rgba(10,20,35,0.65)] dark:bg-[rgba(10,20,35,0.65)] border-b border-white/10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-6">
+        {/* Left cluster */}
+        <div className="flex items-center gap-4">
           <button
-            onClick={toggleTheme}
-            className="px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+            onClick={() => setMobileOpen(o => !o)}
+            className="md:hidden mk-btn-tab !px-3 !py-2"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           >
-            {theme === 'dark' ? '🌞 Light' : '🌙 Dark'}
+            {mobileOpen ? '✕' : '☰'}
           </button>
-          <SignedOut>
-            <button
-              onClick={() => navigate('/sign-in')}
-              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Sign In
-            </button>
-          </SignedOut>
-          <SignedIn>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400 capitalize hidden sm:inline">
-                {currentRole}
-              </span>
-              <UserButton afterSignOutUrl="/" />
-            </div>
-          </SignedIn>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black/50">
-          <nav className="fixed top-0 left-0 w-64 h-full bg-white dark:bg-gray-900 shadow-lg p-5 space-y-4">
-            <div className="flex items-center justify-between border-b pb-3 mb-3">
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                Menu
-              </span>
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                ✕
-              </button>
-            </div>
+          <NavLink to="/" className="flex items-center gap-2 group">
+            <span className="text-base font-bold tracking-wide mk-text-primary group-hover:mk-accent transition">CrowdMgmt</span>
+            <span className="mk-badge mk-badge-accent text-[9px]">Live</span>
+          </NavLink>
+          <nav className="hidden md:flex items-center gap-1">
             {links.map(l => (
               <NavLink
                 key={l.to}
                 to={l.to}
-                className={({ isActive }) =>
-                  `block px-3 py-2 rounded-lg text-sm ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
-                  }`
-                }
-              >
-                {l.label}
-              </NavLink>
+                className={({ isActive }) => `mk-btn-tab ${isActive? 'mk-btn-tab-active':''}`}
+              >{l.label}</NavLink>
             ))}
-            <div className="border-t pt-4 space-y-3">
-              <button
-                onClick={toggleTheme}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                {theme === 'dark' ? '🌞 Light Theme' : '🌙 Dark Theme'}
-              </button>
-              <SignedOut>
-                <button
-                  onClick={() => navigate('/sign-in')}
-                  className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Sign In
-                </button>
-              </SignedOut>
-              <SignedIn>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                    {currentRole}
-                  </span>
-                  <UserButton afterSignOutUrl="/" />
-                </div>
-              </SignedIn>
-            </div>
           </nav>
         </div>
-      )}
+
+        {/* Right cluster */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="mk-btn-tab !text-[11px]"
+            aria-label="Toggle color theme"
+          >
+            {theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
+          <SignedOut>
+            <button
+              onClick={()=> navigate('/sign-in')}
+              className="mk-btn-tab mk-btn-tab-active !text-[11px]"
+            >Sign In</button>
+            <button
+              onClick={()=> navigate('/sign-up')}
+              className="mk-btn-tab !text-[11px] hidden sm:inline-flex"
+            >Register</button>
+          </SignedOut>
+          <SignedIn>
+            <span className="hidden sm:inline-flex text-[11px] mk-text-muted capitalize mr-1">{currentRole}</span>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+        </div>
+      </div>
+
+      {/* Mobile slide-out */}
+      <div
+        className={`md:hidden fixed inset-0 z-40 transition ${mobileOpen? 'pointer-events-auto':'pointer-events-none'}`}
+        aria-hidden={!mobileOpen}
+      >
+        <div
+          className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity ${mobileOpen? 'opacity-100':'opacity-0'}`}
+          onClick={()=> setMobileOpen(false)}
+        />
+        <nav
+          className={`absolute top-0 left-0 h-full w-72 bg-[rgba(14,32,51,0.95)] border-r border-white/10 pt-6 pb-10 flex flex-col gap-4 translate-x-${mobileOpen? '0':'[-100%]'} transition-all duration-300`}
+        >
+          <div className="px-6 flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold tracking-wide">Navigation</span>
+            <button onClick={()=> setMobileOpen(false)} className="mk-btn-tab !px-2 !py-1">✕</button>
+          </div>
+          <div className="px-4 space-y-2 overflow-y-auto flex-1">
+            {links.map(l => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                className={({ isActive }) => `block mk-route-card px-4 py-3 text-sm font-medium ${isActive? 'mk-route-card-active':''}`}
+              >{l.label}</NavLink>
+            ))}
+          </div>
+          <div className="mt-auto px-4 pt-4 border-t border-white/10 space-y-3">
+            <button onClick={toggleTheme} className="w-full mk-btn-tab !justify-center">{theme === 'dark'? 'Light Theme':'Dark Theme'}</button>
+            <SignedOut>
+              <button onClick={()=> navigate('/sign-in')} className="w-full mk-btn-tab mk-btn-tab-active !justify-center">Sign In</button>
+              <button onClick={()=> navigate('/sign-up')} className="w-full mk-btn-tab !justify-center">Register</button>
+            </SignedOut>
+            <SignedIn>
+              <div className="flex items-center justify-between text-[11px] mk-text-muted px-1">
+                <span className="capitalize">{currentRole}</span>
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            </SignedIn>
+          </div>
+        </nav>
+      </div>
     </header>
   );
 };

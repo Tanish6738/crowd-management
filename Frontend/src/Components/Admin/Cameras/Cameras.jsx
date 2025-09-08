@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, CameraOff as CamOffIcon, Search as SearchIcon, Grid as GridIcon, List as ListIcon, AlertTriangle, RefreshCcw, BarChart3, Layers, FolderPlus, Trash2, Edit2, Check, X, Box, Filter, Database, Activity, Download, Upload, PlayCircle } from 'lucide-react';
+import { Camera, CameraOff as CamOffIcon, Search as SearchIcon, Grid as GridIcon, List as ListIcon, AlertTriangle, RefreshCcw, BarChart3, Layers, FolderPlus, Trash2, Edit2, Check, X, Box, Database, Activity, Upload, PlayCircle } from 'lucide-react';
 import cameraApi, { normalizeCCTV } from '@/Services/Camera';
 import heatMapApi from '@/Services/heatMapApi';
 
@@ -154,6 +154,14 @@ const Cameras = () => {
   // Toasts
   const { toasts, api: toast } = useToasts();
 
+  // Live preview modal state
+  const [livePreview, setLivePreview] = useState(null); // camera object when open
+  useEffect(()=> {
+    if(!livePreview) return; const handler = (e)=> { if(e.key==='Escape') setLivePreview(null); };
+    window.addEventListener('keydown', handler);
+    return ()=> window.removeEventListener('keydown', handler);
+  }, [livePreview]);
+
   // Derived
   const filtered = useMemo(() => cameras.filter(c => {
     return (
@@ -183,7 +191,7 @@ const Cameras = () => {
   }, []);
 
   const loadCameras = useCallback(async (force=false) => {
-    if (!force && Date.now() - lastFetchRef.current.cctvs < FRESH_MS && cameras.length) return; // skip
+    if (!force && Date.now() - lastFetchRef.current.cctvs < FRESH_MS && cameras.length) return; // freshness guard
     await guarded('cctvs', async () => {
       setLoading(true); setError(null);
       try {
@@ -198,7 +206,7 @@ const Cameras = () => {
   const loadAreas = useCallback(async () => {
     await guarded('areas', async () => {
       setLoadingAreas(true);
-      try { const res = await heatMapApi.listAreas(); setAreas(res); lastFetchRef.current.areas = Date.now(); } catch { /* ignore */ }
+      try { const res = await heatMapApi.listAreas(); setAreas(res); lastFetchRef.current.areas = Date.now(); } catch { /* silent */ }
       finally { setLoadingAreas(false); }
     });
   }, [guarded]);
@@ -206,7 +214,7 @@ const Cameras = () => {
   const loadZones = useCallback(async () => {
     await guarded('zones', async () => {
       setLoadingZones(true);
-      try { const res = await heatMapApi.listZones(); setZones(res); lastFetchRef.current.zones = Date.now(); } catch {/* ignore */ }
+      try { const res = await heatMapApi.listZones(); setZones(res); lastFetchRef.current.zones = Date.now(); } catch { /* silent */ }
       finally { setLoadingZones(false); }
     });
   }, [guarded]);
@@ -410,17 +418,12 @@ const Cameras = () => {
 
   // Live mock streaming tab ----------------------------------------------
   const Live = () => {
-    // Track video errors to show fallback overlay
     const [errors, setErrors] = useState({});
-    const visible = filtered; // reuse current filters
-    const fallbackUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+    const visible = filtered;
+    const fallbackUrl = '/video.mp4';
     const handleError = (id) => setErrors(e=>({...e,[id]:true}));
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-[11px] text-white/50">Mock preview using sample looping mp4. Replace with real stream URLs later.</p>
-          <button onClick={()=>loadCameras(true)} className="ml-auto h-8 px-3 rounded-md text-[11px] bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 flex items-center gap-1"><RefreshCcw size={12}/>Refresh List</button>
-        </div>
         {loading ? <SkeletonGrid/> : (
           visible.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -428,16 +431,17 @@ const Cameras = () => {
                 const src = (cam.video_source && cam.video_source.startsWith('http')) ? cam.video_source : fallbackUrl;
                 const hasError = errors[cam.id];
                 return (
-                  <div key={cam.id} className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/60">
+                  <div key={cam.id} className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/60 cursor-pointer" onClick={()=> setLivePreview(cam)} title="Click to enlarge">
                     {!hasError ? (
                       <video
                         src={src}
-                        className="w-full h-full object-cover aspect-video"
+                        className="w-full h-full object-cover aspect-video select-none"
                         autoPlay
                         muted
                         loop
                         playsInline
                         onError={()=>handleError(cam.id)}
+                        onContextMenu={(e)=> e.preventDefault()}
                       />
                     ) : (
                       <div className="aspect-video flex items-center justify-center text-white/40 text-[11px] bg-black/40">Stream Unavailable</div>
@@ -450,7 +454,7 @@ const Cameras = () => {
                         <span className={cx('ml-auto px-1.5 py-0.5 rounded border capitalize', badge(cam.status))}>{cam.status}</span>
                       </div>
                     </div>
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition" onClick={(e)=> e.stopPropagation()}>
                       <button onClick={()=>startEdit(cam)} className="h-6 px-2 rounded bg-orange-600/80 hover:bg-orange-500 text-white text-[10px] flex items-center gap-1"><Edit2 size={12}/>Edit</button>
                       <button onClick={()=>removeCamera(cam.id)} className="h-6 px-2 rounded bg-red-600/80 hover:bg-red-500 text-white text-[10px] flex items-center gap-1"><Trash2 size={12}/>Del</button>
                     </div>
@@ -488,6 +492,44 @@ const Cameras = () => {
       {tab==='bulk' && <Bulk/>}
       {tab==='analytics' && <Analytics/>}
   {tab==='live' && <Live/>}
+  {/* Live Enlarged Modal */}
+  {livePreview && (
+    <div
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={(e)=> { if (e.target === e.currentTarget) setLivePreview(null); }}
+    >
+      <div className="relative w-full max-w-6xl">
+        <button
+          onClick={()=> setLivePreview(null)}
+          className="absolute top-2 right-2 h-9 w-9 rounded-full bg-black/60 hover:bg-black/80 text-white/70 flex items-center justify-center border border-white/10"
+          aria-label="Close preview"
+        >
+          <X size={18}/>
+        </button>
+        <div className="rounded-lg overflow-hidden border border-white/10 bg-black/90">
+          <video
+            key={livePreview.id}
+            src={(livePreview.video_source && livePreview.video_source.startsWith('http')) ? livePreview.video_source : '/video.mp4'}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full max-h-[80vh] object-contain bg-black"
+            onContextMenu={(e)=> e.preventDefault()}
+          />
+          <div className="absolute left-0 bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 text-xs flex flex-col gap-2 pointer-events-none">
+            <div className="flex items-center gap-2 text-white/90 text-sm font-medium"><Camera size={14} className="text-orange-400"/>{livePreview.name}</div>
+            <div className="flex flex-wrap items-center gap-2 text-white/60">
+              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">{livePreview.area || '—'}</span>
+              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">{livePreview.zone || '—'}</span>
+              <span className={cx('px-2 py-0.5 rounded border capitalize', badge(livePreview.status))}>{livePreview.status}</span>
+              <span className="ml-auto text-[10px] text-white/40">Click outside video or X to close</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
   <ToastRegion toasts={toasts} />
     </div>
   );
