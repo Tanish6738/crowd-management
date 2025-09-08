@@ -181,20 +181,65 @@ export const searchFace = async (faceId, config) => {
 	}
 };
 
-/**
- * 4. Get All Lost People (GET /get_all_lost)
- */
-export const getAllLost = async (config) => exec(client.get('/get_all_lost', withConfig(config)));
+// ---------------------------------------------------------------------------
+// Lightweight In‑Memory GET Cache (improves perceived speed & dedups double
+// invocation caused by React 18 StrictMode in dev). NOT for sensitive data.
+// Keys are endpoint paths. Each entry: { ts, ttl, data, promise }.
+// Use config: { noCache: true } to bypass, or config: { cacheTTL: 0 }.
+// ---------------------------------------------------------------------------
+const _getCache = new Map();
+const DEFAULT_CACHE_TTL = 30_000; // 30s – tweak via VITE_API_CACHE_TTL
+const ENV_TTL = Number(import.meta?.env?.VITE_API_CACHE_TTL);
+const EFFECTIVE_DEFAULT_TTL = !Number.isNaN(ENV_TTL) && ENV_TTL > 0 ? ENV_TTL : DEFAULT_CACHE_TTL;
+
+const cachedGet = (path, config = {}) => {
+	const noCache = config?.noCache === true;
+	const ttl = config?.cacheTTL === 0 ? 0 : (config?.cacheTTL ?? EFFECTIVE_DEFAULT_TTL);
+	const now = Date.now();
+	if (!noCache && ttl > 0) {
+		const entry = _getCache.get(path);
+		if (entry) {
+			// If in‑flight promise – return it (dedupe concurrent + StrictMode double calls)
+			if (entry.promise) return entry.promise;
+			if (now - entry.ts < entry.ttl) {
+				return Promise.resolve(entry.data);
+			}
+			// stale -> fall through and refetch
+		}
+	}
+	const p = exec(client.get(path, withConfig(config)))
+		.then((data) => {
+			if (!noCache && ttl > 0) {
+				_getCache.set(path, { ts: Date.now(), ttl, data });
+			}
+			return data;
+		})
+		.catch((err) => {
+			// On error, discard cache entry so future retries can proceed
+			const existing = _getCache.get(path);
+			if (existing?.promise) _getCache.delete(path);
+			throw err;
+		});
+	if (!noCache && ttl > 0) {
+		_getCache.set(path, { ts: now, ttl, data: undefined, promise: p });
+	}
+	return p;
+};
 
 /**
- * 5. Get All Found People (GET /get_all_found)
+ * 4. Get All Lost People (GET /get_all_lost) – cached
  */
-export const getAllFound = async (config) => exec(client.get('/get_all_found', withConfig(config)));
+export const getAllLost = async (config) => cachedGet('/get_all_lost', config);
 
 /**
- * 6. Get All Matches (GET /get_all_matches)
+ * 5. Get All Found People (GET /get_all_found) – cached
  */
-export const getAllMatches = async (config) => exec(client.get('/get_all_matches', withConfig(config)));
+export const getAllFound = async (config) => cachedGet('/get_all_found', config);
+
+/**
+ * 6. Get All Matches (GET /get_all_matches) – cached
+ */
+export const getAllMatches = async (config) => cachedGet('/get_all_matches', config);
 
 /**
  * 7. Health Check (GET /health)

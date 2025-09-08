@@ -18,7 +18,7 @@ import {
   Plus,
   AlertCircle
 } from 'lucide-react';
-import { getAllLost, getAllMatches, getAllFound, searchFace, normalizePersonRecord } from '../../../Services/api';
+import { getAllLost, getAllMatches, getAllFound, searchFace, checkMatches, normalizePersonRecord } from '../../../Services/api';
 
 // Contracts reference
 // LostReport, Match (pending review)
@@ -51,6 +51,10 @@ const LostAndFound = () => {
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceError, setFaceError] = useState(null);
   const [showRaw, setShowRaw] = useState(false);
+  // Face ID match lookup (check_matches)
+  const [faceMatches, setFaceMatches] = useState([]); // array of match objects
+  const [faceMatchesLoading, setFaceMatchesLoading] = useState(false);
+  const [faceMatchesError, setFaceMatchesError] = useState(null);
 
   // Data Fetching ----------------------------------------------------------
   const transformLost = (lostRecords, matchMap) => {
@@ -60,6 +64,8 @@ const LostAndFound = () => {
       let uiStatus = 'open';
       if (hasMatch) uiStatus = 'matched';
       if (rec.status === 'found') uiStatus = 'closed';
+      // Prefer backend-provided face blob; fallback to placeholder
+      const photo = rec.face_blob ? `data:image/jpeg;base64,${rec.face_blob}` : 'https://via.placeholder.com/120x120.png?text=Lost';
       return {
         id: rec.face_id,
         person: {
@@ -68,7 +74,7 @@ const LostAndFound = () => {
           gender: (rec.gender || 'unknown').toLowerCase(),
           description: rec.where_lost ? `Last seen at ${rec.where_lost}` : 'No description'
         },
-        photos: [ 'https://via.placeholder.com/120x120.png?text=Lost' ], // Placeholder (API currently doesn't supply images)
+        photos: [ photo ],
         status: uiStatus,
         lastUpdated: rec.upload_time,
         timeline: [
@@ -89,7 +95,7 @@ const LostAndFound = () => {
         gender: (rec.gender || 'unknown').toLowerCase(),
         description: rec.where_found ? `Found at ${rec.where_found}` : 'No description'
       },
-      photos: [ 'https://via.placeholder.com/120x120.png?text=Found' ],
+      photos: [ rec.face_blob ? `data:image/jpeg;base64,${rec.face_blob}` : 'https://via.placeholder.com/120x120.png?text=Found' ],
       status: rec.status === 'found' ? 'closed' : 'open',
       lastUpdated: rec.upload_time,
       timeline: [ 'Logged', rec.status === 'found' && 'Closed' ].filter(Boolean)
@@ -97,35 +103,58 @@ const LostAndFound = () => {
   };
 
   const transformMatches = (records) => {
-    return records.map(m => ({
-      id: m.match_id,
-      lostPersonName: m.lost_person?.name || 'Unknown',
-      score: null, // similarity not provided by API
-      threshold: null,
-      lostPhotoUrl: 'https://via.placeholder.com/150x150.png?text=Lost',
-      foundFaceUrl: 'https://via.placeholder.com/150x150.png?text=Found',
-      status: m.match_status || 'pending_review'
-    }));
+    return records.map(m => {
+      // Attempt to derive embedded lost/found record blobs if backend includes them
+      const lostRec = m.lost_record || m.lost_person || m.lost || {};
+      const foundRec = m.found_record || m.found_person || m.found || {};
+      const lostBlob = lostRec.face_blob || m.lost_face_blob;
+      const foundBlob = foundRec.face_blob || m.found_face_blob;
+      return {
+        id: m.match_id,
+        lostPersonName: lostRec.name || m.lost_person?.name || 'Unknown',
+        score: m.similarity ?? m.score ?? null,
+        threshold: m.threshold ?? null,
+        lostPhotoUrl: lostBlob ? `data:image/jpeg;base64,${lostBlob}` : 'https://via.placeholder.com/150x150.png?text=Lost',
+        foundFaceUrl: foundBlob ? `data:image/jpeg;base64,${foundBlob}` : 'https://via.placeholder.com/150x150.png?text=Found',
+        status: m.match_status || m.status || 'pending_review'
+      };
+    });
   };
 
-  const fetchData = useCallback(async () => {
-    setLoading(true); setError(null);
+  // Progressive / staged fetching to improve perceived speed:
+  // 1. Load lost reports first (primary tab default) – show immediately.
+  // 2. Then fetch found reports & matches in background; update when ready.
+  // 3. Cache layer in api.js dedupes duplicate calls (StrictMode, concurrent tabs).
+  const fetchData = useCallback(async ({ force=false } = {}) => {
+    setError(null);
+    setLoading(true);
     try {
-      const [lostRes, foundRes, matchesRes] = await Promise.all([
-        getAllLost(),
-        getAllFound(),
-        getAllMatches()
-      ]);
-      const matchMap = new Map();
-      (matchesRes.records || []).forEach(m => { if (m.lost_face_id) matchMap.set(m.lost_face_id, true); });
-      setMatches(transformMatches(matchesRes.records || []));
-      setReports(transformLost(lostRes.records || [], matchMap));
-      setFoundReports(transformFound(foundRes.records || []));
+      const lostRes = await getAllLost(force ? { noCache: true } : undefined);
+      // Show lost list ASAP
+      setReports(cur => {
+        const matchMap = new Map(); // temporarily empty until matches arrive
+        return transformLost(lostRes.records || [], matchMap);
+      });
     } catch (e) {
-      setError(e.message || 'Failed to load data');
+      setError(e.message || 'Failed to load lost records');
     } finally {
       setLoading(false);
     }
+    // Fire & forget secondary fetches (found + matches); update independently
+    Promise.allSettled([
+      getAllFound(force ? { noCache: true } : undefined),
+      getAllMatches(force ? { noCache: true } : undefined)
+    ]).then(results => {
+      const [foundRes, matchesRes] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+      if (matchesRes) {
+        const matchMap = new Map();
+        (matchesRes.records || []).forEach(m => { if (m.lost_face_id) matchMap.set(m.lost_face_id, true); });
+        setMatches(transformMatches(matchesRes.records || []));
+        // Re-map lost reports to include matched status without losing existing ordering
+        setReports(prev => prev.map(r => ({ ...r, status: matchMap.has(r.id) && r.status==='open' ? 'matched' : r.status })));
+      }
+      if (foundRes) setFoundReports(transformFound(foundRes.records || []));
+    });
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -307,13 +336,17 @@ const LostAndFound = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-sm font-semibold text-white/90 flex items-center gap-2"><UserSearch size={18} className="text-orange-400"/> Lost & Found</h2>
-        <div className="flex flex-wrap gap-2 text-xs">
+  <div className="flex flex-wrap gap-2 text-xs">
           <button onClick={()=>setTab('lost')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition ${tab==='lost' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><Users size={14}/> Lost ({counts.lostTotal})</button>
           <button onClick={()=>setTab('found')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition ${tab==='found' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><Inbox size={14}/> Found ({counts.foundTotal})</button>
           <button onClick={()=>setTab('matches')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition ${tab==='matches' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><ListChecks size={14}/> Matches <span className="text-[10px] px-1 py-0.5 rounded bg-orange-500/15 text-orange-300 border border-orange-400/30">{counts.pendingMatches}</span></button>
           <button onClick={()=>setTab('search')} className={`px-3 py-1.5 rounded-md border flex items-center gap-1 transition ${tab==='search' ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}><SearchIcon size={14}/> Search Face</button>
         </div>
         <div className="hidden md:flex items-center gap-2 ml-auto text-xs">
+          <button onClick={()=>fetchData({ force:true })} title="Refresh (bypass cache)" className="h-9 px-3 rounded-md border flex items-center gap-1 bg-white/5 border-white/10 text-white/70 hover:bg-white/10 transition">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+            Refresh
+          </button>
           {['lost','found'].includes(tab) && (
             <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="h-9 rounded-md border border-white/10 bg-white/5 backdrop-blur px-2 text-white/80 focus:outline-none focus:ring-2 focus:ring-orange-500">
               {['all','open','matched','closed'].map(s=> <option key={s} className="bg-gray-900" value={s}>{s==='all'?'All Statuses':s}</option>)}
@@ -391,7 +424,42 @@ const LostAndFound = () => {
       )}
       {tab==='search' && (
         <div className="mk-surface-alt backdrop-blur border mk-border rounded-lg p-4 space-y-5 text-xs text-white/70" aria-label="Search by Face ID">
-          <form onSubmit={async (e)=>{e.preventDefault(); if(!faceId || faceLoading) return; setFaceLoading(true); setFaceError(null); setFaceResult(null); try { const res = await searchFace(faceId.trim()); setFaceResult(res); } catch(e){ setFaceError(e.message||'Search failed'); } finally { setFaceLoading(false);} }} className="flex flex-col sm:flex-row gap-2">
+          <form onSubmit={async (e)=>{
+            e.preventDefault();
+            if(!faceId || faceLoading) return;
+            setFaceLoading(true);
+            setFaceError(null);
+            setFaceResult(null);
+            setFaceMatches([]);
+            setFaceMatchesError(null);
+            try {
+              const id = faceId.trim();
+              const res = await searchFace(id);
+              setFaceResult(res);
+              // Fire & forget matches fetch (only if record exists)
+              if(!res?.not_found){
+                setFaceMatchesLoading(true);
+                try {
+                  const matchRes = await checkMatches(id);
+                  const matchesArr = matchRes.matches || matchRes.records || [];
+                  setFaceMatches(matchesArr);
+                } catch(err){
+                  // 404 -> no matches; other -> error
+                  if(err?.status === 404){
+                    setFaceMatches([]);
+                  } else {
+                    setFaceMatchesError(err.message||'Failed to load matches');
+                  }
+                } finally {
+                  setFaceMatchesLoading(false);
+                }
+              }
+            } catch(e){
+              setFaceError(e.message||'Search failed');
+            } finally {
+              setFaceLoading(false);
+            }
+          }} className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/40" />
               <input value={faceId} onChange={e=>setFaceId(e.target.value)} placeholder="Enter face ID (UUID)" className="flex-1 h-9 rounded-md border border-white/10 bg-white/5 pl-7 pr-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-white/80 placeholder:text-white/40" />
@@ -404,6 +472,22 @@ const LostAndFound = () => {
           {faceError && <div className="p-2 rounded border border-red-500/40 bg-red-500/10 text-red-300 text-[11px] flex items-center gap-2"><AlertCircle size={14}/> {faceError}</div>}
           {!faceError && faceResult && (
             <FaceResultPanel result={faceResult} showRaw={showRaw} onToggleRaw={()=>setShowRaw(r=>!r)} />
+          )}
+          {/* Face matches (from /check_matches) */}
+          {faceResult && !faceResult.not_found && (
+            <div className="space-y-3" aria-label="Face ID matches list">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide font-semibold text-white/60">
+                <ListChecks size={14} className="text-orange-400" /> Matches
+                {faceMatchesLoading && <span className="text-white/40 normal-case">Loading…</span>}
+                {!faceMatchesLoading && !faceMatchesError && faceMatches.length===0 && <span className="text-white/40 normal-case">None</span>}
+                {faceMatchesError && <span className="text-red-400 normal-case">{faceMatchesError}</span>}
+              </div>
+              {faceMatches.length>0 && (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {faceMatches.map((m,i)=> <MatchCard key={m.match_id||i} match={m} />)}
+                </div>
+              )}
+            </div>
           )}
           {!faceResult && !faceError && !faceLoading && <div className="text-white/40 text-[11px]">Enter a face ID to view existing lost/found record details.</div>}
         </div>
@@ -561,3 +645,43 @@ const InfoPill = ({ label, value }) => (
 );
 function truncate(str='', n=24){ return str.length>n ? str.slice(0, n-4)+'…'+str.slice(-4) : str; }
 function formatDate(str){ try { return new Date(str).toLocaleString(); } catch { return str; } }
+
+// Match card for face search matches (check_matches)
+const MatchCard = ({ match }) => {
+  // Expected match shape (backend speculative): {
+  //  match_id, lost_face_id, found_face_id, lost_record, found_record, similarity, threshold, status
+  //  Each record may contain face_blob (base64)
+  // }
+  const lost = match.lost_record || match.lost || {};
+  const found = match.found_record || match.found || {};
+  const lostImg = lost.face_blob ? `data:image/jpeg;base64,${lost.face_blob}` : 'https://via.placeholder.com/120x160.png?text=Lost';
+  const foundImg = found.face_blob ? `data:image/jpeg;base64,${found.face_blob}` : 'https://via.placeholder.com/120x160.png?text=Found';
+  const score = match.similarity ?? match.score ?? null;
+  const threshold = match.threshold ?? null;
+  return (
+    <div className="relative p-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur flex flex-col gap-2 text-[10px] text-white/70">
+      <div className="flex items-start gap-2">
+        <div className="w-16 h-20 rounded overflow-hidden border border-white/10 bg-black/30">
+          <img src={lostImg} alt="Lost" className="w-full h-full object-cover" loading="lazy" />
+        </div>
+        <div className="w-16 h-20 rounded overflow-hidden border border-white/10 bg-black/30">
+          <img src={foundImg} alt="Found" className="w-full h-full object-cover" loading="lazy" />
+        </div>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="font-semibold text-white/80 truncate">{lost.name || match.lost_name || 'Unknown'}</div>
+          {score !== null && <div className="text-white/60">Score {(score*100).toFixed(1)}%</div>}
+          {threshold !== null && <div className="text-white/40">Threshold {(threshold*100).toFixed(0)}%</div>}
+          <div className="flex flex-wrap gap-1">
+            {match.status && <span className="px-1.5 py-0.5 rounded border border-orange-400/30 bg-orange-500/15 text-orange-300 uppercase tracking-wide text-[8px]">{String(match.status)}</span>}
+            {match.match_id && <span className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 font-mono text-[8px]">{truncate(match.match_id,14)}</span>}
+          </div>
+        </div>
+      </div>
+      {score !== null && (
+        <div className="h-1.5 rounded bg-white/10 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600" style={{width: Math.min(100,(score*100))+'%'}} />
+        </div>
+      )}
+    </div>
+  );
+};
