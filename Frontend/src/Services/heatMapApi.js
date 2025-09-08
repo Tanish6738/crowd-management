@@ -10,8 +10,6 @@
 import axios from 'axios';
 
 const BASE_URL = (
-  import.meta?.env?.VITE_HEATMAP_API_URL ||
-  import.meta?.env?.VITE_API_URL ||
   'https://krish09bha-dhruvai2.hf.space'
 ) || 'http://localhost:8000';
 

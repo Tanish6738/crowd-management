@@ -26,8 +26,6 @@ import axios from 'axios';
 // ---------------------------------------------------------------------------
 // Precedence: dedicated CCTV API env -> generic API -> HF space -> localhost
 const BASE_URL = (
-	import.meta?.env?.VITE_CCTV_API_URL ||
-	import.meta?.env?.VITE_API_URL ||
 	'https://krish09bha-dhruvai2.hf.space'
 ) || 'http://localhost:8000';
 
