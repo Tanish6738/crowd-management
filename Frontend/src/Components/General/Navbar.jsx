@@ -89,7 +89,7 @@ const Navbar = () => {
             {mobileOpen ? '✕' : '☰'}
           </button>
           <NavLink to="/" className="flex items-center gap-2 group">
-            <span className="text-base font-bold tracking-wide mk-text-primary group-hover:mk-accent transition">CrowdMgmt</span>
+            <span className="text-base font-bold tracking-wide mk-text-primary group-hover:mk-accent transition">DhruvAi</span>
             <span className="mk-badge mk-badge-accent text-[9px]">Live</span>
           </NavLink>
           <nav className="hidden md:flex items-center gap-1">

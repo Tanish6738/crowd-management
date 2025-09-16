@@ -9,7 +9,6 @@ const roles = [
   { to: "/superAdminDashboard", label: "Super Admin", blurb: "Multi-tenant governance & global policies." },
   { to: "/adminDashboard", label: "Admin", blurb: "Operational configuration & system health." },
   { to: "/volunteerDashboard", label: "Volunteer", blurb: "Assist with tasks, crowd guidance, reports." },
-  { to: "/userDashboard", label: "User", blurb: "Personal reports & real‑time alerts." },
 ];
 
 const features = [
