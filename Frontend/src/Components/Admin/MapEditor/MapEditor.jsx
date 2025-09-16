@@ -41,6 +41,10 @@ const MapEditor = () => {
   const drawnItemsRef = useRef(null);
   const drawControlRef = useRef(null);
   const leafletLoadedRef = useRef(false);
+  // Layer groups and draw handler for programmatic drawing
+  const areaLayerGroupRef = useRef(null);
+  const zoneLayerGroupRef = useRef(null);
+  const drawHandlerRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState('markers');
   const [loading, setLoading] = useState(true);
@@ -51,9 +55,11 @@ const MapEditor = () => {
   const [selectedAreaForZone, setSelectedAreaForZone] = useState('');
   const [areaFilterForMarkers, setAreaFilterForMarkers] = useState('');
   const [zoneFilterForMarkers, setZoneFilterForMarkers] = useState('');
-  const [creatingPolygonType, setCreatingPolygonType] = useState(null); // 'area' | 'zone' | null
+  const [creatingPolygonType, setCreatingPolygonType] = useState(null); // 'area' | 'zone' | 'area-update' | 'zone-update' | null
   const [pendingAreaData, setPendingAreaData] = useState({ name: '', description: '' });
   const [pendingZoneData, setPendingZoneData] = useState({ name: '', description: '', area_id: '' });
+  const [areaToUpdateId, setAreaToUpdateId] = useState('');
+  const [zoneToUpdateId, setZoneToUpdateId] = useState('');
   const [newMarker, setNewMarker] = useState({
     type: MARKER_TYPES[0],
     name: '',
@@ -131,6 +137,10 @@ const MapEditor = () => {
     drawnItemsRef.current = new L.FeatureGroup();
     mapRef.current.addLayer(drawnItemsRef.current);
 
+    // separate groups for areas and zones overlays
+    areaLayerGroupRef.current = L.layerGroup().addTo(mapRef.current);
+    zoneLayerGroupRef.current = L.layerGroup().addTo(mapRef.current);
+
     drawControlRef.current = new L.Control.Draw({
       edit: { featureGroup: drawnItemsRef.current },
       draw: { polygon: { allowIntersection: false, showArea: true }, polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false }
@@ -149,10 +159,21 @@ const MapEditor = () => {
       drawnItemsRef.current.addLayer(layer);
       const latlngs = layer.getLatLngs();
       const coords = normalizeLatLngs(latlngs);
+      // turn off live draw tool if enabled programmatically
+      if (drawHandlerRef.current?.disable) {
+        try { drawHandlerRef.current.disable(); } catch (_) {}
+        drawHandlerRef.current = null;
+      }
       if (creatingPolygonType === 'area') {
         createAreaWithPolygon(coords);
       } else if (creatingPolygonType === 'zone') {
         createZoneWithPolygon(coords);
+      } else if (creatingPolygonType === 'area-update') {
+        if (!areaToUpdateId) { flash('Select an Area to update'); }
+        else { updateAreaPolygon(areaToUpdateId, coords); }
+      } else if (creatingPolygonType === 'zone-update') {
+        if (!zoneToUpdateId) { flash('Select a Zone to update'); }
+        else { updateZonePolygon(zoneToUpdateId, coords); }
       } else {
         flash('Polygon drawn (no type selected)');
       }
@@ -169,6 +190,29 @@ const MapEditor = () => {
     const flat = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
     return flat.map(pt => [pt.lat, pt.lng]);
   };
+
+  // Programmatic drawing when creatingPolygonType changes
+  useEffect(() => {
+    if (!mapRef.current || !window.L) return;
+    const L = window.L;
+    if (creatingPolygonType) {
+      // disable any existing handler
+      if (drawHandlerRef.current?.disable) {
+        try { drawHandlerRef.current.disable(); } catch (_) {}
+      }
+      drawHandlerRef.current = new L.Draw.Polygon(mapRef.current, {
+        allowIntersection: false,
+        showArea: true
+      });
+      try { drawHandlerRef.current.enable(); } catch (_) {}
+      flash(`Drawing ${creatingPolygonType.replace('-update','')} polygon…`);
+    } else {
+      if (drawHandlerRef.current?.disable) {
+        try { drawHandlerRef.current.disable(); } catch (_) {}
+        drawHandlerRef.current = null;
+      }
+    }
+  }, [creatingPolygonType, flash]);
 
   // API integration wrappers
   const loadMarkers = useCallback(async () => {
@@ -222,152 +266,247 @@ const MapEditor = () => {
     createZoneWithPolygon(undefined);
   };
 
+  // Update polygon helpers
+  const updateAreaPolygon = async (areaId, coords) => {
+    try {
+      await heatMapApi.updateArea(areaId, { polygon: coords });
+      flash('Area polygon updated');
+      await loadAreas();
+    } catch (e) { flash('Update area failed: ' + e.message); }
+  };
+
+  const updateZonePolygon = async (zoneId, coords) => {
+    try {
+      await heatMapApi.updateZone(zoneId, { polygon: coords });
+      flash('Zone polygon updated');
+      await loadZones();
+    } catch (e) { flash('Update zone failed: ' + e.message); }
+  };
+
   // Delete marker
   const deleteMarker = async (id) => { if (!window.confirm('Delete marker?')) return; try { await heatMapApi.deleteMarker(id); flash('Deleted'); loadMarkers(); } catch (e) { flash('Delete failed: ' + e.message); } };
 
   // Filtered markers
   const filteredMarkers = markers.filter(m => { if (areaFilterForMarkers && m.area_id !== areaFilterForMarkers) return false; if (zoneFilterForMarkers && m.zone_id !== zoneFilterForMarkers) return false; return true; });
 
+  // Render Areas polygons with click-to-fill marker coords
+  useEffect(() => {
+    if (!mapRef.current || !window.L || !areaLayerGroupRef.current) return;
+    const L = window.L;
+    areaLayerGroupRef.current.clearLayers();
+    areas.forEach(a => {
+      const id = a.id || a._id;
+      if (Array.isArray(a.polygon) && a.polygon.length) {
+        try {
+          const poly = L.polygon(a.polygon, { color: 'blue', weight: 3, dashArray: '10, 10', fillOpacity: 0, opacity: 1 });
+          poly.on('click', (e) => {
+            if (creatingPolygonType) return;
+            setNewMarker(m => ({ ...m, lat: e.latlng.lat.toFixed(6), lng: e.latlng.lng.toFixed(6), area_id: id, zone_id: '' }));
+            setActiveTab('markers');
+            flash(`Coord set from Area: ${a.name}`);
+            L.DomEvent.stopPropagation(e);
+          });
+          poly.addTo(areaLayerGroupRef.current);
+        } catch (_) {}
+      }
+    });
+  }, [areas, creatingPolygonType, flash]);
+
+  // Render Zones polygons with click-to-fill marker coords
+  useEffect(() => {
+    if (!mapRef.current || !window.L || !zoneLayerGroupRef.current) return;
+    const L = window.L;
+    zoneLayerGroupRef.current.clearLayers();
+    zones.forEach(z => {
+      const id = z.id || z._id;
+      if (Array.isArray(z.polygon) && z.polygon.length) {
+        try {
+          const poly = L.polygon(z.polygon, { color: 'red', weight: 2, dashArray: '5, 5', fillOpacity: 0, opacity: 1 });
+          poly.on('click', (e) => {
+            if (creatingPolygonType) return;
+            setNewMarker(m => ({ ...m, lat: e.latlng.lat.toFixed(6), lng: e.latlng.lng.toFixed(6), area_id: z.area_id || m.area_id, zone_id: id }));
+            setActiveTab('markers');
+            flash(`Coord set from Zone: ${z.name}`);
+            L.DomEvent.stopPropagation(e);
+          });
+          poly.addTo(zoneLayerGroupRef.current);
+        } catch (_) {}
+      }
+    });
+  }, [zones, creatingPolygonType, flash]);
+
   // Tab content renderers (markup adjusted for styling only)
   const renderMarkersTab = () => (
-    <div className="tab-pane">
-      <h3>Create Marker</h3>
-      <form onSubmit={handleCreateMarker} className="form-grid">
-        <label>Type
-          <select value={newMarker.type} onChange={e => setNewMarker(m => ({ ...m, type: e.target.value }))}>
-            {MARKER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+    <div className="tab-pane space-y-4">
+      <h3 className="text-sm font-semibold mk-text-secondary">Create Marker</h3>
+      <form onSubmit={handleCreateMarker} className="grid grid-cols-1 gap-3 mk-subtle p-3 rounded">
+        <label className="text-xs mk-text-muted">Type
+          <select className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={newMarker.type} onChange={e => setNewMarker(m => ({ ...m, type: e.target.value }))}>
+            {MARKER_TYPES.map(t => <option className="bg-[#0e2033] theme-light:bg-white" key={t} value={t}>{t}</option>)}
           </select>
         </label>
-        <label>Name
-          <input value={newMarker.name} onChange={e => setNewMarker(m => ({ ...m, name: e.target.value }))} placeholder="Marker name" />
+        <label className="text-xs mk-text-muted">Name
+          <input className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={newMarker.name} onChange={e => setNewMarker(m => ({ ...m, name: e.target.value }))} placeholder="Marker name" />
         </label>
-        <div className="coord-row">
-          <label>Lat
-            <input value={newMarker.lat} onChange={e => setNewMarker(m => ({ ...m, lat: e.target.value }))} placeholder="Latitude" />
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs mk-text-muted">Lat
+            <input className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={newMarker.lat} onChange={e => setNewMarker(m => ({ ...m, lat: e.target.value }))} placeholder="Latitude" />
           </label>
-          <label>Lng
-            <input value={newMarker.lng} onChange={e => setNewMarker(m => ({ ...m, lng: e.target.value }))} placeholder="Longitude" />
+          <label className="text-xs mk-text-muted">Lng
+            <input className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={newMarker.lng} onChange={e => setNewMarker(m => ({ ...m, lng: e.target.value }))} placeholder="Longitude" />
           </label>
         </div>
-        <button type="button" onClick={() => setIsPlacingMarker(v => !v)} className={isPlacingMarker ? 'secondary active' : 'secondary'}>
+        <button type="button" onClick={() => setIsPlacingMarker(v => !v)} className={`mk-btn-tab ${isPlacingMarker ? 'mk-btn-tab-active' : ''}`}>
           {isPlacingMarker ? 'Click map to set coords (ON)' : 'Enable map click for coords'}
         </button>
-        <label>Description
-          <textarea rows={2} value={newMarker.description} onChange={e => setNewMarker(m => ({ ...m, description: e.target.value }))} />
+        <label className="text-xs mk-text-muted">Description
+          <textarea rows={2} className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={newMarker.description} onChange={e => setNewMarker(m => ({ ...m, description: e.target.value }))} />
         </label>
-        <label>Area (optional)
-          <select value={newMarker.area_id} onChange={e => setNewMarker(m => ({ ...m, area_id: e.target.value, zone_id: '' }))}>
-            <option value="">-- none --</option>
-            {areas.map(a => <option key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
+        <label className="text-xs mk-text-muted">Area (optional)
+          <select className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={newMarker.area_id} onChange={e => setNewMarker(m => ({ ...m, area_id: e.target.value, zone_id: '' }))}>
+            <option className="bg-[#0e2033] theme-light:bg-white" value="">-- none --</option>
+            {areas.map(a => <option className="bg-[#0e2033] theme-light:bg-white" key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
           </select>
         </label>
-        <label>Zone (optional)
-          <select value={newMarker.zone_id} onChange={e => setNewMarker(m => ({ ...m, zone_id: e.target.value }))} disabled={!newMarker.area_id}>
-            <option value="">-- none --</option>
-            {zones.filter(z => z.area_id === newMarker.area_id).map(z => <option key={z.id || z._id} value={z.id || z._id}>{z.name}</option>)}
+        <label className="text-xs mk-text-muted">Zone (optional)
+          <select className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border disabled:opacity-50" value={newMarker.zone_id} onChange={e => setNewMarker(m => ({ ...m, zone_id: e.target.value }))} disabled={!newMarker.area_id}>
+            <option className="bg-[#0e2033] theme-light:bg-white" value="">-- none --</option>
+            {zones.filter(z => z.area_id === newMarker.area_id).map(z => <option className="bg-[#0e2033] theme-light:bg-white" key={z.id || z._id} value={z.id || z._id}>{z.name}</option>)}
           </select>
         </label>
-        <button type="submit">Create Marker</button>
+        <button type="submit" className="mk-btn-tab">Create Marker</button>
       </form>
 
-      <h3 style={{ marginTop: '1.5rem' }}>Markers</h3>
-      <div className="filter-row">
-        <select value={areaFilterForMarkers} onChange={e => { setAreaFilterForMarkers(e.target.value); setZoneFilterForMarkers(''); }}>
-          <option value="">All Areas</option>
-          {areas.map(a => <option key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
+      <h3 className="text-sm font-semibold mk-text-secondary mt-6">Markers</h3>
+      <div className="flex items-center gap-2">
+        <select className="px-3 py-2 rounded bg-transparent mk-border" value={areaFilterForMarkers} onChange={e => { setAreaFilterForMarkers(e.target.value); setZoneFilterForMarkers(''); }}>
+          <option className="bg-[#0e2033] theme-light:bg-white" value="">All Areas</option>
+          {areas.map(a => <option className="bg-[#0e2033] theme-light:bg-white" key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
         </select>
-        <select value={zoneFilterForMarkers} onChange={e => setZoneFilterForMarkers(e.target.value)} disabled={!areaFilterForMarkers}>
-          <option value="">All Zones</option>
-          {zones.filter(z => !areaFilterForMarkers || z.area_id === areaFilterForMarkers).map(z => <option key={z.id || z._id} value={z.id || z._id}>{z.name}</option>)}
+        <select className="px-3 py-2 rounded bg-transparent mk-border disabled:opacity-50" value={zoneFilterForMarkers} onChange={e => setZoneFilterForMarkers(e.target.value)} disabled={!areaFilterForMarkers}>
+          <option className="bg-[#0e2033] theme-light:bg-white" value="">All Zones</option>
+          {zones.filter(z => !areaFilterForMarkers || z.area_id === areaFilterForMarkers).map(z => <option className="bg-[#0e2033] theme-light:bg-white" key={z.id || z._id} value={z.id || z._id}>{z.name}</option>)}
         </select>
-        <button type="button" className="secondary" onClick={() => refreshAll()}>↻</button>
+        <button type="button" className="mk-btn-tab" onClick={() => refreshAll()}>↻</button>
       </div>
-      <ul className="item-list markers-scroll">
+      <ul className="mt-2 space-y-2 max-h-64 overflow-auto pr-1">
         {filteredMarkers.map(m => (
-          <li key={m.id || m._id} className="item marker-item">
-            <div className="item-header">
-              <div className="title-row">
-                <span className="type-badge" data-type={m.type}>{TYPE_ICONS[m.type] || '📍'}</span>
+          <li key={m.id || m._id} className="mk-card p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="mk-badge" data-type={m.type}>{TYPE_ICONS[m.type] || '📍'}</span>
                 <strong className="truncate">{m.name || '(unnamed)'}</strong>
               </div>
-              <button className="danger small" onClick={() => deleteMarker(m.id || m._id)}>✕</button>
+              <button className="mk-btn-tab" onClick={() => deleteMarker(m.id || m._id)}>✕</button>
             </div>
-            <div className="item-body">
-              <small className="dims">{m.type} • {parseFloat(m.lat).toFixed(4)}, {parseFloat(m.lng).toFixed(4)}</small>
-              {m.description && <p>{m.description}</p>}
+            <div className="mt-1 text-xs mk-text-muted">
+              {m.type} • {parseFloat(m.lat).toFixed(4)}, {parseFloat(m.lng).toFixed(4)}
             </div>
+            {m.description && <p className="mt-1 text-sm">{m.description}</p>}
           </li>
         ))}
-        {!filteredMarkers.length && <li className="empty">No markers</li>}
+        {!filteredMarkers.length && <li className="mk-text-muted text-sm">No markers</li>}
       </ul>
     </div>
   );
 
   const renderAreasTab = () => (
-    <div className="tab-pane">
-      <h3>Create Area</h3>
-      <form onSubmit={handleAreaFormSubmit} className="form-grid">
-        <label>Name
-          <input value={pendingAreaData.name} onChange={e => setPendingAreaData(a => ({ ...a, name: e.target.value }))} placeholder="Area name" />
+    <div className="tab-pane space-y-4">
+      <h3 className="text-sm font-semibold mk-text-secondary">Create Area</h3>
+      <form onSubmit={handleAreaFormSubmit} className="grid grid-cols-1 gap-3 mk-subtle p-3 rounded">
+        <label className="text-xs mk-text-muted">Name
+          <input className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={pendingAreaData.name} onChange={e => setPendingAreaData(a => ({ ...a, name: e.target.value }))} placeholder="Area name" />
         </label>
-        <label>Description
-          <textarea rows={2} value={pendingAreaData.description} onChange={e => setPendingAreaData(a => ({ ...a, description: e.target.value }))} />
+        <label className="text-xs mk-text-muted">Description
+          <textarea rows={2} className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={pendingAreaData.description} onChange={e => setPendingAreaData(a => ({ ...a, description: e.target.value }))} />
         </label>
-        <div className="button-row">
-          <button type="button" className={creatingPolygonType === 'area' ? 'secondary active' : 'secondary'} onClick={() => setCreatingPolygonType(p => p === 'area' ? null : 'area')}>{creatingPolygonType === 'area' ? 'Drawing ON - finish on map' : 'Draw Polygon'}</button>
-          <button type="submit">Create (no polygon)</button>
+        <div className="flex items-center gap-2">
+          <button type="button" className={`mk-btn-tab ${creatingPolygonType === 'area' ? 'mk-btn-tab-active' : ''}`} onClick={() => setCreatingPolygonType(p => p === 'area' ? null : 'area')}>{creatingPolygonType === 'area' ? 'Drawing ON - finish on map' : 'Draw Polygon'}</button>
+          <button type="submit" className="mk-btn-tab">Create (no polygon)</button>
         </div>
       </form>
-      <h3 style={{ marginTop: '1.5rem' }}>Areas</h3>
-      <ul className="item-list compact">
+
+      <h4 className="text-xs mk-text-muted">Add Polygon to Existing Area</h4>
+      <div className="mk-subtle p-3 rounded grid grid-cols-1 gap-3">
+        <label className="text-xs mk-text-muted">Select Area
+          <select className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={areaToUpdateId} onChange={(e) => setAreaToUpdateId(e.target.value)}>
+            <option className="bg-[#0e2033] theme-light:bg-white" value="">-- select area --</option>
+            {areas.map(a => <option className="bg-[#0e2033] theme-light:bg-white" key={a.id || a._id} value={a.id || a._id}>{a.name} {a.polygon ? '' : '(No polygon)'}</option>)}
+          </select>
+        </label>
+        <div className="flex items-center gap-2">
+          <button type="button" disabled={!areaToUpdateId} className={`mk-btn-tab ${creatingPolygonType === 'area-update' ? 'mk-btn-tab-active' : ''} disabled:opacity-50`} onClick={() => setCreatingPolygonType(p => p === 'area-update' ? null : 'area-update')}>
+            {creatingPolygonType === 'area-update' ? 'Drawing ON - finish on map' : 'Draw Polygon for Selected Area'}
+          </button>
+        </div>
+      </div>
+
+      <h3 className="text-sm font-semibold mk-text-secondary mt-4">Areas</h3>
+      <ul className="mt-2 space-y-2 max-h-64 overflow-auto pr-1">
         {areas.map(a => (
-          <li key={a.id || a._id} className="item area-item">
-            <div className="item-header">
+          <li key={a.id || a._id} className="mk-card p-3">
+            <div className="flex items-center justify-between">
               <strong>{a.name}</strong>
-              <span className={"pill " + (a.polygon ? 'pill-green' : 'pill-gray')}>{a.polygon ? 'Polygon' : 'No polygon'}</span>
+              <span className={`mk-badge ${a.polygon ? 'mk-badge-accent' : ''}`}>{a.polygon ? 'Polygon' : 'No polygon'}</span>
             </div>
-            {a.description && <p className="desc-text">{a.description}</p>}
+            {a.description && <p className="mt-1 text-sm">{a.description}</p>}
           </li>
         ))}
-        {!areas.length && <li className="empty">No areas</li>}
+        {!areas.length && <li className="mk-text-muted text-sm">No areas</li>}
       </ul>
     </div>
   );
 
   const renderZonesTab = () => (
-    <div className="tab-pane">
-      <h3>Create Zone</h3>
-      <form onSubmit={handleZoneFormSubmit} className="form-grid">
-        <label>Area
-          <select value={pendingZoneData.area_id} onChange={e => setPendingZoneData(z => ({ ...z, area_id: e.target.value }))}>
-            <option value="">-- select area --</option>
-            {areas.map(a => <option key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
+    <div className="tab-pane space-y-4">
+      <h3 className="text-sm font-semibold mk-text-secondary">Create Zone</h3>
+      <form onSubmit={handleZoneFormSubmit} className="grid grid-cols-1 gap-3 mk-subtle p-3 rounded">
+        <label className="text-xs mk-text-muted">Area
+          <select className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={pendingZoneData.area_id} onChange={e => setPendingZoneData(z => ({ ...z, area_id: e.target.value }))}>
+            <option className="bg-[#0e2033] theme-light:bg-white" value="">-- select area --</option>
+            {areas.map(a => <option className="bg-[#0e2033] theme-light:bg-white" key={a.id || a._id} value={a.id || a._id}>{a.name}</option>)}
           </select>
         </label>
-        <label>Name
-          <input value={pendingZoneData.name} onChange={e => setPendingZoneData(z => ({ ...z, name: e.target.value }))} placeholder="Zone name" />
+        <label className="text-xs mk-text-muted">Name
+          <input className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={pendingZoneData.name} onChange={e => setPendingZoneData(z => ({ ...z, name: e.target.value }))} placeholder="Zone name" />
         </label>
-        <label>Description
-          <textarea rows={2} value={pendingZoneData.description} onChange={e => setPendingZoneData(z => ({ ...z, description: e.target.value }))} />
+        <label className="text-xs mk-text-muted">Description
+          <textarea rows={2} className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={pendingZoneData.description} onChange={e => setPendingZoneData(z => ({ ...z, description: e.target.value }))} />
         </label>
-        <div className="button-row">
-          <button type="button" disabled={!pendingZoneData.area_id} className={creatingPolygonType === 'zone' ? 'secondary active' : 'secondary'} onClick={() => setCreatingPolygonType(p => p === 'zone' ? null : 'zone')}>{creatingPolygonType === 'zone' ? 'Drawing ON - finish on map' : 'Draw Polygon'}</button>
-          <button type="submit">Create (no polygon)</button>
+        <div className="flex items-center gap-2">
+          <button type="button" disabled={!pendingZoneData.area_id} className={`mk-btn-tab ${creatingPolygonType === 'zone' ? 'mk-btn-tab-active' : ''} disabled:opacity-50`} onClick={() => setCreatingPolygonType(p => p === 'zone' ? null : 'zone')}>{creatingPolygonType === 'zone' ? 'Drawing ON - finish on map' : 'Draw Polygon'}</button>
+          <button type="submit" className="mk-btn-tab">Create (no polygon)</button>
         </div>
       </form>
-      <h3 style={{ marginTop: '1.5rem' }}>Zones</h3>
-      <ul className="item-list compact">
+
+      <h4 className="text-xs mk-text-muted">Add Polygon to Existing Zone</h4>
+      <div className="mk-subtle p-3 rounded grid grid-cols-1 gap-3">
+        <label className="text-xs mk-text-muted">Select Zone
+          <select className="mt-1 w-full px-3 py-2 rounded bg-transparent mk-border" value={zoneToUpdateId} onChange={(e) => setZoneToUpdateId(e.target.value)}>
+            <option className="bg-[#0e2033] theme-light:bg-white" value="">-- select zone --</option>
+            {zones.map(z => <option className="bg-[#0e2033] theme-light:bg-white" key={z.id || z._id} value={z.id || z._id}>{z.name}</option>)}
+          </select>
+        </label>
+        <div className="flex items-center gap-2">
+          <button type="button" disabled={!zoneToUpdateId} className={`mk-btn-tab ${creatingPolygonType === 'zone-update' ? 'mk-btn-tab-active' : ''} disabled:opacity-50`} onClick={() => setCreatingPolygonType(p => p === 'zone-update' ? null : 'zone-update')}>
+            {creatingPolygonType === 'zone-update' ? 'Drawing ON - finish on map' : 'Draw Polygon for Selected Zone'}
+          </button>
+        </div>
+      </div>
+
+      <h3 className="text-sm font-semibold mk-text-secondary mt-4">Zones</h3>
+      <ul className="mt-2 space-y-2 max-h-64 overflow-auto pr-1">
         {zones.map(z => (
-          <li key={z.id || z._id} className="item zone-item">
-            <div className="item-header">
+          <li key={z.id || z._id} className="mk-card p-3">
+            <div className="flex items-center justify-between">
               <strong>{z.name}</strong>
-              <span className={"pill " + (z.polygon ? 'pill-green' : 'pill-gray')}>{z.polygon ? 'Polygon' : 'No polygon'}</span>
+              <span className={`mk-badge ${z.polygon ? 'mk-badge-accent' : ''}`}>{z.polygon ? 'Polygon' : 'No polygon'}</span>
             </div>
-            <small className="meta-line">Area: {areas.find(a => (a.id||a._id) === z.area_id)?.name || '—'}</small>
-            {z.description && <p className="desc-text">{z.description}</p>}
+            <small className="block mt-1 text-xs mk-text-muted">Area: {areas.find(a => (a.id||a._id) === z.area_id)?.name || '—'}</small>
+            {z.description && <p className="mt-1 text-sm">{z.description}</p>}
           </li>
         ))}
-        {!zones.length && <li className="empty">No zones</li>}
+        {!zones.length && <li className="mk-text-muted text-sm">No zones</li>}
       </ul>
     </div>
   );
@@ -392,113 +531,44 @@ const MapEditor = () => {
   }, [markers]);
 
   return (
-    <div className="map-editor-root">
-      <div className="nav-header">
-        <div className="nav-title">🗺️ Map Editor</div>
-        <div className="nav-links">
-          <button onClick={() => refreshAll()} className="secondary">Refresh All</button>
+    <div className="mk-gradient-bg p-4 md:p-6">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-lg font-semibold mk-text-primary">🗺️ Map Editor</div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => refreshAll()} className="mk-btn-tab">Refresh All</button>
         </div>
       </div>
-      <div className="editor-container">
-        <div className="map-wrapper">
-          {loading && <div className="overlay">Initializing map…</div>}
-          {scriptError && <div className="overlay error">{scriptError}</div>}
-          <div ref={mapNodeRef} id="map" style={{ width: '100%', height: '100%', minHeight: 500, border: '3px solid #333', borderRadius: 10 }} />
-          {creatingPolygonType && <div className="drawing-hint">Drawing {creatingPolygonType} polygon – finish by clicking first point.</div>}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 items-start">
+        <div className="relative min-h-[520px] mk-card overflow-hidden">
+          {loading && <div className="absolute inset-0 flex items-center justify-center text-sm mk-text-muted">Initializing map…</div>}
+          {scriptError && <div className="absolute inset-0 flex items-center justify-center text-sm mk-status-danger">{scriptError}</div>}
+          <div ref={mapNodeRef} id="map" className="w-full h-full min-h-[520px] rounded" />
+          {creatingPolygonType && (
+            <div className="absolute left-3 bottom-3 mk-badge mk-badge-accent">Drawing {creatingPolygonType} – click first point to finish</div>
+          )}
         </div>
-        <aside className="sidebar">
-          <div className="tabs">
-            {TABS.map(t => <button key={t.id} className={t.id === activeTab ? 'tab-button active' : 'tab-button'} onClick={() => setActiveTab(t.id)}>{t.label}</button>)}
+        <aside className="mk-panel p-3 rounded space-y-3">
+          <div className="flex gap-2 flex-wrap">
+            {TABS.map(t => (
+              <button key={t.id} className={`mk-btn-tab ${t.id === activeTab ? 'mk-btn-tab-active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
+            ))}
           </div>
-          <div className="tab-content">
+          <div>
             {activeTab === 'markers' && renderMarkersTab()}
             {activeTab === 'areas' && renderAreasTab()}
             {activeTab === 'zones' && renderZonesTab()}
           </div>
-          {message && <div className="result-box">{message}</div>}
-          <div className="legend">
-            <h4>Legend</h4>
-            <ul>
-              {MARKER_TYPES.map(t => <li key={t}><span>{TYPE_ICONS[t] || '📍'}</span> {t}</li>)}
+          {message && <div className="mk-status-success p-2 rounded text-sm">{message}</div>}
+          <div className="mt-2">
+            <h4 className="text-xs mk-text-muted mb-1">Legend</h4>
+            <ul className="flex flex-wrap gap-2">
+              {MARKER_TYPES.map(t => (
+                <li key={t} className="mk-badge"><span className="mr-1">{TYPE_ICONS[t] || '📍'}</span> {t}</li>
+              ))}
             </ul>
           </div>
         </aside>
       </div>
-      <style>{`
-        /* THEME + LAYOUT ENHANCEMENTS */
-        .map-editor-root { --c-bg:#f5f7fb; --c-panel:#ffffff; --c-border:#d9e2ec; --c-border-strong:#b3c1ce; --c-accent:#007cba; --c-accent-hover:#00649a; --c-danger:#d9534f; --c-text:#1f2d3d; --c-muted:#5c6b7a; --radius-s:4px; --radius-m:8px; --shadow-sm:0 1px 2px rgba(0,0,0,0.08); --shadow-md:0 3px 10px -2px rgba(0,0,0,0.12); font-family:system-ui, Arial, sans-serif; height:100%; display:flex; flex-direction:column; background:linear-gradient(135deg,#eef2f7,#f8fafc); color:var(--c-text);}        
-        .nav-header { background:linear-gradient(90deg,#0f3e62,#17669b); color:#fff; padding:14px 22px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 6px rgba(0,0,0,0.25);}        
-        .nav-title { font-weight:600; font-size:1.3rem; letter-spacing:.5px; display:flex; align-items:center; gap:6px;}        
-        .editor-container { flex:1; display:flex; min-height:600px; overflow:hidden; backdrop-filter:blur(2px);}        
-        .map-wrapper { position:relative; flex:1; background:#e2e8f0;}        
-        .sidebar { width:430px; background:rgba(255,255,255,0.9); padding:18px 16px 22px; display:flex; flex-direction:column; overflow:auto; border-left:1px solid var(--c-border); box-shadow:-4px 0 12px -6px rgba(0,0,0,0.15); backdrop-filter:blur(6px);}        
-        .sidebar::-webkit-scrollbar { width:10px;}        
-        .sidebar::-webkit-scrollbar-track { background:transparent;}        
-        .sidebar::-webkit-scrollbar-thumb { background:#c4d1dd; border-radius:20px; border:2px solid transparent; background-clip:content-box;}        
-        .tabs { display:flex; gap:6px; margin-bottom:14px; position:sticky; top:0; background:inherit; padding-bottom:6px; z-index:10;}        
-        .tab-button { flex:1; background:var(--c-panel); border:1px solid var(--c-border); padding:10px 12px; cursor:pointer; font-weight:600; border-radius:var(--radius-s); font-size:0.8rem; color:var(--c-muted); transition:.25s; position:relative;}        
-        .tab-button:hover { color:var(--c-text); box-shadow:var(--shadow-sm);}        
-        .tab-button.active { color:#fff; background:var(--c-accent); border-color:var(--c-accent); box-shadow:0 2px 6px -2px rgba(0,124,186,.6);}        
-        .tab-pane h3 { margin:0 0 10px; font-size:0.95rem; letter-spacing:.5px; font-weight:600; color:var(--c-text);}        
-        .tab-pane form { background:var(--c-panel); border:1px solid var(--c-border); padding:14px 14px 12px; border-radius:var(--radius-m); box-shadow:var(--shadow-sm); position:relative; overflow:hidden;}        
-        .tab-pane form:before { content:""; position:absolute; inset:0; background:linear-gradient(135deg,rgba(0,124,186,0.05),rgba(0,124,186,0)); pointer-events:none;}        
-        .form-grid label { display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:10px; font-weight:600; color:var(--c-muted);}        
-        .form-grid input, .form-grid select, .form-grid textarea { width:100%; box-sizing:border-box; padding:8px 10px; margin-top:5px; font-size:0.8rem; border:1px solid var(--c-border); border-radius:var(--radius-s); background:#fff; color:var(--c-text); font-family:inherit; transition:border-color .2s, box-shadow .2s;}        
-        .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { outline:none; border-color:var(--c-accent); box-shadow:0 0 0 2px rgba(0,124,186,0.25);}        
-        .button-row { display:flex; gap:10px; margin-top:4px; flex-wrap:wrap;}        
-        button { background:var(--c-accent); color:#fff; border:1px solid var(--c-accent); border-radius:var(--radius-s); padding:9px 14px; cursor:pointer; font-size:0.8rem; font-weight:600; letter-spacing:.4px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px -2px rgba(0,0,0,0.3); transition:background .2s, transform .15s, box-shadow .2s;}        
-        button:hover:not(:disabled) { background:var(--c-accent-hover);}        
-        button:active:not(:disabled) { transform:translateY(1px); box-shadow:0 1px 3px -1px rgba(0,0,0,0.4);}        
-        button.secondary { background:#64748b; border-color:#64748b;}        
-        button.secondary:hover { background:#526073;}        
-        button.secondary.active { background:#334155; border-color:#334155;}        
-        button.danger { background:var(--c-danger); border-color:var(--c-danger);}        
-        button.danger:hover { background:#c94440;}        
-        button.small { padding:4px 8px; font-size:0.65rem; font-weight:600; box-shadow:none;}        
-        button:disabled { opacity:.55; cursor:not-allowed;}        
-        .item-list { list-style:none; padding:0; margin:12px 0 4px;}        
-        .item { background:var(--c-panel); border:1px solid var(--c-border); margin-bottom:10px; padding:10px 12px 8px; border-radius:var(--radius-m); position:relative; display:flex; flex-direction:column; gap:4px; box-shadow:var(--shadow-sm); transition:box-shadow .25s, transform .25s, border-color .25s;}        
-        .item:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--c-border-strong);}        
-        .item.marker-item { border-left:5px solid var(--c-accent);}        
-        .item.area-item { border-left:5px solid #6366f1;}        
-        .item.zone-item { border-left:5px solid #0ea5e9;}        
-        .item-header { display:flex; justify-content:space-between; align-items:center; gap:8px;}        
-        .title-row { display:flex; align-items:center; gap:6px; min-width:0;}        
-        .truncate { max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}        
-        .item-body p, .desc-text { margin:3px 0 2px; font-size:0.7rem; line-height:1.15rem; color:var(--c-text);}        
-        .meta-line { display:block; font-size:0.65rem; color:var(--c-muted); margin-bottom:2px;}        
-        .dims { color:var(--c-muted);}        
-        .empty { font-size:0.7rem; color:var(--c-muted); font-style:italic;}        
-        .result-box { background:linear-gradient(135deg,#ffffff,#f1f7fb); border:1px solid var(--c-border); padding:10px 12px; border-radius:var(--radius-m); font-size:0.7rem; margin-top:10px; white-space:pre-wrap; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow-sm); animation:fadeIn .4s ease;}        
-        .legend { margin-top:18px; background:var(--c-panel); border:1px solid var(--c-border); padding:10px 12px; border-radius:var(--radius-m); box-shadow:var(--shadow-sm);}        
-        .legend h4 { margin:0 0 8px; font-size:0.75rem; text-transform:uppercase; letter-spacing:.6px; color:var(--c-muted);}        
-        .legend ul { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:6px 10px;}        
-        .legend li { font-size:0.65rem; display:flex; gap:6px; align-items:center; background:#f1f5f9; padding:4px 6px; border-radius:var(--radius-s); border:1px solid #e2e8f0;}        
-        .coord-row { display:flex; gap:10px;}        
-        .filter-row { display:flex; gap:8px; margin:8px 0 12px;}        
-        .filter-row select { flex:1;}        
-        .overlay { position:absolute; inset:0; background:linear-gradient(120deg,rgba(255,255,255,0.9),rgba(255,255,255,0.75)); display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; font-weight:600; font-size:0.9rem; z-index:500; letter-spacing:.5px;}        
-        .overlay.error { background:rgba(255,220,220,0.95); color:#7f1d1d;}        
-        .drawing-hint { position:absolute; bottom:14px; left:14px; background:var(--c-accent); color:#fff; padding:8px 12px; border-radius:24px; font-size:0.65rem; z-index:400; box-shadow:0 4px 14px -4px rgba(0,0,0,0.4); letter-spacing:.5px; display:flex; align-items:center; gap:6px; animation:floatPulse 3s ease-in-out infinite;}        
-        .custom-marker span { font-size:20px; line-height:20px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));}        
-        .type-badge { width:26px; height:26px; background:#f1f5f9; border:1px solid #d9e2ec; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:var(--shadow-sm);}        
-        .pill { font-size:0.55rem; text-transform:uppercase; letter-spacing:.7px; padding:4px 8px 3px; border-radius:20px; background:#e2e8f0; color:#334155; font-weight:600; border:1px solid #cbd5e1;}        
-        .pill-green { background:#dcfce7; color:#166534; border-color:#bbf7d0;}        
-        .pill-gray { background:#f1f5f9; color:#475569; border-color:#e2e8f0;}        
-        .markers-scroll { max-height:300px; overflow:auto; padding-right:4px;}        
-        .markers-scroll::-webkit-scrollbar { width:8px;}        
-        .markers-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:20px;}        
-        @keyframes fadeIn { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }        
-        @keyframes floatPulse { 0%,100% { transform:translateY(0);} 50% { transform:translateY(-3px);} }        
-        @media (max-width:1280px) { .sidebar { width:380px; } }
-        @media (max-width:1100px) { .sidebar { width:340px; } }
-        @media (max-width:950px) { .sidebar { width:320px; } }
-        @media (max-width:900px) { .editor-container { flex-direction:column; } .sidebar { width:auto; order:-1; box-shadow:0 4px 14px -6px rgba(0,0,0,0.2); border-left:none; border-bottom:1px solid var(--c-border); } .map-wrapper { min-height:420px; } }
-        @media (max-width:560px) { .tab-button { padding:8px 6px; font-size:0.7rem; } .nav-title { font-size:1.05rem; } .sidebar { padding:14px 12px 18px; } }
-        @media (max-width:440px) { .coord-row { flex-direction:column; } .truncate { max-width:120px; } }
-        button:focus-visible, .form-grid input:focus-visible, .form-grid select:focus-visible, .form-grid textarea:focus-visible { outline:2px solid var(--c-accent); outline-offset:2px; }
-        @media (prefers-contrast: more) { .item { border-color:var(--c-border-strong); } }
-      `}</style>
     </div>
   );
 };
